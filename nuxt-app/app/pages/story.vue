@@ -62,7 +62,7 @@
           </button>
         </div>
 
-        <!-- 왕국 이름 입력 (chapter10에서만) -->
+        <!-- 왕국 이름 입력 -->
         <div v-else-if="showNationNameInput" class="space-y-4 sm:space-y-6">
           <input
             v-model="localNationName"
@@ -82,196 +82,134 @@
           </div>
         </div>
 
+        <!-- 5계명 선택 영역 (commandments 챕터에 도달했을 때만 표시) -->
+        <div v-else-if="showCommandmentsSection && showNextHandle" ref="commandmentsSection" class="mt-12 sm:mt-16 md:mt-20 pt-8 sm:pt-10 border-t-2 border-amber-400/30">
+          <div class="max-w-[1600px] mx-auto">
+            <div class="max-w-[800px] mx-auto mb-10">
+              <div class="flex justify-between items-center mb-2.5 gap-5 flex-col md:flex-row md:items-center">
+                <span class="text-base font-semibold text-slate-300">선택된 계명: {{ localSelectedCommandments.length }} / 5 </span>
+                <span class="text-base font-semibold text-slate-300">(선택에 따라 게임의 이벤트가 다르게 발생합니다.)</span>
+                <button
+                    v-if="rerollCount < maxRerolls"
+                    @click="rerollCommandments"
+                    class="px-4 py-2 bg-gradient-to-br from-violet-600 to-indigo-600 border-2 border-violet-600/50 rounded-lg text-white font-semibold text-sm cursor-pointer transition-all whitespace-nowrap hover:bg-gradient-to-br hover:from-violet-700 hover:to-indigo-700 hover:border-violet-600/80 hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:translate-y-[-2px] w-full md:w-auto text-center"
+                >
+                  🎲 계명 다시 뽑기 ({{ maxRerolls - rerollCount }}번 남음)
+                </button>
+                <span v-else class="text-sm text-slate-500 italic">리롤 기회 사용됨</span>
+              </div>
+              <div class="h-3 bg-slate-800/80 rounded-md overflow-hidden border border-amber-400/30">
+                <div class="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-[width] duration-300 shadow-[0_0_10px_rgba(251,191,36,0.6)]" :style="{ width: (localSelectedCommandments.length / 5 * 100) + '%' }"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+              <div
+                  v-for="commandment in availableCommandments"
+                  :key="commandment.id"
+                  class="bg-slate-800/60 backdrop-blur-xl rounded-xl p-4 border-2 transition-all relative"
+                  :class="{
+                  'border-amber-400/80 bg-amber-400/10 shadow-[0_0_30px_rgba(251,191,36,0.3)]': isSelected(commandment),
+                  'opacity-40 cursor-not-allowed': !isSelected(commandment) && localSelectedCommandments.length >= 5,
+                  'border-slate-600/20 hover:border-amber-400/50 hover:shadow-[0_4px_20px_rgba(251,191,36,0.15)]': !isSelected(commandment) && localSelectedCommandments.length < 5,
+                  'bg-slate-800/80': expandedCommandments[commandment.id]
+                }"
+              >
+                <!-- Compact Header -->
+                <div class="flex items-center gap-2 cursor-pointer mb-2" @click.stop="toggleExpand(commandment.id)">
+                  <span class="text-[28px] drop-shadow-[0_0_10px_rgba(251,191,36,0.4)]">{{ commandment.icon }}</span>
+                  <h3 class="text-base font-bold text-slate-200 flex-1">{{ commandment.name }}</h3>
+                  <div class="ml-auto flex items-center gap-2">
+                    <div v-if="isSelected(commandment)" class="w-5 h-5 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-black text-xs shadow-[0_2px_8px_rgba(16,185,129,0.5)]">✓</div>
+                    <span class="text-xs text-slate-300 transition-transform duration-300" :class="{ 'rotate-180': expandedCommandments[commandment.id] }">▼</span>
+                  </div>
+                </div>
+
+                <!-- Collapsed View -->
+                <div v-if="!expandedCommandments[commandment.id]" class="mt-1">
+                  <p class="text-xs text-slate-400 mb-2 leading-normal">{{ commandment.description.slice(0, 60) }}...</p>
+                  <button
+                      @click.stop="toggleCommandment(commandment)"
+                      class="w-full px-3 py-1.5 bg-amber-400/20 border border-amber-400/40 rounded-md text-amber-400 font-semibold text-xs cursor-pointer transition-all hover:bg-amber-400/30 hover:border-amber-400/60 disabled:opacity-40 disabled:cursor-not-allowed"
+                      :disabled="!isSelected(commandment) && localSelectedCommandments.length >= 5"
+                  >
+                    {{ isSelected(commandment) ? '✓ 선택됨' : '선택하기' }}
+                  </button>
+                </div>
+
+                <!-- Expanded View -->
+                <div v-else class="mt-1 animate-[slideDown_0.3s_ease]" @click.stop>
+                  <p class="text-[13px] text-slate-400 mb-3 leading-relaxed">{{ commandment.description }}</p>
+
+                  <div class="mb-3">
+                    <div class="mb-3">
+                      <h4 class="text-xs font-bold mb-1.5 flex items-center gap-1 text-emerald-400 before:content-['✓'] before:text-sm">장점</h4>
+                      <ul class="list-none pl-0">
+                        <li v-for="(pro, index) in commandment.pros" :key="index" class="text-xs py-0.5 pl-4 relative text-emerald-300 before:content-['•'] before:absolute before:left-2">
+                          {{ pro }}
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div class="mb-3">
+                      <h4 class="text-xs font-bold mb-1.5 flex items-center gap-1 text-red-500 before:content-['✗'] before:text-sm">단점</h4>
+                      <ul class="list-none pl-0">
+                        <li v-for="(con, index) in commandment.cons" :key="index" class="text-xs py-0.5 pl-4 relative text-red-300 before:content-['•'] before:absolute before:left-2">
+                          {{ con }}
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-wrap gap-1.5">
+                    <div v-if="commandment.effects.morale !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.morale > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+                      민심: {{ commandment.effects.morale > 0 ? '+' : '' }}{{ commandment.effects.morale }}
+                    </div>
+                    <div v-if="commandment.effects.gold !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.gold > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+                      금: {{ commandment.effects.gold > 0 ? '+' : '' }}{{ commandment.effects.gold }}
+                    </div>
+                    <div v-if="commandment.effects.military !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.military > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+                      군사: {{ commandment.effects.military > 0 ? '+' : '' }}{{ commandment.effects.military }}
+                    </div>
+                    <div v-if="commandment.effects.food !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.food > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+                      식량: {{ commandment.effects.food > 0 ? '+' : '' }}{{ commandment.effects.food }}
+                    </div>
+                    <div v-if="commandment.effects.population !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.population > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+                      인구: {{ commandment.effects.population > 0 ? '+' : '' }}{{ commandment.effects.population }}
+                    </div>
+                  </div>
+
+                  <button
+                      @click.stop="toggleCommandment(commandment)"
+                      class="w-full px-4 py-2 bg-gradient-to-br from-amber-400 to-amber-500 border-0 rounded-lg text-slate-800 font-bold text-[13px] cursor-pointer transition-all mt-2.5 hover:translate-y-[-2px] hover:shadow-[0_4px_12px_rgba(251,191,36,0.4)] disabled:opacity-40 disabled:cursor-not-allowed"
+                      :disabled="!isSelected(commandment) && localSelectedCommandments.length >= 5"
+                  >
+                    {{ isSelected(commandment) ? '✓ 선택 해제' : '이 계명 선택하기' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-center px-4">
+              <button
+                  @click="confirmCommandments"
+                  class="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-3.5 md:px-12 md:py-4 bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 rounded-lg md:rounded-xl font-bold text-base sm:text-lg hover:translate-y-[-2px] hover:shadow-[0_8px_20px_rgba(251,191,36,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:translate-y-[-1px]"
+                  :disabled="localSelectedCommandments.length !== 5"
+              >
+                <span class="mr-2">⚡</span>
+                계명 확정하기
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- 일반 컨트롤 버튼 -->
-        <div v-else class="flex justify-center sm:justify-end items-center">
+        <div v-else-if="showNextHandle" class="flex justify-center sm:justify-end items-center">
           <button
             @click="handleNext"
             class="w-full sm:w-auto px-8 py-3 sm:px-9 sm:py-3.5 md:px-10 md:py-3.5 bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 rounded-lg md:rounded-xl font-bold text-base sm:text-lg hover:translate-y-[-2px] hover:shadow-[0_8px_20px_rgba(251,191,36,0.4)] transition-all active:translate-y-[-1px]"
           >
             다음 →
-          </button>
-        </div>
-
-        <!-- 5계명 선택 영역 (commandments 챕터에 도달했을 때만 표시) -->
-        <div v-if="showCommandmentsSection" ref="commandmentsSection" class="mt-12 sm:mt-16 md:mt-20 pt-8 sm:pt-10 border-t-2 border-amber-400/30">
-      <div class="max-w-[1600px] mx-auto">
-        <div class="text-center mb-8 sm:mb-10">
-          <p class="text-base sm:text-lg md:text-xl lg:text-[22px] leading-relaxed text-slate-300 mb-4 sm:mb-5 px-2">
-            나는 기존 모든 법 위에 놓일 {{ localNationName }}왕국의 5계명을 쓴다.
-          </p>
-          <p class="text-base sm:text-lg md:text-xl lg:text-[22px] leading-relaxed text-slate-300 mb-4 sm:mb-5 px-2">
-            그리고 이 세계에 '적용'한다. 마치, 그것이 오래전부터 선언된 진리였던 것처럼.
-          </p>
-        </div>
-
-        <div class="max-w-[800px] mx-auto mb-10">
-          <div class="flex justify-between items-center mb-2.5 gap-5 flex-col md:flex-row md:items-center">
-            <span class="text-base font-semibold text-slate-300">선택된 계명: {{ localSelectedCommandments.length }} / 5</span>
-            <button
-              v-if="rerollCount < maxRerolls"
-              @click="rerollCommandments"
-              class="px-4 py-2 bg-gradient-to-br from-violet-600 to-indigo-600 border-2 border-violet-600/50 rounded-lg text-white font-semibold text-sm cursor-pointer transition-all whitespace-nowrap hover:bg-gradient-to-br hover:from-violet-700 hover:to-indigo-700 hover:border-violet-600/80 hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:translate-y-[-2px] w-full md:w-auto text-center"
-            >
-              🎲 계명 다시 뽑기 ({{ maxRerolls - rerollCount }}번 남음)
-            </button>
-            <span v-else class="text-sm text-slate-500 italic">리롤 기회 사용됨</span>
-          </div>
-          <div class="h-3 bg-slate-800/80 rounded-md overflow-hidden border border-amber-400/30">
-            <div class="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-[width] duration-300 shadow-[0_0_10px_rgba(251,191,36,0.6)]" :style="{ width: (localSelectedCommandments.length / 5 * 100) + '%' }"></div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
-          <div
-            v-for="commandment in availableCommandments"
-            :key="commandment.id"
-            class="bg-slate-800/60 backdrop-blur-xl rounded-xl p-4 border-2 transition-all relative"
-            :class="{
-              'border-amber-400/80 bg-amber-400/10 shadow-[0_0_30px_rgba(251,191,36,0.3)]': isSelected(commandment),
-              'opacity-40 cursor-not-allowed': !isSelected(commandment) && localSelectedCommandments.length >= 5,
-              'border-slate-600/20 hover:border-amber-400/50 hover:shadow-[0_4px_20px_rgba(251,191,36,0.15)]': !isSelected(commandment) && localSelectedCommandments.length < 5,
-              'bg-slate-800/80': expandedCommandments[commandment.id]
-            }"
-          >
-            <!-- Compact Header -->
-            <div class="flex items-center gap-2 cursor-pointer mb-2" @click.stop="toggleExpand(commandment.id)">
-              <span class="text-[28px] drop-shadow-[0_0_10px_rgba(251,191,36,0.4)]">{{ commandment.icon }}</span>
-              <h3 class="text-base font-bold text-slate-200 flex-1">{{ commandment.name }}</h3>
-              <div class="ml-auto flex items-center gap-2">
-                <div v-if="isSelected(commandment)" class="w-5 h-5 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-black text-xs shadow-[0_2px_8px_rgba(16,185,129,0.5)]">✓</div>
-                <span class="text-xs text-slate-300 transition-transform duration-300" :class="{ 'rotate-180': expandedCommandments[commandment.id] }">▼</span>
-              </div>
-            </div>
-
-            <!-- Collapsed View -->
-            <div v-if="!expandedCommandments[commandment.id]" class="mt-1">
-              <p class="text-xs text-slate-400 mb-2 leading-normal">{{ commandment.description.slice(0, 60) }}...</p>
-              <button
-                @click.stop="toggleCommandment(commandment)"
-                class="w-full px-3 py-1.5 bg-amber-400/20 border border-amber-400/40 rounded-md text-amber-400 font-semibold text-xs cursor-pointer transition-all hover:bg-amber-400/30 hover:border-amber-400/60 disabled:opacity-40 disabled:cursor-not-allowed"
-                :disabled="!isSelected(commandment) && localSelectedCommandments.length >= 5"
-              >
-                {{ isSelected(commandment) ? '✓ 선택됨' : '선택하기' }}
-              </button>
-            </div>
-
-            <!-- Expanded View -->
-            <div v-else class="mt-1 animate-[slideDown_0.3s_ease]" @click.stop>
-              <p class="text-[13px] text-slate-400 mb-3 leading-relaxed">{{ commandment.description }}</p>
-
-              <div class="mb-3">
-                <div class="mb-3">
-                  <h4 class="text-xs font-bold mb-1.5 flex items-center gap-1 text-emerald-400 before:content-['✓'] before:text-sm">장점</h4>
-                  <ul class="list-none pl-0">
-                    <li v-for="(pro, index) in commandment.pros" :key="index" class="text-xs py-0.5 pl-4 relative text-emerald-300 before:content-['•'] before:absolute before:left-2">
-                      {{ pro }}
-                    </li>
-                  </ul>
-                </div>
-
-                <div class="mb-3">
-                  <h4 class="text-xs font-bold mb-1.5 flex items-center gap-1 text-red-500 before:content-['✗'] before:text-sm">단점</h4>
-                  <ul class="list-none pl-0">
-                    <li v-for="(con, index) in commandment.cons" :key="index" class="text-xs py-0.5 pl-4 relative text-red-300 before:content-['•'] before:absolute before:left-2">
-                      {{ con }}
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <div class="flex flex-wrap gap-1.5">
-                <div v-if="commandment.effects.morale !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.morale > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
-                  민심: {{ commandment.effects.morale > 0 ? '+' : '' }}{{ commandment.effects.morale }}
-                </div>
-                <div v-if="commandment.effects.gold !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.gold > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
-                  금: {{ commandment.effects.gold > 0 ? '+' : '' }}{{ commandment.effects.gold }}
-                </div>
-                <div v-if="commandment.effects.military !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.military > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
-                  군사: {{ commandment.effects.military > 0 ? '+' : '' }}{{ commandment.effects.military }}
-                </div>
-                <div v-if="commandment.effects.food !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.food > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
-                  식량: {{ commandment.effects.food > 0 ? '+' : '' }}{{ commandment.effects.food }}
-                </div>
-                <div v-if="commandment.effects.population !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.population > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
-                  인구: {{ commandment.effects.population > 0 ? '+' : '' }}{{ commandment.effects.population }}
-                </div>
-              </div>
-
-              <button
-                @click.stop="toggleCommandment(commandment)"
-                class="w-full px-4 py-2 bg-gradient-to-br from-amber-400 to-amber-500 border-0 rounded-lg text-slate-800 font-bold text-[13px] cursor-pointer transition-all mt-2.5 hover:translate-y-[-2px] hover:shadow-[0_4px_12px_rgba(251,191,36,0.4)] disabled:opacity-40 disabled:cursor-not-allowed"
-                :disabled="!isSelected(commandment) && localSelectedCommandments.length >= 5"
-              >
-                {{ isSelected(commandment) ? '✓ 선택 해제' : '이 계명 선택하기' }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="text-center px-4">
-          <button
-            @click="confirmCommandments"
-            class="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-3.5 md:px-12 md:py-4 bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 rounded-lg md:rounded-xl font-bold text-base sm:text-lg hover:translate-y-[-2px] hover:shadow-[0_8px_20px_rgba(251,191,36,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:translate-y-[-1px]"
-            :disabled="localSelectedCommandments.length !== 5"
-          >
-            <span class="mr-2">⚡</span>
-            계명 확정하기
-          </button>
-        </div>
-      </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 카드 선택 화면 -->
-    <div v-else-if="gameState === 'cards'" class="min-h-screen p-4 sm:p-6 md:p-8 lg:p-10">
-      <div class="max-w-[1600px] mx-auto">
-        <div class="text-center mb-8 sm:mb-10 px-2">
-          <p class="text-base sm:text-lg md:text-xl lg:text-[22px] leading-relaxed text-slate-300 mb-4 sm:mb-5">
-            통치 시작 후 10분, {{ localNationName }}의 국세청 위에, 커다란 폭탄이 떨어졌다.
-          </p>
-          <p class="text-base sm:text-lg md:text-xl lg:text-[22px] leading-relaxed text-slate-300 mb-4 sm:mb-5">
-            이제 본격적인 통치가 시작된다.
-          </p>
-          <p class="text-lg sm:text-xl md:text-2xl lg:text-[26px] font-bold text-amber-400 drop-shadow-[0_0_20px_rgba(251,191,36,0.3)]">
-            왕으로서 첫 번째 선택을 해야 할 시간이다.
-          </p>
-        </div>
-
-        <div class="text-base sm:text-lg font-semibold text-amber-400 mb-6 sm:mb-8 text-center px-2">
-          선택된 카드: {{ selectedStartCards.length }} / 3
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-8 sm:mb-10 px-2">
-          <div
-            v-for="card in availableStartCards"
-            :key="card.id"
-            @click="toggleCard(card)"
-            class="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-5 border-2 cursor-pointer transition-all relative min-h-[200px] flex flex-col"
-            :class="{
-              'border-amber-400/80 bg-amber-400/10 shadow-[0_0_30px_rgba(251,191,36,0.3)]': isCardSelected(card.id),
-              'opacity-40 cursor-not-allowed': selectedStartCards.length >= 3 && !isCardSelected(card.id),
-              'border-slate-600/20 hover:border-amber-400/50 hover:shadow-[0_4px_20px_rgba(251,191,36,0.15)] hover:translate-y-[-4px]': selectedStartCards.length < 3 || isCardSelected(card.id)
-            }"
-          >
-            <div class="absolute top-3 right-3 px-3 py-1 rounded-md text-[11px] font-bold" :class="card.rarity === 'common' ? 'bg-green-500/20 text-emerald-300 border border-green-500/30' : card.rarity === 'rare' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : card.rarity === 'epic' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-orange-500/20 text-orange-300 border border-orange-500/30'">
-              {{ getRarityLabel(card.rarity) }}
-            </div>
-            <div class="text-5xl mb-3 drop-shadow-[0_0_10px_rgba(251,191,36,0.4)]">{{ card.icon }}</div>
-            <h3 class="text-lg font-bold text-slate-200 mb-3">{{ card.name }}</h3>
-            <p class="text-[13px] text-slate-400 leading-relaxed flex-1">{{ card.description }}</p>
-            <div v-if="isCardSelected(card.id)" class="absolute top-3 left-3 w-7 h-7 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-black text-base shadow-[0_2px_8px_rgba(16,185,129,0.5)]">✓</div>
-          </div>
-        </div>
-
-        <div class="text-center px-4">
-          <button
-            @click="startGame"
-            class="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-3.5 md:px-12 md:py-4 bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 rounded-lg md:rounded-xl font-bold text-base sm:text-lg hover:translate-y-[-2px] hover:shadow-[0_8px_20px_rgba(251,191,36,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:translate-y-[-1px]"
-            :disabled="selectedStartCards.length !== 3"
-          >
-            <span class="mr-2">🎮</span>
-            게임 시작하기
           </button>
         </div>
       </div>
@@ -472,6 +410,8 @@ const typeText = () => {
   typeNextChar()
 }
 
+
+
 // 타이핑 즉시 완료
 const completeTyping = () => {
   if (typingTimer) {
@@ -486,6 +426,10 @@ const completeTyping = () => {
 // 챕터 변경 감지
 watch(currentChapterIndex, () => {
   typeText()
+})
+
+const showNextHandle = computed(() => {
+  return !isTyping.value
 })
 
 // 다음 버튼 핸들러
