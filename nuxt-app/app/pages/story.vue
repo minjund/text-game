@@ -1,25 +1,7 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
-    <!-- 게임 시작 화면 -->
-    <div v-if="gameState === 'start'" class="flex items-center justify-center min-h-screen p-4">
-      <div class="text-center max-w-[700px] w-full">
-        <h1 class="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-6 sm:mb-8 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 bg-clip-text text-transparent flex items-center justify-center gap-3 sm:gap-4 md:gap-5 flex-wrap">
-          <span class="text-3xl sm:text-4xl md:text-5xl drop-shadow-[0_0_20px_rgba(251,191,36,0.8)] animate-pulse">✨</span>
-          <span class="whitespace-nowrap">신의 시대</span>
-          <span class="text-3xl sm:text-4xl md:text-5xl drop-shadow-[0_0_20px_rgba(251,191,36,0.8)] animate-pulse">✨</span>
-        </h1>
-        <p class="text-base sm:text-lg md:text-xl leading-relaxed text-slate-300 mb-8 sm:mb-10 px-4">
-          세상의 운명을 바꿀 여정을 시작하세요
-        </p>
-        <button @click="startStory" class="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-3.5 md:px-12 md:py-4 bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 rounded-lg md:rounded-xl font-bold text-base sm:text-lg hover:translate-y-[-2px] hover:shadow-[0_8px_20px_rgba(251,191,36,0.4)] transition-all active:translate-y-[-1px]">
-          <span class="mr-2">🌟</span>
-          게임 시작
-        </button>
-      </div>
-    </div>
-
     <!-- 스토리 진행 화면 -->
-    <div v-else-if="gameState === 'story'" class="min-h-screen p-4 sm:p-6 md:p-8 lg:p-10">
+    <div v-if="gameState === 'story'" class="min-h-screen p-4 sm:p-6 md:p-8 lg:p-10">
       <div class="max-w-[1000px] mx-auto w-full">
         <!-- 텍스트 디스플레이 -->
         <div class="bg-slate-800/80 backdrop-blur-xl border-2 border-slate-600/20 rounded-xl md:rounded-2xl p-5 sm:p-6 md:p-8 lg:p-10 mb-6 md:mb-8 min-h-[250px] md:min-h-[300px]">
@@ -218,7 +200,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import {ref, computed, watch, onMounted} from 'vue'
 import { useRouter } from 'vue-router'
 import { tutorialStory } from '~/data/tutorialStory'
 import { AVAILABLE_COMMANDMENTS, type Commandment } from '~/types/god-game'
@@ -230,7 +212,13 @@ const { setNationName, setSelectedCommandments, setStartCards, initializeNation 
 
 // 게임 상태
 type GameState = 'start' | 'story' | 'cards'
-const gameState = ref<GameState>('start')
+const gameState = ref<GameState>('story')
+
+onMounted(() => {
+  setTimeout(() => {
+    typeText()
+  }, 100)
+})
 
 // 스토리 상태
 const currentChapterIndex = ref(0)

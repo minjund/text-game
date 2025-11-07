@@ -7,7 +7,7 @@
         <span class="logo-text">Kingdom Wars</span>
       </div>
       <nav class="nav-links">
-        <NuxtLink to="/god" class="nav-link">게임 시작</NuxtLink>
+        <NuxtLink to="/story" class="nav-link">게임 시작</NuxtLink>
       </nav>
     </header>
 
@@ -23,7 +23,7 @@
           당신의 왕국이 역사에 길이 남을 것입니다.
         </p>
         <div class="hero-buttons">
-          <NuxtLink to="/god" class="btn btn-primary btn-huge">
+          <NuxtLink to="/story" class="btn btn-primary btn-huge">
             <span class="btn-icon">✨</span>
             게임 시작
           </NuxtLink>
@@ -97,7 +97,7 @@
       <div class="cta-content">
         <h2>지금 당신의 전설을 시작하세요</h2>
         <p>무료로 플레이하고 최고의 통치자가 되어보세요</p>
-        <NuxtLink to="/god" class="btn btn-primary btn-huge">
+        <NuxtLink to="/story" class="btn btn-primary btn-huge">
           <span class="btn-icon">✨</span>
           게임 시작
         </NuxtLink>
