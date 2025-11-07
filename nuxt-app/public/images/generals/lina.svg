@@ -1,0 +1,89 @@
+<svg width="300" height="400" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lina-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#134e5e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#71b280;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="lina-outfit" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#06a77d;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00a896;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#028090;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="lina-wind">
+      <stop offset="0%" style="stop-color:#c0fdff;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#c0fdff;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="300" height="400" fill="url(#lina-bg)"/>
+
+  <!-- Wind Effects -->
+  <path d="M 20 100 Q 40 95 60 100 Q 80 105 100 100" stroke="#c0fdff" stroke-width="3" fill="none" opacity="0.5">
+    <animate attributeName="d" dur="3s" repeatCount="indefinite"
+      values="M 20 100 Q 40 95 60 100 Q 80 105 100 100;
+              M 20 100 Q 40 105 60 100 Q 80 95 100 100;
+              M 20 100 Q 40 95 60 100 Q 80 105 100 100"/>
+  </path>
+  <path d="M 200 120 Q 220 115 240 120 Q 260 125 280 120" stroke="#c0fdff" stroke-width="2" fill="none" opacity="0.4">
+    <animate attributeName="d" dur="2.5s" repeatCount="indefinite"
+      values="M 200 120 Q 220 115 240 120 Q 260 125 280 120;
+              M 200 120 Q 220 125 240 120 Q 260 115 280 120;
+              M 200 120 Q 220 115 240 120 Q 260 125 280 120"/>
+  </path>
+
+  <!-- Glow -->
+  <circle cx="150" cy="200" r="100" fill="url(#lina-wind)" opacity="0.3"/>
+
+  <!-- Body -->
+  <ellipse cx="150" cy="280" rx="50" ry="70" fill="url(#lina-outfit)"/>
+
+  <!-- Belt -->
+  <rect x="130" y="270" width="40" height="8" fill="#8b7355" rx="2"/>
+  <circle cx="150" cy="274" r="5" fill="#ffd700"/>
+
+  <!-- Cape -->
+  <path d="M 130 240 Q 110 280 100 340 L 105 340 Q 115 280 130 250 Z" fill="#028090" opacity="0.7"/>
+  <path d="M 170 240 Q 190 280 200 340 L 195 340 Q 185 280 170 250 Z" fill="#028090" opacity="0.7"/>
+
+  <!-- Arms -->
+  <ellipse cx="120" cy="250" rx="15" ry="30" fill="#d4a574"/>
+  <ellipse cx="180" cy="250" rx="15" ry="30" fill="#d4a574"/>
+
+  <!-- Bow -->
+  <path d="M 200 220 Q 210 260 200 300" stroke="#8b4513" stroke-width="6" fill="none"/>
+  <path d="M 200 220 Q 230 260 200 300" stroke="#f5f5dc" stroke-width="2" fill="none"/>
+
+  <!-- Arrow -->
+  <line x1="185" y1="260" x2="145" y2="260" stroke="#8b4513" stroke-width="3"/>
+  <polygon points="145,260 135,255 135,265" fill="#c0c0c0"/>
+  <path d="M 182 257 L 188 260 L 182 263" stroke="#f5f5dc" stroke-width="2" fill="none"/>
+
+  <!-- Head -->
+  <circle cx="150" cy="185" r="30" fill="#d4a574"/>
+
+  <!-- Hair -->
+  <path d="M 125 175 Q 125 155 150 145 Q 175 155 175 175" fill="#4a2511"/>
+  <path d="M 125 175 Q 120 200 115 220 Q 125 215 130 210" fill="#4a2511"/>
+  <path d="M 175 175 Q 180 200 185 220 Q 175 215 170 210" fill="#4a2511"/>
+  <ellipse cx="150" cy="150" rx="30" ry="25" fill="#4a2511"/>
+
+  <!-- Headband -->
+  <rect x="120" y="165" width="60" height="6" fill="#06a77d" rx="3"/>
+  <circle cx="150" cy="168" r="4" fill="#c0fdff"/>
+
+  <!-- Face -->
+  <ellipse cx="140" cy="185" rx="4" ry="6" fill="#2d2d2d"/>
+  <ellipse cx="160" cy="185" rx="4" ry="6" fill="#2d2d2d"/>
+  <path d="M 140 197 Q 150 200 160 197" stroke="#c97064" stroke-width="2" fill="none"/>
+
+  <!-- Wind Particles -->
+  <circle cx="80" cy="180" r="3" fill="#c0fdff" opacity="0.6"/>
+  <circle cx="100" cy="160" r="2" fill="#c0fdff" opacity="0.5"/>
+  <circle cx="220" cy="190" r="3" fill="#c0fdff" opacity="0.6"/>
+  <circle cx="200" cy="170" r="2" fill="#c0fdff" opacity="0.5"/>
+
+  <!-- Title Text -->
+  <text x="150" y="370" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#c0fdff" text-anchor="middle">바람의 리나</text>
+  <text x="150" y="390" font-family="Arial, sans-serif" font-size="14" fill="#06a77d" text-anchor="middle">신궁</text>
+</svg>
