@@ -55,35 +55,6 @@
               <div v-else class="px-3 pb-3 space-y-3 animate-slideDown">
                 <p class="text-sm text-amber-100/90 leading-relaxed">{{ commandment.description }}</p>
 
-                <!-- Pros & Cons -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <!-- Pros -->
-                  <div>
-                    <h4 class="text-xs font-bold text-green-400 mb-1.5 flex items-center gap-1">
-                      <span>✓</span> 장점
-                    </h4>
-                    <ul class="space-y-1">
-                      <li v-for="(pro, idx) in commandment.pros" :key="idx" class="text-xs text-green-300/80 pl-3 relative">
-                        <span class="absolute left-0">•</span>
-                        {{ pro }}
-                      </li>
-                    </ul>
-                  </div>
-
-                  <!-- Cons -->
-                  <div>
-                    <h4 class="text-xs font-bold text-red-400 mb-1.5 flex items-center gap-1">
-                      <span>✗</span> 단점
-                    </h4>
-                    <ul class="space-y-1">
-                      <li v-for="(con, idx) in commandment.cons" :key="idx" class="text-xs text-red-300/80 pl-3 relative">
-                        <span class="absolute left-0">•</span>
-                        {{ con }}
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
                 <!-- Effects -->
                 <div class="flex flex-wrap gap-2 pt-2 border-t border-amber-600/30">
                   <div v-if="commandment.effects.morale !== 0" class="stat-badge" :class="commandment.effects.morale > 0 ? 'positive' : 'negative'">

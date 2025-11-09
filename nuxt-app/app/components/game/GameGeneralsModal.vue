@@ -11,7 +11,16 @@
         </div>
 
         <!-- Generals List -->
-        <div class="p-4 overflow-y-auto max-h-[calc(90vh-80px)] grid gap-4 md:grid-cols-2">
+        <div class="p-3 sm:p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+          <!-- Empty State -->
+          <div v-if="generals.length === 0" class="text-center py-8 sm:py-12 text-slate-400">
+            <div class="text-5xl sm:text-6xl mb-3 sm:mb-4">⚔️</div>
+            <p class="text-base sm:text-lg font-bold mb-2">보유한 장수가 없습니다</p>
+            <p class="text-xs sm:text-sm">이벤트를 진행하여 장수를 영입하세요!</p>
+          </div>
+
+          <!-- Generals Grid -->
+          <div v-else class="grid gap-4 md:grid-cols-2">
           <div v-for="general in generals" :key="general.id"
                class="bg-slate-700/50 border-2 rounded-lg p-4"
                :class="{
@@ -95,15 +104,36 @@
               <span class="text-xs text-slate-500">💫 스킬 없음</span>
             </div>
 
-            <!-- Soldier Assignment -->
+            <!-- Current Assigned Soldiers (Read-only) -->
             <div class="mb-3">
               <label class="text-sm font-bold mb-1 flex items-center gap-1">
-                <span>🎖️</span> 배치 병력
+                <span>🎖️</span> 현재 배치 병력
               </label>
-              <input type="number" v-model.number="general.assignedSoldiers"
-                     :max="maxSoldiers" min="0" step="100"
-                     class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+              <div class="w-full bg-slate-900/50 border border-slate-600 rounded px-3 py-2 text-slate-300">
+                {{ general.assignedSoldiers.toLocaleString() }} 명
+              </div>
             </div>
+
+            <!-- New Soldier Assignment Input -->
+            <div class="mb-3">
+              <label class="text-sm font-bold mb-1 flex items-center gap-1">
+                <span>⚔️</span> 병력 배치/회수
+              </label>
+              <input type="number" v-model.number="newAssignments[general.id]"
+                     :max="maxSoldiers" :min="-general.assignedSoldiers" step="100" placeholder="0"
+                     class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                     @input="validateAssignment(general.id)" />
+              <p class="text-xs text-slate-400 mt-1">
+                양수: 배치, 음수: 회수 (가용 병력: {{ maxSoldiers.toLocaleString() }}명)
+              </p>
+            </div>
+
+            <!-- Assign Soldiers Button -->
+            <button @click="handleAssignSoldiers(general.id)"
+                    :disabled="!newAssignments[general.id] || newAssignments[general.id] === 0"
+                    class="w-full bg-blue-900/50 hover:bg-blue-800/50 border border-blue-600 rounded py-2 text-sm font-bold transition-colors mb-2 disabled:opacity-50 disabled:cursor-not-allowed">
+              병력 배치
+            </button>
 
             <!-- Dismiss Button -->
             <button @click="$emit('dismiss-general', general.id)"
@@ -112,6 +142,7 @@
             </button>
 
           </div>
+          </div>
         </div>
       </div>
     </div>
@@ -119,6 +150,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, reactive } from 'vue'
 import type { General } from '~/types/game'
 
 interface Props {
@@ -127,12 +159,16 @@ interface Props {
   maxSoldiers: number
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   close: []
   'dismiss-general': [generalId: string]
+  'assign-soldiers': [generalId: string, amount: number]
 }>()
+
+// Track new soldier assignments for each general
+const newAssignments = reactive<Record<string, number>>({})
 
 const getRarityLabel = (rarity: string) => {
   const labels: Record<string, string> = {
@@ -142,5 +178,37 @@ const getRarityLabel = (rarity: string) => {
     legendary: '전설'
   }
   return labels[rarity] || rarity
+}
+
+const validateAssignment = (generalId: string) => {
+  const amount = newAssignments[generalId]
+  if (!amount) return
+
+  const general = props.generals.find(g => g.id === generalId)
+  if (!general) return
+
+  // 병력 배치인 경우 (양수)
+  if (amount > 0) {
+    // 가용 병력을 초과할 수 없음
+    if (amount > props.maxSoldiers) {
+      newAssignments[generalId] = props.maxSoldiers
+    }
+  }
+  // 병력 회수인 경우 (음수)
+  else if (amount < 0) {
+    // 현재 배치된 병력보다 많이 회수할 수 없음
+    if (Math.abs(amount) > general.assignedSoldiers) {
+      newAssignments[generalId] = -general.assignedSoldiers
+    }
+  }
+}
+
+const handleAssignSoldiers = (generalId: string) => {
+  const amount = newAssignments[generalId]
+  if (!amount || amount === 0) return
+
+  emit('assign-soldiers', generalId, amount)
+  // Reset the input after emitting
+  newAssignments[generalId] = 0
 }
 </script>

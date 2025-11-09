@@ -4,6 +4,7 @@ import { eventCards } from '../data/mockData'
 import type { PassiveCard } from '../types/passive-cards'
 import { drawRandomCards } from '../types/passive-cards'
 import type { ReincarnationData } from '../types/reincarnation'
+import type { NationState } from '../types/god-game'
 
 interface UseEventSystemOptions {
   kingdom: Ref<Kingdom>
@@ -18,6 +19,7 @@ interface UseEventSystemOptions {
   calculateProduction: () => { foodProduction: number; goldProduction: number; soldierUpkeep: number }
   generateRandomGeneral: (rarity: 'common' | 'rare' | 'epic') => General
   synergyDailyEffects?: Ref<{ gold: number; food: number; morale: number; population: number }>
+  godGameState?: Ref<NationState | null>
 }
 
 export const useEventSystem = (options: UseEventSystemOptions) => {
@@ -33,7 +35,8 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
     showNotification,
     calculateProduction,
     generateRandomGeneral,
-    synergyDailyEffects
+    synergyDailyEffects,
+    godGameState
   } = options
 
   // State
@@ -56,33 +59,127 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
   const drawEventCard = () => {
     kingdom.value.day++
 
+    // 변동사항 추적
+    const changes = {
+      food: 0,
+      gold: 0,
+      soldiers: 0,
+      morale: 0,
+      population: 0
+    }
+
     // 패시브 카드 효과 적용 (daily 트리거)
-    applyPassiveEffects('daily')
+    const dailyPassiveCards = playerPassiveCards.value.filter(card => card.trigger === 'daily')
+    dailyPassiveCards.forEach(card => {
+      if (card.effect.gold) {
+        kingdom.value.resources.gold += card.effect.gold
+        changes.gold += card.effect.gold
+      }
+      if (card.effect.food) {
+        kingdom.value.resources.food += card.effect.food
+        changes.food += card.effect.food
+      }
+      if (card.effect.morale) {
+        const oldMorale = kingdom.value.resources.morale
+        kingdom.value.resources.morale = Math.min(100, Math.max(0, kingdom.value.resources.morale + card.effect.morale))
+        changes.morale += (kingdom.value.resources.morale - oldMorale)
+      }
+      if (card.effect.military) {
+        kingdom.value.resources.soldiers += card.effect.military
+        changes.soldiers += card.effect.military
+      }
+    })
 
     // 시너지 카드 일일 효과 적용
     if (synergyDailyEffects?.value) {
       kingdom.value.resources.gold += synergyDailyEffects.value.gold
+      changes.gold += synergyDailyEffects.value.gold
+
       kingdom.value.resources.food += synergyDailyEffects.value.food
+      changes.food += synergyDailyEffects.value.food
+
+      const oldMorale = kingdom.value.resources.morale
       kingdom.value.resources.morale = Math.min(100, Math.max(0, kingdom.value.resources.morale + synergyDailyEffects.value.morale))
+      changes.morale += (kingdom.value.resources.morale - oldMorale)
+
       kingdom.value.resources.population = Math.max(0, kingdom.value.resources.population + synergyDailyEffects.value.population)
+      changes.population += synergyDailyEffects.value.population
+    }
+
+    // 계명 효과 매일 적용
+    if (godGameState?.value?.selectedCommandments && godGameState.value.selectedCommandments.length > 0) {
+      godGameState.value.selectedCommandments.forEach(commandment => {
+        if (commandment.effects.morale !== 0) {
+          const oldMorale = kingdom.value.resources.morale
+          kingdom.value.resources.morale = Math.min(100, Math.max(0, kingdom.value.resources.morale + commandment.effects.morale))
+          changes.morale += (kingdom.value.resources.morale - oldMorale)
+        }
+        if (commandment.effects.gold !== 0) {
+          kingdom.value.resources.gold += commandment.effects.gold
+          changes.gold += commandment.effects.gold
+        }
+        if (commandment.effects.military !== 0) {
+          kingdom.value.resources.soldiers += commandment.effects.military
+          changes.soldiers += commandment.effects.military
+        }
+        if (commandment.effects.food !== 0) {
+          kingdom.value.resources.food += commandment.effects.food
+          changes.food += commandment.effects.food
+        }
+        if (commandment.effects.population !== 0) {
+          kingdom.value.resources.population = Math.max(0, kingdom.value.resources.population + commandment.effects.population)
+          changes.population += commandment.effects.population
+        }
+      })
     }
 
     // 자원 생산
     const { foodProduction, goldProduction, soldierUpkeep } = calculateProduction()
+    kingdom.value.resources.food += foodProduction
+    kingdom.value.resources.gold += goldProduction
+    changes.food += foodProduction
+    changes.gold += goldProduction
 
-    // 식량 부족 시 민심 하락
-    if (kingdom.value.resources.food < 1000) {
-      kingdom.value.resources.morale = Math.max(0, kingdom.value.resources.morale - 5)
-      showNotification('식량이 부족합니다! 민심이 하락했습니다.', 'error')
+    // 병력 유지비 차감
+    const foodAfterUpkeep = kingdom.value.resources.food - soldierUpkeep
+
+    if (foodAfterUpkeep >= 0) {
+      // 식량이 충분한 경우 정상적으로 차감
+      kingdom.value.resources.food = foodAfterUpkeep
+      changes.food -= soldierUpkeep
+    } else {
+      // 식량이 부족한 경우
+      // 현재 보유한 식량으로 유지할 수 있는 병사 수 계산
+      const availableFood = kingdom.value.resources.food
+      const supportableSoldiers = Math.floor(availableFood)
+      const soldierLoss = kingdom.value.resources.soldiers - supportableSoldiers
+
+      if (soldierLoss > 0) {
+        kingdom.value.resources.soldiers = Math.max(0, supportableSoldiers)
+        kingdom.value.resources.food = 0
+        changes.food -= availableFood // 사용 가능했던 모든 식량 소모
+        changes.soldiers -= soldierLoss
+
+        showNotification(`⚠️ 식량 부족! 병사 ${soldierLoss}명이 탈영했습니다!`, 'error')
+      }
+
+      // 식량 부족 시 민심 하락
+      const oldMorale = kingdom.value.resources.morale
+      kingdom.value.resources.morale = Math.max(0, kingdom.value.resources.morale - 10)
+      changes.morale += (kingdom.value.resources.morale - oldMorale)
     }
 
-    // 생산 알림 (시너지 효과 포함)
-    const totalFood = foodProduction + (synergyDailyEffects?.value?.food || 0)
-    const totalGold = goldProduction + (synergyDailyEffects?.value?.gold || 0)
-    const synergyBonus = synergyDailyEffects?.value && (synergyDailyEffects.value.gold > 0 || synergyDailyEffects.value.food > 0)
-      ? ' (시너지 효과 포함)'
-      : ''
-    showNotification(`자원 생산: 식량 +${totalFood}, 금 +${totalGold} (병력 유지비 -${soldierUpkeep})${synergyBonus}`, 'success')
+    // 통합 변동사항 알림
+    const changeSummary: string[] = []
+    if (changes.food !== 0) changeSummary.push(`식량 ${changes.food > 0 ? '+' : ''}${changes.food}`)
+    if (changes.gold !== 0) changeSummary.push(`금 ${changes.gold > 0 ? '+' : ''}${changes.gold}`)
+    if (changes.soldiers !== 0) changeSummary.push(`병력 ${changes.soldiers > 0 ? '+' : ''}${changes.soldiers}`)
+    if (changes.morale !== 0) changeSummary.push(`민심 ${changes.morale > 0 ? '+' : ''}${changes.morale}`)
+    if (changes.population !== 0) changeSummary.push(`인구 ${changes.population > 0 ? '+' : ''}${changes.population}`)
+
+    if (changeSummary.length > 0) {
+      showNotification(`📊 변동사항: ${changeSummary.join(', ')}`, 'success')
+    }
 
     // 100일째 환생 시스템
     if (kingdom.value.day === 100) {

@@ -55,15 +55,32 @@ export const useGameKingdom = (
     const actualCost = Math.floor(baseCost * (1 - recruitDiscount / 100))
 
     if (kingdom.value.resources.gold >= actualCost) {
+      // 민심에 따라 모집되는 병사 수 계산
+      // 민심 0: 20명, 민심 50: 100명, 민심 100: 180명
+      const morale = kingdom.value.resources.morale
+      const baseRecruit = 100
+      const moraleBonus = Math.floor((morale - 50) * 1.6) // 민심 50 기준으로 ±1.6배
+      const recruitCount = Math.max(20, baseRecruit + moraleBonus) // 최소 20명
+
       kingdom.value.resources.gold -= actualCost
-      kingdom.value.resources.soldiers += 100
-      showNotification(`병력 100을 모집했습니다! (비용: 금 ${actualCost})`, 'success')
+      kingdom.value.resources.soldiers += recruitCount
+
+      // 민심에 따른 메시지
+      if (morale >= 80) {
+        showNotification(`✨ 높은 민심! 병력 ${recruitCount}명 모집 (비용: 금 ${actualCost})`, 'success')
+      } else if (morale >= 50) {
+        showNotification(`병력 ${recruitCount}명 모집 (비용: 금 ${actualCost})`, 'success')
+      } else if (morale >= 30) {
+        showNotification(`⚠️ 낮은 민심으로 병력 ${recruitCount}명만 모집됨 (비용: 금 ${actualCost})`, 'info')
+      } else {
+        showNotification(`🚨 매우 낮은 민심! 병력 ${recruitCount}명만 모집됨 (비용: 금 ${actualCost})`, 'error')
+      }
     } else {
       showNotification(`금이 부족합니다! (필요: ${actualCost})`, 'error')
     }
   }
 
-  // 자원 생산 (영구 효과 적용)
+  // 자원 생산 (영구 효과 적용) - 값만 계산하고 반환
   const calculateProduction = () => {
     let foodBonus = 0
     let goldBonus = 0
@@ -81,13 +98,9 @@ export const useGameKingdom = (
     const foodProduction = Math.floor(baseFoodProduction * (1 + foodBonus / 100))
     const goldProduction = Math.floor(baseGoldProduction * (1 + goldBonus / 100))
 
-    kingdom.value.resources.food += foodProduction
-    kingdom.value.resources.gold += goldProduction
-
-    // 병력 유지 비용 (영구 효과 적용)
-    const baseSoldierUpkeep = Math.floor(kingdom.value.resources.soldiers * 0.5)
+    // 병력 유지 비용 (병사 1명당 식량 1 소모, 영구 효과 적용)
+    const baseSoldierUpkeep = Math.floor(kingdom.value.resources.soldiers * 1)
     const soldierUpkeep = Math.floor(baseSoldierUpkeep * (1 - upkeepDiscount / 100))
-    kingdom.value.resources.food = Math.max(0, kingdom.value.resources.food - soldierUpkeep)
 
     return { foodProduction, goldProduction, soldierUpkeep }
   }

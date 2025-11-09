@@ -123,26 +123,6 @@
                 <div v-else class="mt-1 animate-[slideDown_0.3s_ease]" @click.stop>
                   <p class="text-[13px] text-slate-400 mb-3 leading-relaxed">{{ commandment.description }}</p>
 
-                  <div class="mb-3">
-                    <div class="mb-3">
-                      <h4 class="text-xs font-bold mb-1.5 flex items-center gap-1 text-emerald-400 before:content-['✓'] before:text-sm">장점</h4>
-                      <ul class="list-none pl-0">
-                        <li v-for="(pro, index) in commandment.pros" :key="index" class="text-xs py-0.5 pl-4 relative text-emerald-300 before:content-['•'] before:absolute before:left-2">
-                          {{ pro }}
-                        </li>
-                      </ul>
-                    </div>
-
-                    <div class="mb-3">
-                      <h4 class="text-xs font-bold mb-1.5 flex items-center gap-1 text-red-500 before:content-['✗'] before:text-sm">단점</h4>
-                      <ul class="list-none pl-0">
-                        <li v-for="(con, index) in commandment.cons" :key="index" class="text-xs py-0.5 pl-4 relative text-red-300 before:content-['•'] before:absolute before:left-2">
-                          {{ con }}
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-
                   <div class="flex flex-wrap gap-1.5">
                     <div v-if="commandment.effects.morale !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.morale > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
                       민심: {{ commandment.effects.morale > 0 ? '+' : '' }}{{ commandment.effects.morale }}
@@ -170,6 +150,31 @@
                   </button>
                 </div>
               </div>
+            </div>
+
+            <!-- 선택한 계명의 일일 효과 합산 표시 -->
+            <div v-if="localSelectedCommandments.length > 0" class="max-w-[800px] mx-auto mb-8 p-6 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 backdrop-blur-xl border-2 border-indigo-500/50 rounded-xl">
+              <h3 class="text-lg font-bold text-indigo-200 mb-4 flex items-center gap-2">
+                <span>📊</span> 매일 변화되는 수치 (합산)
+              </h3>
+              <div class="flex flex-wrap gap-2">
+                <div v-if="totalDailyEffects.morale !== 0" class="px-4 py-2 rounded-lg text-sm font-semibold" :class="totalDailyEffects.morale > 0 ? 'bg-emerald-500/30 text-emerald-200 border-2 border-emerald-500/50' : 'bg-red-500/30 text-red-200 border-2 border-red-500/50'">
+                  민심: {{ totalDailyEffects.morale > 0 ? '+' : '' }}{{ totalDailyEffects.morale }} /일
+                </div>
+                <div v-if="totalDailyEffects.gold !== 0" class="px-4 py-2 rounded-lg text-sm font-semibold" :class="totalDailyEffects.gold > 0 ? 'bg-emerald-500/30 text-emerald-200 border-2 border-emerald-500/50' : 'bg-red-500/30 text-red-200 border-2 border-red-500/50'">
+                  금: {{ totalDailyEffects.gold > 0 ? '+' : '' }}{{ totalDailyEffects.gold }} /일
+                </div>
+                <div v-if="totalDailyEffects.military !== 0" class="px-4 py-2 rounded-lg text-sm font-semibold" :class="totalDailyEffects.military > 0 ? 'bg-emerald-500/30 text-emerald-200 border-2 border-emerald-500/50' : 'bg-red-500/30 text-red-200 border-2 border-red-500/50'">
+                  병력: {{ totalDailyEffects.military > 0 ? '+' : '' }}{{ totalDailyEffects.military }} /일
+                </div>
+                <div v-if="totalDailyEffects.food !== 0" class="px-4 py-2 rounded-lg text-sm font-semibold" :class="totalDailyEffects.food > 0 ? 'bg-emerald-500/30 text-emerald-200 border-2 border-emerald-500/50' : 'bg-red-500/30 text-red-200 border-2 border-red-500/50'">
+                  식량: {{ totalDailyEffects.food > 0 ? '+' : '' }}{{ totalDailyEffects.food }} /일
+                </div>
+                <div v-if="totalDailyEffects.population !== 0" class="px-4 py-2 rounded-lg text-sm font-semibold" :class="totalDailyEffects.population > 0 ? 'bg-emerald-500/30 text-emerald-200 border-2 border-emerald-500/50' : 'bg-red-500/30 text-red-200 border-2 border-red-500/50'">
+                  인구: {{ totalDailyEffects.population > 0 ? '+' : '' }}{{ totalDailyEffects.population }} /일
+                </div>
+              </div>
+              <p class="text-xs text-indigo-300/70 mt-3">* 다음 날을 누를 때마다 위 수치만큼 변화합니다</p>
             </div>
 
             <div class="text-center px-4">
@@ -236,7 +241,8 @@ let typingTimer: NodeJS.Timeout | null = null
 const localNationName = ref('')
 
 // 경로 추적
-const visitedPaths = ref<string[]>([]) // 방문한 경로들
+const selectedPath = ref<string>('') // 선택한 경로
+const eventCount = ref(0) // 현재 경로에서 획득한 이벤트 카드 수
 
 // 계명 선택
 const availableCommandments = ref<Commandment[]>([])
@@ -261,16 +267,21 @@ const selectedStartCards = ref<PassiveCard[]>([])
 // 선택지 표시 여부
 const showPathChoices = computed(() => {
   const chapterId = currentChapter.value?.id
-  return (chapterId === 'choice_intro' || chapterId?.endsWith('_reward')) &&
-         visitedPaths.value.length < 3
+  return chapterId === 'choice_intro'
 })
 
-// 세부 선택지 표시 여부 (각 장소 내부 선택)
+// 세부 선택지 표시 여부 (각 이벤트 선택)
 const showLocationChoices = computed(() => {
   const chapterId = currentChapter.value?.id
-  return chapterId === 'path_admin_choice' ||
-          chapterId === 'path_military_choice' ||
-          chapterId === 'path_market_choice'
+  return chapterId === 'path_admin_choice_1' ||
+          chapterId === 'path_admin_choice_2' ||
+          chapterId === 'path_admin_choice_3' ||
+          chapterId === 'path_military_choice_1' ||
+          chapterId === 'path_military_choice_2' ||
+          chapterId === 'path_military_choice_3' ||
+          chapterId === 'path_market_choice_1' ||
+          chapterId === 'path_market_choice_2' ||
+          chapterId === 'path_market_choice_3'
 })
 
 // 왕국 이름 입력 표시 여부 (chapter6에서만)
@@ -287,33 +298,66 @@ const showCommandmentsSection = computed(() => {
 
 // 사용 가능한 경로
 const availablePaths = computed(() => {
-  const allPaths = [
+  return [
     { id: 'admin', name: '행정실', icon: '📜' },
     { id: 'military', name: '훈련장', icon: '⚔️' },
     { id: 'market', name: '시장', icon: '🏪' }
   ]
-
-  return allPaths.filter(path => !visitedPaths.value.includes(path.id))
 })
 
-// 각 장소별 세부 선택지
+// 각 이벤트별 선택지
 const locationChoices = computed(() => {
   const chapterId = currentChapter.value?.id
 
-  if (chapterId === 'path_admin_choice') {
+  // 행정실 이벤트들
+  if (chapterId === 'path_admin_choice_1') {
     return [
-      { id: 'tax', name: '재정 개혁', icon: '💰', description: '세금 체계를 정비합니다' },
-      { id: 'trade', name: '무역 확대', icon: '🚢', description: '해상 무역로를 개척합니다' }
+      { id: 'success', name: '장부를 먼저 치운다', icon: '📚', description: '재빨리 장부를 들어올린다' },
+      { id: 'fail', name: '잉크병을 잡는다', icon: '🖋️', description: '잉크병을 잡으려 한다' }
     ]
-  } else if (chapterId === 'path_military_choice') {
+  } else if (chapterId === 'path_admin_choice_2') {
     return [
-      { id: 'infantry', name: '보병 강화', icon: '🛡️', description: '중장보병을 육성합니다' },
-      { id: 'cavalry', name: '기병 육성', icon: '🐎', description: '경기병을 훈련시킵니다' }
+      { id: 'success', name: '조심스럽게 털어낸다', icon: '✨', description: '천천히 먼지를 털어낸다' },
+      { id: 'fail', name: '빠르게 뒤적인다', icon: '💨', description: '급하게 상자를 뒤진다' }
     ]
-  } else if (chapterId === 'path_market_choice') {
+  } else if (chapterId === 'path_admin_choice_3') {
     return [
-      { id: 'festival', name: '축제 개최', icon: '🎉', description: '백성들에게 즐거움을 줍니다' },
-      { id: 'farm', name: '농업 지원', icon: '🌾', description: '농사를 도와줍니다' }
+      { id: 'success', name: '서기관 말에 집중', icon: '👂', description: '조언에 귀를 기울인다' },
+      { id: 'fail', name: '찻잔을 잡는다', icon: '☕', description: '황급히 찻잔을 잡는다' }
+    ]
+  }
+  // 훈련장 이벤트들
+  else if (chapterId === 'path_military_choice_1') {
+    return [
+      { id: 'success', name: '자루를 잡는다', icon: '⚔️', description: '검날을 피하고 자루를 잡는다' },
+      { id: 'fail', name: '검날을 잡는다', icon: '🩸', description: '검날을 잡으려 한다' }
+    ]
+  } else if (chapterId === 'path_military_choice_2') {
+    return [
+      { id: 'success', name: '균형을 잡는다', icon: '🛡️', description: '중심을 낮추고 버틴다' },
+      { id: 'fail', name: '그냥 넘어진다', icon: '💥', description: '진흙에 그대로 넘어진다' }
+    ]
+  } else if (chapterId === 'path_military_choice_3') {
+    return [
+      { id: 'success', name: '말에 집중한다', icon: '🐎', description: '고삐를 잡고 말을 진정시킨다' },
+      { id: 'fail', name: '떨어진 것을 본다', icon: '👀', description: '바닥의 물건을 본다' }
+    ]
+  }
+  // 시장 이벤트들
+  else if (chapterId === 'path_market_choice_1') {
+    return [
+      { id: 'success', name: '빨리 줍는다', icon: '🍎', description: '재빨리 사과를 줍는다' },
+      { id: 'fail', name: '천천히 줍는다', icon: '🥀', description: '천천히 사과를 줍는다' }
+    ]
+  } else if (chapterId === 'path_market_choice_2') {
+    return [
+      { id: 'success', name: '참는다', icon: '🍞', description: '뜨거움을 참고 견딘다' },
+      { id: 'fail', name: '떨어뜨린다', icon: '🔥', description: '너무 뜨거워 떨어뜨린다' }
+    ]
+  } else if (chapterId === 'path_market_choice_3') {
+    return [
+      { id: 'success', name: '금화를 잡는다', icon: '💰', description: '금화 주머니를 잡는다' },
+      { id: 'fail', name: '땅에 넘어진다', icon: '💨', description: '그냥 땅바닥에 넘어진다' }
     ]
   }
 
@@ -439,21 +483,26 @@ const handleNext = () => {
   } else if (chapterId === 'choice_intro') {
     // choice_intro 끝나면 선택지 대기 (showPathChoices가 true가 됨)
     return
-  } else if (chapterId === 'path_admin_tax' || chapterId === 'path_admin_trade' ||
-             chapterId === 'path_military_infantry' || chapterId === 'path_military_cavalry' ||
-             chapterId === 'path_market_festival' || chapterId === 'path_market_farm') {
-    // 세부 선택 완료 후 다시 장소 선택으로 또는 epilogue로
-    if (visitedPaths.value.length >= 3) {
-      // 3개 다 방문했으면 epilogue로
+  } else if (chapterId === 'path_admin_event_1_success' || chapterId === 'path_admin_event_1_fail' ||
+             chapterId === 'path_admin_event_2_success' || chapterId === 'path_admin_event_2_fail' ||
+             chapterId === 'path_admin_event_3_success' || chapterId === 'path_admin_event_3_fail' ||
+             chapterId === 'path_military_event_1_success' || chapterId === 'path_military_event_1_fail' ||
+             chapterId === 'path_military_event_2_success' || chapterId === 'path_military_event_2_fail' ||
+             chapterId === 'path_military_event_3_success' || chapterId === 'path_military_event_3_fail' ||
+             chapterId === 'path_market_event_1_success' || chapterId === 'path_market_event_1_fail' ||
+             chapterId === 'path_market_event_2_success' || chapterId === 'path_market_event_2_fail' ||
+             chapterId === 'path_market_event_3_success' || chapterId === 'path_market_event_3_fail') {
+    // 이벤트 완료 후
+    if (eventCount.value >= 3) {
+      // 3개 이벤트 다 완료했으면 epilogue로
       const epilogueIndex = tutorialStory.findIndex(ch => ch.id === 'epilogue')
       if (epilogueIndex !== -1) {
         currentChapterIndex.value = epilogueIndex
       }
     } else {
-      // 아직 방문할 곳이 남았으면 choice_intro로
-      const choiceIntroIndex = tutorialStory.findIndex(ch => ch.id === 'choice_intro')
-      if (choiceIntroIndex !== -1) {
-        currentChapterIndex.value = choiceIntroIndex
+      // 아직 이벤트가 남았으면 다음 챕터로 진행
+      if (!isLastChapter.value) {
+        currentChapterIndex.value++
       }
     }
     return
@@ -469,19 +518,11 @@ const handleNext = () => {
   }
 }
 
-// 게임 시작
-const startStory = () => {
-  gameState.value = 'story'
-  // 첫 챕터 타이핑 시작
-  setTimeout(() => {
-    typeText()
-  }, 100)
-}
-
 // 스토리 중 경로 선택
 const selectPathFromStory = async (pathId: string) => {
-  // 방문 기록 추가
-  visitedPaths.value.push(pathId)
+  // 선택한 경로 저장
+  selectedPath.value = pathId
+  eventCount.value = 0
 
   // 해당 경로의 첫 챕터 찾기
   const pathChapters: Record<string, number> = {
@@ -491,32 +532,42 @@ const selectPathFromStory = async (pathId: string) => {
   }
 
   const chapterIndex = pathChapters[pathId]
-  if (chapterIndex !== -1) {
+  if (chapterIndex !== undefined && chapterIndex !== -1) {
     currentChapterIndex.value = chapterIndex
   }
 }
 
-// 세부 선택지 선택 (각 장소 내부 선택)
+// 이벤트 선택지 선택 (성공/실패)
 const selectLocationChoice = async (choiceId: string) => {
   const chapterId = currentChapter.value?.id
   let targetChapterId = ''
-  let pathType = ''
 
-  // 현재 장소와 선택에 따라 타겟 챕터 결정
-  if (chapterId === 'path_admin_choice') {
-    pathType = 'admin'
-    targetChapterId = choiceId === 'tax' ? 'path_admin_tax' : 'path_admin_trade'
-  } else if (chapterId === 'path_military_choice') {
-    pathType = 'military'
-    targetChapterId = choiceId === 'infantry' ? 'path_military_infantry' : 'path_military_cavalry'
-  } else if (chapterId === 'path_market_choice') {
-    pathType = 'market'
-    targetChapterId = choiceId === 'festival' ? 'path_market_festival' : 'path_market_farm'
+  // 현재 이벤트와 선택에 따라 타겟 챕터 결정
+  if (chapterId === 'path_admin_choice_1') {
+    targetChapterId = choiceId === 'success' ? 'path_admin_event_1_success' : 'path_admin_event_1_fail'
+  } else if (chapterId === 'path_admin_choice_2') {
+    targetChapterId = choiceId === 'success' ? 'path_admin_event_2_success' : 'path_admin_event_2_fail'
+  } else if (chapterId === 'path_admin_choice_3') {
+    targetChapterId = choiceId === 'success' ? 'path_admin_event_3_success' : 'path_admin_event_3_fail'
+  } else if (chapterId === 'path_military_choice_1') {
+    targetChapterId = choiceId === 'success' ? 'path_military_event_1_success' : 'path_military_event_1_fail'
+  } else if (chapterId === 'path_military_choice_2') {
+    targetChapterId = choiceId === 'success' ? 'path_military_event_2_success' : 'path_military_event_2_fail'
+  } else if (chapterId === 'path_military_choice_3') {
+    targetChapterId = choiceId === 'success' ? 'path_military_event_3_success' : 'path_military_event_3_fail'
+  } else if (chapterId === 'path_market_choice_1') {
+    targetChapterId = choiceId === 'success' ? 'path_market_event_1_success' : 'path_market_event_1_fail'
+  } else if (chapterId === 'path_market_choice_2') {
+    targetChapterId = choiceId === 'success' ? 'path_market_event_2_success' : 'path_market_event_2_fail'
+  } else if (chapterId === 'path_market_choice_3') {
+    targetChapterId = choiceId === 'success' ? 'path_market_event_3_success' : 'path_market_event_3_fail'
   }
 
-  // 선택에 따라 특정 카드 지급
-  const receivedCard = await getCardForChoice(pathType, choiceId)
+  // 선택에 따라 카드 지급
+  const eventNumber = eventCount.value + 1
+  const receivedCard = await getCardForChoice(selectedPath.value, eventNumber, choiceId === 'success')
   selectedStartCards.value.push(receivedCard)
+  eventCount.value++
 
   // 해당 챕터로 이동
   const targetChapterIndex = tutorialStory.findIndex(ch => ch.id === targetChapterId)
@@ -525,82 +576,227 @@ const selectLocationChoice = async (choiceId: string) => {
   }
 }
 
-// 선택에 따라 특정 카드 지급 (일반 등급만, 좋은 카드 or 꽝 카드)
-const getCardForChoice = async (pathType: string, choiceId: string): Promise<PassiveCard> => {
-  const { PASSIVE_CARDS } = await import('~/types/passive-cards')
-
-  let filteredCards: PassiveCard[] = []
-
-  // 행정실 선택
-  if (pathType === 'admin') {
-    if (choiceId === 'tax') {
-      // 재정 개혁: 좋은 선택 - 금 생산 증가 카드 (일반 등급)
-      filteredCards = PASSIVE_CARDS.filter(card =>
-        card.rarity === 'common' &&
-        card.effect.gold && card.effect.gold > 0
-      )
-    } else {
-      // 무역 확대: 꽝 선택 - 효과 없거나 약한 카드
-      filteredCards = PASSIVE_CARDS.filter(card =>
-        card.rarity === 'common' &&
-        (!card.effect.gold || card.effect.gold <= 0) &&
-        (!card.effect.food || card.effect.food <= 0) &&
-        (!card.effect.military || card.effect.military <= 0)
-      )
+// 선택에 따라 시나리오 맞춤 카드 생성
+const getCardForChoice = async (pathType: string, eventNumber: number, isSuccess: boolean): Promise<PassiveCard> => {
+  // 시나리오에 맞는 커스텀 카드 생성
+  const cardData: Record<string, Record<number, { success: PassiveCard, fail: PassiveCard }>> = {
+    admin: {
+      1: {
+        success: {
+          id: 'admin_1_success',
+          name: '깔끔한 재정 장부',
+          description: '장부를 잘 보존했다. 오래된 금융 지혜가 담겨있다.',
+          rarity: 'common',
+          icon: '📚',
+          image: '📚',
+          trigger: 'daily',
+          effect: { type: 'resource', gold: 5 }
+        },
+        fail: {
+          id: 'admin_1_fail',
+          name: '얼룩진 종이 조각',
+          description: '잉크가 번져서 읽을 수 없다. 아무 쓸모가 없다.',
+          rarity: 'common',
+          icon: '🖋️',
+          image: '🖋️',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      },
+      2: {
+        success: {
+          id: 'admin_2_success',
+          name: '고대의 금화',
+          description: '먼지를 털어내고 발견한 선왕의 비상금. 반짝이는 보물이다.',
+          rarity: 'common',
+          icon: '💰',
+          image: '💰',
+          trigger: 'daily',
+          effect: { type: 'resource', gold: 8 }
+        },
+        fail: {
+          id: 'admin_2_fail',
+          name: '먼지투성이 빈 상자',
+          description: '급하게 뒤적이다 먼지만 뒤집어썼다. 상자는 비어있다.',
+          rarity: 'common',
+          icon: '📦',
+          image: '📦',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      },
+      3: {
+        success: {
+          id: 'admin_3_success',
+          name: '서기관의 조언서',
+          description: '서기관의 지혜가 담긴 기록. 세금 징수의 비법이 적혀있다.',
+          rarity: 'common',
+          icon: '📜',
+          image: '📜',
+          trigger: 'daily',
+          effect: { type: 'resource', gold: 6 }
+        },
+        fail: {
+          id: 'admin_3_fail',
+          name: '깨진 찻잔 조각',
+          description: '찻잔만 깨뜨리고 조언은 놓쳤다. 쓸모없는 도자기 파편이다.',
+          rarity: 'common',
+          icon: '☕',
+          image: '☕',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      }
+    },
+    military: {
+      1: {
+        success: {
+          id: 'military_1_success',
+          name: '날카로운 강철검',
+          description: '검을 능숙하게 다뤘다. 전투에서 큰 힘이 될 것이다.',
+          rarity: 'common',
+          icon: '⚔️',
+          image: '⚔️',
+          trigger: 'battle_start',
+          effect: { type: 'combat', attackBonus: 10 }
+        },
+        fail: {
+          id: 'military_1_fail',
+          name: '부러진 검자루',
+          description: '검날에 손을 베이고 검은 부러졌다. 무기로 쓸 수 없다.',
+          rarity: 'common',
+          icon: '🪓',
+          image: '🪓',
+          trigger: 'battle_start',
+          effect: { type: 'special' }
+        }
+      },
+      2: {
+        success: {
+          id: 'military_2_success',
+          name: '빛나는 강철 갑옷',
+          description: '균형을 잡아 갑옷이 빛난다. 방어력이 크게 증가한다.',
+          rarity: 'common',
+          icon: '🛡️',
+          image: '🛡️',
+          trigger: 'battle_start',
+          effect: { type: 'combat', defenseBonus: 10 }
+        },
+        fail: {
+          id: 'military_2_fail',
+          name: '진흙 묻은 낡은 갑옷',
+          description: '진흙탕에 넘어져 갑옷이 엉망이다. 제대로 된 방어력이 없다.',
+          rarity: 'common',
+          icon: '💩',
+          image: '💩',
+          trigger: 'battle_start',
+          effect: { type: 'special' }
+        }
+      },
+      3: {
+        success: {
+          id: 'military_3_success',
+          name: '기병의 긴 창',
+          description: '말을 능숙하게 다뤘다. 적진을 꿰뚫을 강력한 무기다.',
+          rarity: 'common',
+          icon: '🏇',
+          image: '🏇',
+          trigger: 'battle_start',
+          effect: { type: 'combat', attackBonus: 12 }
+        },
+        fail: {
+          id: 'military_3_fail',
+          name: '말똥 묻은 누더기',
+          description: '말에서 떨어져 말똥에 빠졌다. 악취만 진동한다.',
+          rarity: 'common',
+          icon: '💩',
+          image: '💩',
+          trigger: 'battle_start',
+          effect: { type: 'special' }
+        }
+      }
+    },
+    market: {
+      1: {
+        success: {
+          id: 'market_1_success',
+          name: '신선한 빨간 사과',
+          description: '재빨리 주워 상하지 않았다. 건강과 활력이 느껴진다.',
+          rarity: 'common',
+          icon: '🍎',
+          image: '🍎',
+          trigger: 'daily',
+          effect: { type: 'resource', food: 5 }
+        },
+        fail: {
+          id: 'market_1_fail',
+          name: '짓눌린 썩은 사과',
+          description: '사람들에게 밟혀 으깨졌다. 악취가 진동한다.',
+          rarity: 'common',
+          icon: '🥀',
+          image: '🥀',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      },
+      2: {
+        success: {
+          id: 'market_2_success',
+          name: '갓 구운 황금빵',
+          description: '뜨거움을 참고 지킨 빵. 완벽한 황금빛이 빛난다.',
+          rarity: 'common',
+          icon: '🍞',
+          image: '🍞',
+          trigger: 'daily',
+          effect: { type: 'resource', food: 7 }
+        },
+        fail: {
+          id: 'market_2_fail',
+          name: '흙 묻은 타버린 빵',
+          description: '떨어뜨려 흙이 묻었다. 먹을 수가 없다.',
+          rarity: 'common',
+          icon: '🔥',
+          image: '🔥',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      },
+      3: {
+        success: {
+          id: 'market_3_success',
+          name: '잃어버린 금화 주머니',
+          description: '넘어지면서도 금화를 건졌다. 상당한 재산이다.',
+          rarity: 'common',
+          icon: '💰',
+          image: '💰',
+          trigger: 'daily',
+          effect: { type: 'resource', gold: 10 }
+        },
+        fail: {
+          id: 'market_3_fail',
+          name: '흙먼지 묻은 누더기',
+          description: '그냥 땅바닥에 넘어졌다. 금화는 남이 주워갔다.',
+          rarity: 'common',
+          icon: '💨',
+          image: '💨',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      }
     }
   }
-  // 훈련장 선택
-  else if (pathType === 'military') {
-    if (choiceId === 'infantry') {
-      // 보병 강화: 좋은 선택 - 방어/군사력 증가 카드 (일반 등급)
-      filteredCards = PASSIVE_CARDS.filter(card =>
-        card.rarity === 'common' &&
-        ((card.effect.defenseBonus && card.effect.defenseBonus > 0) ||
-         (card.effect.military && card.effect.military > 0))
-      )
-    } else {
-      // 기병 육성: 꽝 선택 - 효과 없거나 약한 카드
-      filteredCards = PASSIVE_CARDS.filter(card =>
-        card.rarity === 'common' &&
-        (!card.effect.attackBonus || card.effect.attackBonus <= 0) &&
-        (!card.effect.defenseBonus || card.effect.defenseBonus <= 0) &&
-        (!card.effect.military || card.effect.military <= 0)
-      )
-    }
-  }
-  // 시장 선택
-  else if (pathType === 'market') {
-    if (choiceId === 'festival') {
-      // 축제 개최: 꽝 선택 - 효과 없거나 약한 카드
-      filteredCards = PASSIVE_CARDS.filter(card =>
-        card.rarity === 'common' &&
-        (!card.effect.morale || card.effect.morale <= 0) &&
-        (!card.effect.population || card.effect.population <= 0)
-      )
-    } else {
-      // 농업 지원: 좋은 선택 - 식량 증가 카드 (일반 등급)
-      filteredCards = PASSIVE_CARDS.filter(card =>
-        card.rarity === 'common' &&
-        card.effect.food && card.effect.food > 0
-      )
-    }
+
+  const pathData = cardData[pathType]
+  if (!pathData) {
+    throw new Error(`Invalid path type: ${pathType}`)
   }
 
-  // 이미 선택한 카드는 제외
-  filteredCards = filteredCards.filter(c =>
-    !selectedStartCards.value.some(sc => sc.id === c.id)
-  )
-
-  // 랜덤으로 1개 선택
-  if (filteredCards.length > 0) {
-    const randomIndex = Math.floor(Math.random() * filteredCards.length)
-    return filteredCards[randomIndex]!
+  const eventData = pathData[eventNumber]
+  if (!eventData) {
+    throw new Error(`Invalid event number: ${eventNumber}`)
   }
 
-  // 만약 사용 가능한 카드가 없으면 일반 등급 카드에서 랜덤 선택
-  const commonCards = PASSIVE_CARDS.filter(card => card.rarity === 'common')
-  const randomIndex = Math.floor(Math.random() * commonCards.length)
-  return commonCards[randomIndex]!
+  return isSuccess ? eventData.success : eventData.fail
 }
 
 // 실제 게임 시작
@@ -653,6 +849,27 @@ const isSelected = (commandment: Commandment) => {
   return localSelectedCommandments.value.some(c => c.id === commandment.id)
 }
 
+// 선택한 계명들의 일일 효과 합산
+const totalDailyEffects = computed(() => {
+  const total = {
+    morale: 0,
+    gold: 0,
+    military: 0,
+    food: 0,
+    population: 0
+  }
+
+  localSelectedCommandments.value.forEach(commandment => {
+    total.morale += commandment.effects.morale
+    total.gold += commandment.effects.gold
+    total.military += commandment.effects.military
+    total.food += commandment.effects.food
+    total.population += commandment.effects.population
+  })
+
+  return total
+})
+
 // 계명 확정
 const confirmCommandments = () => {
   if (localSelectedCommandments.value.length !== 5) return
@@ -669,42 +886,6 @@ const confirmCommandments = () => {
   }, 100)
 }
 
-// 카드 선택
-const toggleCard = (card: PassiveCard) => {
-  if (isCardSelected(card.id)) {
-    selectedStartCards.value = selectedStartCards.value.filter(c => c.id !== card.id)
-  } else if (selectedStartCards.value.length < 3) {
-    selectedStartCards.value.push(card)
-  }
-}
-
-const isCardSelected = (cardId: string) => {
-  return selectedStartCards.value.some(c => c.id === cardId)
-}
-
-const getRarityLabel = (rarity: string): string => {
-  const labels: Record<string, string> = {
-    common: '일반',
-    rare: '희귀',
-    epic: '영웅',
-    legendary: '전설'
-  }
-  return labels[rarity] || rarity
-}
-
-// 게임 시작
-const startGame = () => {
-  if (selectedStartCards.value.length !== 3) return
-
-  // 전역 상태에 저장
-  setNationName(localNationName.value)
-  setSelectedCommandments(localSelectedCommandments.value)
-  setStartCards(selectedStartCards.value)
-  initializeNation()
-
-  // 게임 페이지로 이동
-  router.push('/game')
-}
 </script>
 
 <style scoped>

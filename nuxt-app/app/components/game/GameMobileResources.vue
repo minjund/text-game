@@ -27,12 +27,42 @@
             <span class="resource-icon">🎯</span>
             <div class="resource-info">
               <span class="resource-label">남은 턴</span>
-              <span
-                class="resource-value"
-                :class="turnData.currentTurns < 20 ? 'text-red-400' : 'text-purple-300'"
-              >
-                {{ turnData.currentTurns }}/{{ turnData.maxTurns }}
-              </span>
+              <div class="flex items-center justify-between gap-2">
+                <span
+                  class="resource-value"
+                  :class="turnData.currentTurns < 20 ? 'text-red-400' : 'text-purple-300'"
+                >
+                  {{ turnData.currentTurns }}/{{ turnData.maxTurns }}
+                </span>
+                <span v-if="turnData.timeUntilNext && turnData.currentTurns < turnData.maxTurns" class="text-[10px] text-slate-400">
+                  {{ formatTimeUntilNext }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Day and Reincarnation -->
+      <div class="flex justify-between gap-1.5">
+        <!-- Current Day -->
+        <div class="flex-1 pointer-events-auto">
+          <div class="resource-display compact border-blue-500">
+            <span class="resource-icon">📅</span>
+            <div class="resource-info">
+              <span class="resource-label">게임 일차</span>
+              <span class="resource-value">{{ currentDay }}일</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reincarnation Count -->
+        <div class="flex-1 pointer-events-auto">
+          <div class="resource-display compact border-amber-500">
+            <span class="resource-icon">♻️</span>
+            <div class="resource-info">
+              <span class="resource-label">환생</span>
+              <span class="resource-value text-amber-300">{{ reincarnationCount }}회</span>
             </div>
           </div>
         </div>
@@ -50,7 +80,34 @@
         </div>
       </div>
 
-      <!-- Row 2: Food and Gold -->
+      <!-- Commandment Effects -->
+      <div v-if="commandmentEffects && hasEffects" class="pointer-events-auto">
+        <div class="resource-display compact border-indigo-500 bg-indigo-900/30">
+          <span class="resource-icon">⚖️</span>
+          <div class="resource-info w-full">
+            <span class="resource-label">계명 효과 (매일)</span>
+            <div class="flex flex-wrap gap-1 mt-1">
+              <span v-if="commandmentEffects.morale !== 0" class="text-[9px] px-1.5 py-0.5 rounded" :class="commandmentEffects.morale > 0 ? 'bg-emerald-500/30 text-emerald-200' : 'bg-red-500/30 text-red-200'">
+                민심 {{ commandmentEffects.morale > 0 ? '+' : '' }}{{ commandmentEffects.morale }}
+              </span>
+              <span v-if="commandmentEffects.gold !== 0" class="text-[9px] px-1.5 py-0.5 rounded" :class="commandmentEffects.gold > 0 ? 'bg-emerald-500/30 text-emerald-200' : 'bg-red-500/30 text-red-200'">
+                금 {{ commandmentEffects.gold > 0 ? '+' : '' }}{{ commandmentEffects.gold }}
+              </span>
+              <span v-if="commandmentEffects.military !== 0" class="text-[9px] px-1.5 py-0.5 rounded" :class="commandmentEffects.military > 0 ? 'bg-emerald-500/30 text-emerald-200' : 'bg-red-500/30 text-red-200'">
+                병력 {{ commandmentEffects.military > 0 ? '+' : '' }}{{ commandmentEffects.military }}
+              </span>
+              <span v-if="commandmentEffects.food !== 0" class="text-[9px] px-1.5 py-0.5 rounded" :class="commandmentEffects.food > 0 ? 'bg-emerald-500/30 text-emerald-200' : 'bg-red-500/30 text-red-200'">
+                식량 {{ commandmentEffects.food > 0 ? '+' : '' }}{{ commandmentEffects.food }}
+              </span>
+              <span v-if="commandmentEffects.population !== 0" class="text-[9px] px-1.5 py-0.5 rounded" :class="commandmentEffects.population > 0 ? 'bg-emerald-500/30 text-emerald-200' : 'bg-red-500/30 text-red-200'">
+                인구 {{ commandmentEffects.population > 0 ? '+' : '' }}{{ commandmentEffects.population }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Food and Gold -->
       <div class="flex justify-between gap-1.5">
         <ResourceDisplay
           icon="🍖"
@@ -66,7 +123,7 @@
         />
       </div>
 
-      <!-- Row 3: Soldiers and Morale -->
+      <!-- Row 4: Soldiers and Morale -->
       <div class="flex justify-between gap-1.5">
         <ResourceDisplay
           icon="⚔️"
@@ -115,14 +172,27 @@ interface TurnData {
   } | null
 }
 
+interface CommandmentEffects {
+  morale: number
+  gold: number
+  military: number
+  food: number
+  population: number
+}
+
 interface Props {
   resources: Resources
   timer: TimerData
   turnData: TurnData
   currentDay: number
+  reincarnationCount?: number
+  commandmentEffects?: CommandmentEffects | null
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  reincarnationCount: 0,
+  commandmentEffects: null
+})
 
 // 주와 남은 일 계산
 const weeks = computed(() => Math.floor(props.timer.days / 7))
@@ -141,6 +211,27 @@ const invasionWarning = computed(() => {
   if (daysUntilInvasion.value === 0) return '⚔️ 오늘 제국 침략!'
   if (daysUntilInvasion.value === 1) return '⚔️ 내일 제국 침략!'
   return `⚔️ ${daysUntilInvasion.value}일 후 제국 침략`
+})
+
+// 다음 턴까지 남은 시간 포맷
+const formatTimeUntilNext = computed(() => {
+  if (!props.turnData.timeUntilNext) return ''
+  const time = props.turnData.timeUntilNext
+
+  if (time.hours > 0) {
+    return `${time.hours}:${String(time.minutes).padStart(2, '0')}`
+  } else if (time.minutes > 0) {
+    return `${time.minutes}:${String(time.seconds).padStart(2, '0')}`
+  } else {
+    return `${time.seconds}초`
+  }
+})
+
+// 계명 효과가 있는지 확인
+const hasEffects = computed(() => {
+  if (!props.commandmentEffects) return false
+  const effects = props.commandmentEffects
+  return effects.morale !== 0 || effects.gold !== 0 || effects.military !== 0 || effects.food !== 0 || effects.population !== 0
 })
 </script>
 

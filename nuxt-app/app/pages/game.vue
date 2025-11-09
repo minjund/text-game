@@ -18,6 +18,8 @@
       :timer="remainingTime"
       :turn-data="turnData"
       :current-day="kingdom.day"
+      :reincarnation-count="reincarnationData.count"
+      :commandment-effects="commandmentEffects"
     />
 
     <!-- Desktop Header -->
@@ -34,6 +36,7 @@
         :timer="remainingTime"
         :turn-data="turnData"
         :current-day="kingdom.day"
+        :commandment-effects="commandmentEffects"
         @recharge-all-turns="rechargeAllTurns"
       />
 
@@ -79,6 +82,7 @@
       :max-soldiers="kingdom.resources.soldiers"
       @close="handleCloseGeneralsModal"
       @dismiss-general="dismissGeneral"
+      @assign-soldiers="handleAssignSoldiers"
     />
 
     <!-- Event Card Modal -->
@@ -171,6 +175,17 @@
       @close="showSynergyGuide = false"
     />
 
+    <!-- Daily Card Exchange Modal -->
+    <GameDailyCardExchange
+      :show="showDailyCardExchange"
+      :current-cards="playerPassiveCards"
+      :new-cards="availableDailyCards"
+      @close="showDailyCardExchange = false"
+      @skip="handleSkipDailyExchange"
+      @exchange="handleCardExchange"
+      @add="handleAddDailyCard"
+    />
+
     <!-- Notification -->
     <Transition name="notification">
       <div v-if="notification"
@@ -193,6 +208,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { PermanentEffect } from '../types/game'
+import type { PassiveCard } from '../types/passive-cards'
+import { drawRandomCards } from '../types/passive-cards'
 import { enemyKingdoms } from '../data/mockData'
 import { useGodGame } from '~/composables/useGodGame'
 
@@ -215,6 +232,7 @@ import GameAdvisorModal from '~/components/game/GameAdvisorModal.vue'
 import GameSynergyCardSelection from '~/components/game/GameSynergyCardSelection.vue'
 import GameSynergyCollection from '~/components/game/GameSynergyCollection.vue'
 import GameSynergyGuide from '~/components/game/GameSynergyGuide.vue'
+import GameDailyCardExchange from '~/components/game/GameDailyCardExchange.vue'
 
 // Composables
 import { useNotification } from '~/composables/useNotification'
@@ -285,6 +303,31 @@ const turnData = computed(() => ({
   timeUntilFull: formattedTimeUntilFull.value
 }))
 
+// 계명 효과 계산 (일일 변동사항)
+const commandmentEffects = computed(() => {
+  if (!godGameState.value?.selectedCommandments || godGameState.value.selectedCommandments.length === 0) {
+    return null
+  }
+
+  const total = {
+    morale: 0,
+    gold: 0,
+    military: 0,
+    food: 0,
+    population: 0
+  }
+
+  godGameState.value.selectedCommandments.forEach(commandment => {
+    total.morale += commandment.effects.morale
+    total.gold += commandment.effects.gold
+    total.military += commandment.effects.military
+    total.food += commandment.effects.food
+    total.population += commandment.effects.population
+  })
+
+  return total
+})
+
 // 패시브 카드 시스템
 const {
   playerPassiveCards,
@@ -337,6 +380,10 @@ const showSynergyCardsCollection = ref(false)
 
 // 시너지 카드 도감 모달
 const showSynergyGuide = ref(false)
+
+// 일일 카드 교환 모달
+const showDailyCardExchange = ref(false)
+const availableDailyCards = ref<PassiveCard[]>([])
 
 // 신의 계명 모달
 const showCommandments = ref(false)
@@ -465,7 +512,8 @@ const {
   showNotification,
   calculateProduction,
   generateRandomGeneral,
-  synergyDailyEffects
+  synergyDailyEffects,
+  godGameState
 })
 
 // 현실 시간 기반 7일마다 제국 침략 감시
@@ -513,6 +561,17 @@ const handleCloseGeneralsModal = () => {
   const hasAssignedSoldiers = generals.value.some(g => g.assignedSoldiers > 0)
   if (hasAssignedSoldiers) {
     tutorialOnAssignGenerals()
+  }
+}
+
+// 장수 병력 배치/회수
+const handleAssignSoldiers = (generalId: string, amount: number) => {
+  if (amount > 0) {
+    // 병력 배치
+    assignSoldiers(generalId, amount)
+  } else if (amount < 0) {
+    // 병력 회수
+    unassignSoldiers(generalId, Math.abs(amount))
   }
 }
 
@@ -575,9 +634,49 @@ const handleNextDay = () => {
       return
     }
 
-    // 일반 이벤트 카드 뽑기
-    drawEventCard()
+    // 25일마다 시너지 카드 선택 (100일 제외)
+    if ((kingdom.value.day + 1) % 25 === 0 && kingdom.value.day + 1 !== 100) {
+      // 먼저 하루를 진행
+      drawEventCard()
+      // 시너지 카드 선택 모달 표시
+      drawSynergyCards()
+      showNotification('🎴 25일이 지났습니다! 시너지 카드를 선택하세요!', 'info')
+      return
+    }
+
+    // 일반 날짜: 랜덤으로 카드 교환 이벤트 또는 일반 이벤트
+    const cardEventChance = Math.random()
+    if (cardEventChance < 0.1) { // 10% 확률로 카드 교환 이벤트 발생
+      availableDailyCards.value = drawRandomCards(3)
+      showDailyCardExchange.value = true
+    } else {
+      // 일반 이벤트 카드 뽑기
+      drawEventCard()
+    }
   }
+}
+
+// 일일 카드 교환 건너뛰기
+const handleSkipDailyExchange = () => {
+  showDailyCardExchange.value = false
+  showNotification('카드 교환을 건너뛰었습니다.', 'info')
+}
+
+// 카드 교환 처리
+const handleCardExchange = (oldCard: PassiveCard, newCard: PassiveCard) => {
+  const index = playerPassiveCards.value.findIndex(c => c.id === oldCard.id)
+  if (index !== -1) {
+    playerPassiveCards.value.splice(index, 1, newCard)
+    showNotification(`${oldCard.name}을(를) ${newCard.name}(으)로 교환했습니다!`, 'success')
+    showDailyCardExchange.value = false
+  }
+}
+
+// 일일 카드 추가 (보유 카드가 없을 때)
+const handleAddDailyCard = (card: PassiveCard) => {
+  playerPassiveCards.value.push(card)
+  showNotification(`${card.name} 카드를 획득했습니다!`, 'success')
+  showDailyCardExchange.value = false
 }
 
 // ==================== PVP 함수 - 주석 처리됨 ====================

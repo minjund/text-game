@@ -1,54 +1,59 @@
 <template>
   <Transition name="modal">
-    <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80" @click.self="$emit('close')">
-      <div class="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-purple-600/50 rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+    <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/80" @click.self="$emit('close')">
+      <div class="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-purple-600/50 rounded-lg sm:rounded-xl w-full max-w-2xl max-h-[95vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
         <!-- Header -->
-        <div class="flex items-center justify-between p-4 border-b-2 border-purple-600/30 bg-purple-900/20">
-          <div class="flex items-center gap-3">
-            <span class="text-3xl">🎴</span>
+        <div class="flex items-center justify-between p-3 sm:p-4 border-b-2 border-purple-600/30 bg-purple-900/20">
+          <div class="flex items-center gap-2 sm:gap-3">
+            <span class="text-2xl sm:text-3xl">🎴</span>
             <div>
-              <h2 class="text-xl font-bold text-purple-200">패시브 카드 컬렉션</h2>
-              <p class="text-xs text-slate-400">보유 중인 패시브 카드 목록</p>
+              <h2 class="text-base sm:text-lg md:text-xl font-bold text-purple-200">패시브 카드 컬렉션</h2>
+              <p class="text-[10px] sm:text-xs text-slate-400">보유 중인 패시브 카드 목록</p>
             </div>
           </div>
           <button
             @click="$emit('close')"
-            class="text-slate-400 hover:text-white text-2xl px-2"
+            class="text-slate-400 hover:text-white text-xl sm:text-2xl px-1 sm:px-2"
           >
             ✕
           </button>
         </div>
 
         <!-- Content -->
-        <div class="flex-1 overflow-y-auto p-4">
-          <div v-if="passiveCards.length === 0" class="text-center py-12 text-slate-500">
-            <div class="text-6xl mb-4">🎴</div>
-            <p class="text-lg">보유한 패시브 카드가 없습니다</p>
-            <p class="text-sm mt-2">이벤트를 진행하여 패시브 카드를 획득하세요!</p>
+        <div class="flex-1 overflow-y-auto p-3 sm:p-4">
+          <div v-if="passiveCards.length === 0" class="text-center py-8 sm:py-12 text-slate-500">
+            <div class="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4">🎴</div>
+            <p class="text-base sm:text-lg">보유한 패시브 카드가 없습니다</p>
+            <p class="text-xs sm:text-sm mt-1 sm:mt-2">이벤트를 진행하여 패시브 카드를 획득하세요!</p>
           </div>
 
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div
               v-for="(card, index) in passiveCards"
               :key="index"
-              class="border-2 rounded-lg p-4 transition-all hover:scale-105"
+              class="border-2 rounded-lg p-3 sm:p-4 transition-all hover:scale-105"
               :class="getCardClass(card.rarity)"
             >
-              <div class="flex items-start gap-3">
-                <div class="text-4xl">{{ card.icon }}</div>
+              <div class="flex items-start gap-2 sm:gap-3">
+                <div class="text-3xl sm:text-4xl">{{ card.icon }}</div>
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 mb-1">
-                    <h3 class="text-lg font-bold">{{ card.name }}</h3>
+                  <div class="flex items-center flex-wrap gap-1 sm:gap-2 mb-1">
+                    <h3 class="text-sm sm:text-base md:text-lg font-bold">{{ card.name }}</h3>
                     <span
-                      class="text-xs px-2 py-0.5 rounded-full font-bold"
+                      class="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-bold"
                       :class="getRarityBadgeClass(card.rarity)"
                     >
                       {{ getRarityLabel(card.rarity) }}
                     </span>
                   </div>
-                  <p class="text-sm text-slate-300 mb-2">{{ card.description }}</p>
-                  <div class="text-xs text-slate-400 bg-slate-800/50 px-2 py-1 rounded">
-                    <span class="font-semibold">발동:</span> {{ card.trigger }}
+                  <p class="text-xs sm:text-sm text-slate-300 mb-1 sm:mb-2 line-clamp-2">{{ card.description }}</p>
+                  <div class="space-y-1">
+                    <div class="text-[10px] sm:text-xs text-slate-400 bg-slate-800/50 px-2 py-1 rounded">
+                      <span class="font-semibold">발동:</span> {{ card.trigger }}
+                    </div>
+                    <div class="text-[10px] sm:text-xs text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded border border-emerald-700/30">
+                      <span class="font-semibold">효과:</span> {{ getEffectSummary(card) }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -57,12 +62,12 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-4 border-t-2 border-purple-600/30 bg-purple-900/20">
-          <div class="flex justify-between items-center text-sm text-slate-400">
+        <div class="p-3 sm:p-4 border-t-2 border-purple-600/30 bg-purple-900/20">
+          <div class="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 text-xs sm:text-sm text-slate-400">
             <span>총 {{ passiveCards.length }}개의 패시브 카드</span>
             <button
               @click="$emit('close')"
-              class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold text-white transition-colors"
+              class="w-full sm:w-auto px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold text-white transition-colors"
             >
               닫기
             </button>
@@ -80,6 +85,17 @@ interface PassiveCard {
   description: string
   trigger: string
   rarity: 'common' | 'rare' | 'epic' | 'legendary'
+  effect: {
+    type: 'resource' | 'combat' | 'special'
+    morale?: number
+    gold?: number
+    military?: number
+    food?: number
+    population?: number
+    attackBonus?: number
+    defenseBonus?: number
+    description?: string
+  }
 }
 
 interface Props {
@@ -120,6 +136,34 @@ const getRarityLabel = (rarity: string) => {
     legendary: '전설'
   }
   return labelMap[rarity] || '일반'
+}
+
+const getEffectSummary = (card: PassiveCard) => {
+  const effects: string[] = []
+
+  if (card.effect.gold) {
+    effects.push(`금 ${card.effect.gold > 0 ? '+' : ''}${card.effect.gold}`)
+  }
+  if (card.effect.food) {
+    effects.push(`식량 ${card.effect.food > 0 ? '+' : ''}${card.effect.food}`)
+  }
+  if (card.effect.military) {
+    effects.push(`병력 ${card.effect.military > 0 ? '+' : ''}${card.effect.military}`)
+  }
+  if (card.effect.morale) {
+    effects.push(`민심 ${card.effect.morale > 0 ? '+' : ''}${card.effect.morale}`)
+  }
+  if (card.effect.population) {
+    effects.push(`인구 ${card.effect.population > 0 ? '+' : ''}${card.effect.population}`)
+  }
+  if (card.effect.attackBonus) {
+    effects.push(`공격력 ${card.effect.attackBonus > 0 ? '+' : ''}${card.effect.attackBonus}%`)
+  }
+  if (card.effect.defenseBonus) {
+    effects.push(`방어력 ${card.effect.defenseBonus > 0 ? '+' : ''}${card.effect.defenseBonus}%`)
+  }
+
+  return effects.length > 0 ? effects.join(', ') : '효과 없음'
 }
 </script>
 
