@@ -64,6 +64,46 @@
           </div>
         </div>
 
+        <!-- 카드 선택 (reborn_cards 챕터) -->
+        <div v-else-if="showCardSelection" class="mt-12 sm:mt-16">
+          <div class="max-w-[1200px] mx-auto">
+            <div class="text-center mb-8">
+              <h3 class="text-2xl md:text-3xl font-bold text-amber-400 mb-4">시작 카드 선택</h3>
+              <p class="text-slate-300">왕국의 기반이 될 3개의 카드를 선택하세요</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              <div v-for="card in startCardOptions" :key="card.id"
+                   @click="toggleStartCard(card)"
+                   class="relative bg-slate-800/60 backdrop-blur-xl rounded-xl p-4 border-2 transition-all cursor-pointer"
+                   :class="{
+                     'border-amber-400 bg-amber-400/10 shadow-[0_0_30px_rgba(251,191,36,0.3)]': selectedStartCards.some(c => c.id === card.id),
+                     'border-slate-600/20 hover:border-amber-400/50': !selectedStartCards.some(c => c.id === card.id)
+                   }">
+                <div v-if="selectedStartCards.some(c => c.id === card.id)"
+                     class="absolute top-2 right-2 w-6 h-6 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-black text-xs shadow-[0_2px_8px_rgba(16,185,129,0.5)]">
+                  ✓
+                </div>
+
+                <div class="text-center mb-2">
+                  <span class="text-4xl">{{ card.icon }}</span>
+                </div>
+                <h4 class="font-bold text-white text-center mb-2">{{ card.name }}</h4>
+                <p class="text-xs text-slate-400 text-center">{{ card.description }}</p>
+              </div>
+            </div>
+
+            <div class="text-center">
+              <button @click="confirmStartCards"
+                      class="px-12 py-4 bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 rounded-xl font-bold text-lg hover:translate-y-[-2px] hover:shadow-[0_8px_20px_rgba(251,191,36,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      :disabled="selectedStartCards.length !== 3">
+                <span class="mr-2">✨</span>
+                카드 선택 완료 ({{ selectedStartCards.length }}/3)
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- 5계명 선택 영역 (commandments 챕터에 도달했을 때만 표시) -->
         <div v-else-if="showCommandmentsSection && showNextHandle" ref="commandmentsSection" class="mt-12 sm:mt-16 md:mt-20 pt-8 sm:pt-10 border-t-2 border-amber-400/30">
           <div class="max-w-[1600px] mx-auto">
@@ -207,13 +247,32 @@
 <script setup lang="ts">
 import {ref, computed, watch, onMounted} from 'vue'
 import { useRouter } from 'vue-router'
-import { tutorialStory } from '~/data/tutorialStory'
+import { tutorialStory, reincarnationStory } from '~/data/tutorialStory'
 import { AVAILABLE_COMMANDMENTS, type Commandment } from '~/types/god-game'
-import { type PassiveCard } from '~/types/passive-cards'
+import { type PassiveCard, PASSIVE_CARDS } from '~/types/passive-cards'
 import { useGodGame } from '~/composables/useGodGame'
 
 const router = useRouter()
 const { setNationName, setSelectedCommandments, setStartCards, initializeNation } = useGodGame()
+
+// 환생 데이터 불러오기
+const reincarnationCount = ref(0)
+if (process.client) {
+  const savedData = localStorage.getItem('reincarnationData')
+  if (savedData) {
+    try {
+      const data = JSON.parse(savedData)
+      reincarnationCount.value = data.count || 0
+    } catch (e) {
+      console.error('환생 데이터 로드 실패:', e)
+    }
+  }
+}
+
+// 환생 횟수에 따라 스토리 선택
+const currentStory = computed(() => {
+  return reincarnationCount.value > 0 ? reincarnationStory : tutorialStory
+})
 
 // 게임 상태
 type GameState = 'start' | 'story' | 'cards'
@@ -264,6 +323,14 @@ selectRandomCommandments()
 const availableStartCards = ref<PassiveCard[]>([])
 const selectedStartCards = ref<PassiveCard[]>([])
 
+// 시작 카드 옵션 (패시브 카드 풀에서 9개 선택)
+const startCardOptions = computed(() => {
+  const basicCards = PASSIVE_CARDS.filter(card =>
+    card.rarity === 'common' || card.rarity === 'rare'
+  )
+  return basicCards.slice(0, 9)
+})
+
 // 선택지 표시 여부
 const showPathChoices = computed(() => {
   const chapterId = currentChapter.value?.id
@@ -284,16 +351,22 @@ const showLocationChoices = computed(() => {
           chapterId === 'path_market_choice_3'
 })
 
-// 왕국 이름 입력 표시 여부 (chapter6에서만)
+// 왕국 이름 입력 표시 여부 (chapter5 또는 nation_name)
 const showNationNameInput = computed(() => {
   const chapterId = currentChapter.value?.id
-  return chapterId === 'chapter5'
+  return chapterId === 'chapter5' || chapterId === 'nation_name'
 })
 
 // 계명 선택 섹션 표시 여부 (commandments 챕터에 도달했을 때)
 const showCommandmentsSection = computed(() => {
   const chapterId = currentChapter.value?.id
   return chapterId === 'commandments'
+})
+
+// 카드 선택 표시 여부 (reborn_cards 챕터)
+const showCardSelection = computed(() => {
+  const chapterId = currentChapter.value?.id
+  return chapterId === 'reborn_cards'
 })
 
 // 사용 가능한 경로
@@ -365,7 +438,7 @@ const locationChoices = computed(() => {
 })
 
 // Computed
-const currentChapter = computed(() => tutorialStory[currentChapterIndex.value])
+const currentChapter = computed(() => currentStory.value[currentChapterIndex.value])
 const currentTexts = computed(() => {
   const chapter = currentChapter.value
   if (!chapter) return []
@@ -385,7 +458,7 @@ const visibleTexts = computed(() => {
   return currentTexts.value
 })
 
-const isLastChapter = computed(() => currentChapterIndex.value >= tutorialStory.length - 1)
+const isLastChapter = computed(() => currentChapterIndex.value >= currentStory.value.length - 1)
 
 // 대사 체크
 const isDialogue = (text: string): boolean => {
@@ -461,7 +534,7 @@ watch(currentChapterIndex, () => {
 })
 
 const showNextHandle = computed(() => {
-  return !isTyping.value
+  return !isTyping.value && !showCardSelection.value
 })
 
 // 다음 버튼 핸들러
@@ -508,6 +581,10 @@ const handleNext = () => {
     return
   } else if (chapterId === 'epilogue') {
     // epilogue 끝나면 게임 시작
+    startActualGame()
+    return
+  } else if (chapterId === 'reborn_final') {
+    // 환생 스토리 마지막 챕터 끝나면 게임 시작
     startActualGame()
     return
   }
@@ -815,8 +892,17 @@ const startActualGame = () => {
 const confirmNationName = () => {
   if (!localNationName.value.trim()) return
 
-  // 다음 챕터로 (chapter7)
-  const findIndex = tutorialStory.findIndex(ch => ch.id === 'chapter6')
+  // 현재 스토리에 따라 다음 챕터 찾기
+  let nextChapterId = ''
+  if (reincarnationCount.value > 0) {
+    // 환생 스토리: reborn_5
+    nextChapterId = 'reborn_5'
+  } else {
+    // 기존 스토리: chapter6
+    nextChapterId = 'chapter6'
+  }
+
+  const findIndex = currentStory.value.findIndex(ch => ch.id === nextChapterId)
   if (findIndex !== -1) {
     currentChapterIndex.value = findIndex
   }
@@ -829,6 +915,34 @@ const rerollCommandments = () => {
   rerollCount.value++
   localSelectedCommandments.value = [] // 선택 초기화
   selectRandomCommandments()
+}
+
+// 시작 카드 선택/해제
+const toggleStartCard = (card: PassiveCard) => {
+  const index = selectedStartCards.value.findIndex(c => c.id === card.id)
+  if (index !== -1) {
+    // 이미 선택됨 - 해제
+    selectedStartCards.value.splice(index, 1)
+  } else if (selectedStartCards.value.length < 3) {
+    // 선택되지 않음 - 추가 (3개 미만일 때만)
+    selectedStartCards.value.push(card)
+  }
+}
+
+// 시작 카드 선택 완료
+const confirmStartCards = () => {
+  if (selectedStartCards.value.length !== 3) return
+
+  // 다음 챕터로 (reborn_final)
+  const findIndex = currentStory.value.findIndex(ch => ch.id === 'reborn_final')
+  if (findIndex !== -1) {
+    currentChapterIndex.value = findIndex
+  }
+
+  // 스토리 상단으로 스크롤
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, 100)
 }
 
 // 계명 토글
@@ -874,8 +988,20 @@ const totalDailyEffects = computed(() => {
 const confirmCommandments = () => {
   if (localSelectedCommandments.value.length !== 5) return
 
-  // 다음 챕터로 (chapter8)
-  const findIndex = tutorialStory.findIndex(ch => ch.id === 'chapter8')
+  // 계명 저장
+  setSelectedCommandments(localSelectedCommandments.value)
+
+  // 현재 스토리에 따라 다음 챕터 찾기
+  let nextChapterId = ''
+  if (reincarnationCount.value > 0) {
+    // 환생 스토리: reborn_6 (마지막 챕터)
+    nextChapterId = 'reborn_6'
+  } else {
+    // 기존 스토리: chapter8
+    nextChapterId = 'chapter8'
+  }
+
+  const findIndex = currentStory.value.findIndex(ch => ch.id === nextChapterId)
   if (findIndex !== -1) {
     currentChapterIndex.value = findIndex
   }

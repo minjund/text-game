@@ -151,7 +151,9 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
 
   // 완전한 전투 스토리 미리 생성
   const generateCompleteBattle = async () => {
-    if (!currentBattle.value) return
+    if (!currentBattle.value) {
+      return
+    }
 
     const logs: BattleLog[] = []
 
@@ -173,7 +175,16 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
         ? currentBattle.value.attacker.generals
         : currentBattle.value.defender.generals
 
+      if (activeGenerals.length === 0) {
+        continue
+      }
+
       const general = activeGenerals[Math.floor(Math.random() * activeGenerals.length)]
+
+      if (!general.skills || general.skills.length === 0) {
+        continue
+      }
+
       const skill = general.skills[Math.floor(Math.random() * general.skills.length)]
 
       // 영구 효과 + 시너지 카드 효과 적용 (아군만)
@@ -407,22 +418,19 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
         showNotification('제국군 선봉대를 물리쳤습니다!', 'success')
       }
     } else {
-      // 패배 처리
-      showNotification('제국군에게 패배했습니다...', 'error')
-
-      // 7일차 침략 전투에서 패배하면 환생
-      if (isWeeklyInvasion && isWeeklyInvasion.value) {
-        setTimeout(() => {
-          showNotification('💀 침략군을 막지 못했습니다. 왕국이 멸망했습니다...', 'error')
-          // 환생 모달 표시
-          if (showReincarnationModal) {
-            setTimeout(() => {
+      // 패배 처리 - 모든 침략 전투 패배 시 환생
+      setTimeout(() => {
+        showNotification('💀 침략군을 막지 못했습니다. 왕국이 멸망했습니다...', 'error')
+        // 환생 모달 표시
+        if (showReincarnationModal) {
+          setTimeout(() => {
+            if (isWeeklyInvasion) {
               isWeeklyInvasion.value = false
-              showReincarnationModal.value = true
-            }, 2000)
-          }
-        }, 1000)
-      }
+            }
+            showReincarnationModal.value = true
+          }, 2000)
+        }
+      }, 1000)
     }
   }
 

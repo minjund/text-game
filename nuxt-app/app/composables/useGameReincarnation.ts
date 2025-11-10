@@ -122,9 +122,23 @@ export const useGameReincarnation = (
 
     showNotification(`${card.name} 카드를 가지고 환생합니다! (누적 상속 카드: ${reincarnationData.value.inheritedCards.length}개)`, 'success')
 
-    // 게임 상태만 리셋 (나라 이름과 계명 유지)
+    // 모달 닫기
+    showReincarnationModal.value = false
+
+    // story.vue로 리다이렉트
     setTimeout(() => {
-      resetGameKeepProgress()
+      if (process.client) {
+        // 게임 상태 초기화 (환생 데이터와 신 게임 상태는 유지)
+        localStorage.removeItem('gameData')
+        localStorage.removeItem('passiveCards')
+        localStorage.removeItem('turnSystemState')
+        localStorage.removeItem('gameStartTime')
+        localStorage.removeItem('synergyCards')
+        // tutorialState는 유지하여 스토리는 건너뛰고 시작
+
+        // 스토리 페이지로 이동
+        window.location.href = '/story'
+      }
     }, 2000)
   }
 
@@ -140,8 +154,22 @@ export const useGameReincarnation = (
 
     showNotification(`카드 없이 환생합니다. (누적 상속 카드: ${reincarnationData.value.inheritedCards.length}개)`, 'info')
 
+    // 모달 닫기
+    showReincarnationModal.value = false
+
+    // story.vue로 리다이렉트
     setTimeout(() => {
-      resetGameKeepProgress()
+      if (process.client) {
+        // 게임 상태 초기화 (환생 데이터와 신 게임 상태는 유지)
+        localStorage.removeItem('gameData')
+        localStorage.removeItem('passiveCards')
+        localStorage.removeItem('turnSystemState')
+        localStorage.removeItem('gameStartTime')
+        localStorage.removeItem('synergyCards')
+
+        // 스토리 페이지로 이동
+        window.location.href = '/story'
+      }
     }, 2000)
   }
 

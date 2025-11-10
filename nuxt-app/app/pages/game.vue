@@ -117,7 +117,7 @@
     <!-- Reincarnation Modal -->
     <GameReincarnationModal
       :show="showReincarnationModal"
-      :available-cards="availableCardsForReincarnation"
+      :available-cards="reincarnationCardOptions"
       :reincarnation-count="reincarnationData.count"
       :highest-day="Math.max(reincarnationData.highestDay, kingdom.day)"
       :total-days-played="reincarnationData.totalDaysPlayed + kingdom.day"
@@ -336,6 +336,9 @@ const {
   availableCardsForReincarnation
 } = useGamePassiveCards()
 
+// 환생용 랜덤 카드 3장
+const reincarnationCardOptions = ref<PassiveCard[]>([])
+
 // 시너지 카드 시스템
 const {
   playerCards: synergyPlayerCards,
@@ -531,6 +534,14 @@ watch(shouldInvadeThisWeek, (shouldInvade) => {
     markInvasionOccurred(week)
   }
 }, { immediate: true })
+
+// 환생 모달이 열릴 때 랜덤 카드 3장 생성
+watch(showReincarnationModal, (isOpen) => {
+  if (isOpen && process.client) {
+    // 전체 카드 풀에서 랜덤 3장 선택
+    reincarnationCardOptions.value = drawRandomCards(3)
+  }
+})
 
 // 조언자 모달 표시
 const showAdvisorMessage = (message: any) => {

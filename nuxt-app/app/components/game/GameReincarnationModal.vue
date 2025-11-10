@@ -1,99 +1,116 @@
 <template>
   <Transition name="modal">
-    <div v-if="show" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" @click.self="() => {}">
-      <div class="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-cyan-600 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden">
+    <div v-if="show" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" @click.self="() => {}">
+      <!-- Step 1: Defeat Scenario -->
+      <div v-if="currentStep === 1" class="max-w-3xl w-full">
+        <div class="bg-gradient-to-br from-red-950/80 to-black/80 border-2 border-red-600 rounded-lg p-8 backdrop-blur-sm">
+          <div class="text-center mb-8">
+            <div class="text-6xl mb-4 animate-pulse">💀</div>
+            <h2 class="text-4xl font-bold text-red-400 mb-2">왕국의 멸망</h2>
+          </div>
+
+          <div class="space-y-4 text-lg leading-relaxed mb-8">
+            <p v-for="(line, index) in visibleLines" :key="index"
+               class="text-gray-200"
+               :class="{ 'opacity-0 animate-fade-in': index === visibleLines.length - 1 }">
+              {{ line }}
+            </p>
+          </div>
+
+          <div v-if="showContinueButton" class="text-center">
+            <button @click="nextStep"
+                    class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg px-12 py-4 font-bold text-xl transition-all transform hover:scale-105 shadow-lg">
+              계속...
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: God Intervention & Card Selection -->
+      <div v-if="currentStep === 2" class="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-cyan-600 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden">
         <!-- Header -->
-        <div class="bg-gradient-to-r from-cyan-900 to-cyan-800 border-b-2 border-cyan-600 p-4">
-          <h2 class="text-2xl font-bold mb-1 flex items-center justify-center gap-2">
-            <span>💫</span> 환생의 시간
-          </h2>
-          <p class="text-center text-cyan-200">100일을 견뎌냈습니다! 환생하여 더 강해질 시간입니다.</p>
+        <div class="bg-gradient-to-r from-cyan-900 to-blue-900 border-b-2 border-cyan-600 p-6">
+          <div class="text-center mb-4">
+            <div class="text-5xl mb-2">✨</div>
+            <h2 class="text-3xl font-bold mb-2">신의 은총</h2>
+            <p class="text-cyan-200 text-lg">당신은 신이었음을 기억하십니까?</p>
+          </div>
+
+          <div class="bg-black/30 rounded-lg p-4 mb-4">
+            <p class="text-center text-gray-300 leading-relaxed">
+              죽음의 순간, 당신의 신성이 깨어납니다.<br/>
+              시간을 되돌릴 수는 없지만, 하나의 기억을 간직할 수 있습니다.<br/>
+              <span class="text-cyan-400 font-bold">세 가지 운명 중 하나를 선택하세요.</span>
+            </p>
+          </div>
 
           <!-- Stats -->
-          <div class="flex justify-around mt-4 text-center">
+          <div class="flex justify-around text-center">
             <div class="flex flex-col">
               <span class="text-xs text-slate-400">환생 횟수</span>
-              <span class="text-lg font-bold">{{ reincarnationCount + 1 }}회</span>
+              <span class="text-lg font-bold text-cyan-400">{{ reincarnationCount + 1 }}회</span>
             </div>
             <div class="flex flex-col">
               <span class="text-xs text-slate-400">최고 기록</span>
-              <span class="text-lg font-bold">{{ highestDay }}일</span>
+              <span class="text-lg font-bold text-cyan-400">{{ highestDay }}일</span>
             </div>
             <div class="flex flex-col">
               <span class="text-xs text-slate-400">총 플레이</span>
-              <span class="text-lg font-bold">{{ totalDaysPlayed }}일</span>
+              <span class="text-lg font-bold text-cyan-400">{{ totalDaysPlayed }}일</span>
             </div>
           </div>
         </div>
 
         <!-- Content -->
-        <div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-          <!-- With Cards -->
-          <div v-if="availableCards.length > 0">
-            <h3 class="text-xl font-bold mb-2 flex items-center gap-2">
-              <span>🎴</span> 상속할 카드를 선택하세요
-            </h3>
-            <p class="text-sm text-slate-400 mb-4">선택한 카드는 다음 게임 시작 시 자동으로 적용됩니다.</p>
+        <div class="p-6 overflow-y-auto max-h-[calc(90vh-300px)]">
+          <!-- Cards Grid -->
+          <div v-if="availableCards.length > 0" class="grid md:grid-cols-3 gap-4 mb-4">
+            <div v-for="card in availableCards" :key="card.id"
+                 @click="selectCard(card)"
+                 class="relative bg-slate-700/50 border-2 rounded-lg overflow-hidden cursor-pointer transition-all hover:scale-105 hover:shadow-2xl"
+                 :class="{
+                   'border-gray-500 hover:border-gray-400': card.rarity === 'common',
+                   'border-blue-500 hover:border-blue-400': card.rarity === 'rare',
+                   'border-purple-500 hover:border-purple-400': card.rarity === 'epic',
+                   'border-orange-500 hover:border-orange-400': card.rarity === 'legendary'
+                 }">
 
-            <!-- Cards Grid -->
-            <div class="grid md:grid-cols-3 gap-4 mb-4">
-              <div v-for="card in availableCards" :key="card.id"
-                   @click="$emit('select-card', card)"
-                   class="relative bg-slate-700/50 border-2 rounded-lg overflow-hidden cursor-pointer transition-all hover:scale-105"
-                   :class="{
-                     'border-gray-500 hover:border-gray-400': card.rarity === 'common',
-                     'border-blue-500 hover:border-blue-400': card.rarity === 'rare',
-                     'border-purple-500 hover:border-purple-400': card.rarity === 'epic',
-                     'border-orange-500 hover:border-orange-400': card.rarity === 'legendary'
-                   }">
+              <!-- Card Image -->
+              <div class="relative h-32 overflow-hidden">
+                <img :src="card.image" :alt="card.name" class="w-full h-full object-cover" />
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
+              </div>
 
-                <!-- Card Image -->
-                <div class="relative h-32 overflow-hidden">
-                  <img :src="card.image" :alt="card.name" class="w-full h-full object-cover" />
-                  <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
+              <!-- Card Content -->
+              <div class="p-3">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-xl">{{ card.icon }}</div>
+                  <span class="px-2 py-0.5 rounded text-xs font-bold"
+                        :class="{
+                          'bg-gray-600': card.rarity === 'common',
+                          'bg-blue-600': card.rarity === 'rare',
+                          'bg-purple-600': card.rarity === 'epic',
+                          'bg-orange-600': card.rarity === 'legendary'
+                        }">
+                    {{ getRarityLabel(card.rarity) }}
+                  </span>
                 </div>
-
-                <!-- Card Content -->
-                <div class="p-3">
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="text-xl">{{ card.icon }}</div>
-                    <span class="px-2 py-0.5 rounded text-xs font-bold"
-                          :class="{
-                            'bg-gray-600': card.rarity === 'common',
-                            'bg-blue-600': card.rarity === 'rare',
-                            'bg-purple-600': card.rarity === 'epic',
-                            'bg-orange-600': card.rarity === 'legendary'
-                          }">
-                      {{ getRarityLabel(card.rarity) }}
-                    </span>
-                  </div>
-                  <h3 class="font-bold mb-1">{{ card.name }}</h3>
-                  <p class="text-xs text-slate-400 mb-2">{{ card.description }}</p>
-                  <div class="flex justify-center">
-                    <span class="px-2 py-0.5 bg-slate-800 rounded-full text-xs">
-                      {{ getTriggerLabel(card.trigger) }}
-                    </span>
-                  </div>
+                <h3 class="font-bold mb-1">{{ card.name }}</h3>
+                <p class="text-xs text-slate-400 mb-2">{{ card.description }}</p>
+                <div class="flex justify-center">
+                  <span class="px-2 py-0.5 bg-slate-800 rounded-full text-xs">
+                    {{ getTriggerLabel(card.trigger) }}
+                  </span>
                 </div>
               </div>
             </div>
-
-            <!-- Skip Button -->
-            <button @click="$emit('reincarnate-without-card')"
-                    class="w-full bg-slate-700 hover:bg-slate-600 border border-slate-500 rounded-lg py-3 font-bold transition-colors">
-              카드 없이 환생
-            </button>
           </div>
 
-          <!-- Without Cards -->
-          <div v-else class="text-center py-8">
-            <p class="text-lg mb-2">보유한 패시브 카드가 없습니다.</p>
-            <p class="text-slate-400 mb-6">환생하여 새로운 시작을 하세요!</p>
-            <button @click="$emit('reincarnate-without-card')"
-                    class="bg-cyan-600 hover:bg-cyan-500 rounded-lg px-8 py-3 font-bold text-lg transition-colors inline-flex items-center gap-2">
-              <span>💫</span> 환생하기
-            </button>
-          </div>
+          <!-- Skip Button -->
+          <button @click="skipCard"
+                  class="w-full bg-slate-700 hover:bg-slate-600 border border-slate-500 rounded-lg py-3 font-bold transition-colors">
+            기억을 버리고 환생
+          </button>
         </div>
       </div>
     </div>
@@ -101,6 +118,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import type { PassiveCard } from '~/types/passive-cards'
 
 interface Props {
@@ -111,12 +129,76 @@ interface Props {
   totalDaysPlayed: number
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   'select-card': [card: PassiveCard]
   'reincarnate-without-card': []
 }>()
+
+// Step management
+const currentStep = ref(1)
+const visibleLines = ref<string[]>([])
+const showContinueButton = ref(false)
+
+// Defeat scenario text
+const defeatStory = [
+  '성벽이 무너지고, 불길이 치솟습니다.',
+  '백성들의 비명소리가 메아리칩니다.',
+  '당신의 왕국은... 멸망했습니다.',
+  '',
+  '하지만 이것이 끝은 아닙니다.',
+  '당신은 신이었던 존재.',
+  '죽음조차 당신을 완전히 지울 수는 없습니다.'
+]
+
+// Watch for modal open
+watch(() => props.show, (isOpen) => {
+  if (isOpen) {
+    // Reset to step 1
+    currentStep.value = 1
+    visibleLines.value = []
+    showContinueButton.value = false
+
+    // Start typing effect
+    startTypingEffect()
+  }
+})
+
+// Typing effect
+const startTypingEffect = () => {
+  let lineIndex = 0
+
+  const showNextLine = () => {
+    if (lineIndex < defeatStory.length) {
+      visibleLines.value.push(defeatStory[lineIndex])
+      lineIndex++
+      setTimeout(showNextLine, 800) // 800ms between lines
+    } else {
+      // All lines shown, show continue button
+      setTimeout(() => {
+        showContinueButton.value = true
+      }, 500)
+    }
+  }
+
+  showNextLine()
+}
+
+// Move to next step
+const nextStep = () => {
+  currentStep.value = 2
+}
+
+// Select card
+const selectCard = (card: PassiveCard) => {
+  emit('select-card', card)
+}
+
+// Skip card
+const skipCard = () => {
+  emit('reincarnate-without-card')
+}
 
 const getRarityLabel = (rarity: string) => {
   const labels: Record<string, string> = {
@@ -139,3 +221,20 @@ const getTriggerLabel = (trigger: string) => {
   return labels[trigger] || trigger
 }
 </script>
+
+<style scoped>
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+</style>

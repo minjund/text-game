@@ -1,56 +1,58 @@
 <template>
-  <div class="welcome-page">
+  <div class="min-h-screen">
     <!-- 헤더 -->
-    <header class="main-header">
-      <div class="logo">
-        <span class="logo-icon">⚔️</span>
-        <span class="logo-text">Kingdom Wars</span>
+    <header class="fixed top-0 left-0 right-0 z-[1000] px-4 sm:px-6 md:px-12 lg:px-16 py-4 md:py-5 flex justify-between items-center bg-slate-900/80 backdrop-blur-xl border-b border-purple-500/20">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <span class="text-2xl sm:text-3xl md:text-4xl drop-shadow-[0_0_10px_rgba(139,92,246,0.6)]">✨</span>
+        <span class="text-base sm:text-lg md:text-xl lg:text-2xl font-black font-serif text-slate-200">갓 블레스 유 (GBU)</span>
       </div>
-      <nav class="nav-links">
-        <NuxtLink to="/story" class="nav-link">게임 시작</NuxtLink>
+      <nav>
+        <NuxtLink
+          to="/story"
+          class="text-slate-200 no-underline font-semibold text-sm sm:text-base px-3 sm:px-4 md:px-5 py-2 rounded-lg transition-all duration-300 hover:bg-purple-500/20 hover:text-purple-300"
+        >
+          게임 시작
+        </NuxtLink>
       </nav>
     </header>
 
     <!-- 히어로 섹션 -->
-    <section class="hero-section">
-      <div class="hero-content">
-        <h1 class="hero-title">
-          <span class="title-line-1">전설의 왕국을</span>
-          <span class="title-line-2">건설하라</span>
+    <section class="relative min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-8 pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 md:pb-20 overflow-hidden">
+      <div class="max-w-4xl text-center z-10 relative w-full">
+        <h1 class="font-serif font-black leading-tight mb-6 sm:mb-8 md:mb-10 flex flex-col gap-2 sm:gap-3">
+          <span class="title-line-1 text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl">전설의 왕국을</span>
+          <span class="title-line-2 text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl">건설하라</span>
         </h1>
-        <p class="hero-description">
-          장수를 모으고, 군대를 키우고, 적을 정복하라.<br/>
+        <p class="text-sm sm:text-base md:text-lg lg:text-xl text-slate-400 leading-relaxed mb-8 sm:mb-10 md:mb-12 px-4">
+          장수를 모으고, 군대를 키우고, 적을 정복하라.<br class="hidden sm:block"/>
           당신의 왕국이 역사에 길이 남을 것입니다.
         </p>
-        <div class="hero-buttons">
-          <NuxtLink to="/story" class="btn btn-primary btn-huge">
-            <span class="btn-icon">✨</span>
-            게임 시작
+        <div class="flex justify-center mb-12 sm:mb-16 md:mb-20">
+          <NuxtLink to="/story" class="game-btn">
+            <span class="text-xl sm:text-2xl md:text-3xl relative z-10">✨</span>
+            <span class="relative z-10">게임 시작</span>
           </NuxtLink>
         </div>
 
         <!-- 게임 통계 -->
-        <div class="game-stats">
-          <div class="stat-item">
-            <div class="stat-number">{{ animatedPlayers }}</div>
-            <div class="stat-label">활성 플레이어</div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-3xl mx-auto px-4 sm:px-6 md:px-10 py-6 sm:py-8 md:py-10 bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-purple-500/20">
+          <div class="text-center py-4 sm:py-0">
+            <div class="stat-number text-3xl sm:text-4xl md:text-5xl">{{ animatedPlayers }}</div>
+            <div class="text-xs sm:text-sm text-slate-400 font-semibold uppercase tracking-wider mt-2">활성 플레이어</div>
           </div>
-          <div class="stat-item">
-            <div class="stat-number">{{ animatedKingdoms }}</div>
-            <div class="stat-label">건설된 왕국</div>
+          <div class="text-center py-4 sm:py-0 border-t sm:border-t-0 sm:border-l sm:border-r border-purple-500/20">
+            <div class="stat-number text-3xl sm:text-4xl md:text-5xl">{{ animatedKingdoms }}</div>
+            <div class="text-xs sm:text-sm text-slate-400 font-semibold uppercase tracking-wider mt-2">건설된 왕국</div>
           </div>
-          <div class="stat-item">
-            <div class="stat-number">{{ animatedBattles }}</div>
-            <div class="stat-label">진행된 전투</div>
+          <div class="text-center py-4 sm:py-0 border-t sm:border-t-0 border-purple-500/20">
+            <div class="stat-number text-3xl sm:text-4xl md:text-5xl">{{ animatedBattles }}</div>
+            <div class="text-xs sm:text-sm text-slate-400 font-semibold uppercase tracking-wider mt-2">진행된 전투</div>
           </div>
         </div>
       </div>
 
-      <!-- Phaser 애니메이션 -->
-      <PhaserHeroAnimation />
-
       <!-- 배경 애니메이션 -->
-      <div class="hero-background">
+      <div class="absolute w-full h-full top-0 left-0 overflow-hidden z-0">
         <div class="floating-element element-1">⚔️</div>
         <div class="floating-element element-2">🛡️</div>
         <div class="floating-element element-3">👑</div>
@@ -61,52 +63,52 @@
     </section>
 
     <!-- 특징 섹션 -->
-    <section class="features-section">
-      <h2 class="section-title">게임 특징</h2>
-      <div class="features-grid">
+    <section class="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 md:px-8 lg:px-12 max-w-7xl mx-auto">
+      <h2 class="text-3xl sm:text-4xl md:text-5xl font-serif font-black text-center mb-10 sm:mb-12 md:mb-16 section-title">게임 특징</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-10">
         <div class="feature-card">
-          <div class="feature-icon">✨</div>
-          <h3>신의 계명</h3>
-          <p>신이 되어 나라의 기초가 될 5가지 계명을 정하세요</p>
+          <div class="text-5xl sm:text-6xl md:text-7xl mb-4 sm:mb-5 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">✨</div>
+          <h3 class="text-xl sm:text-2xl font-bold text-slate-200 mb-3 sm:mb-4 font-serif">신의 계명</h3>
+          <p class="text-sm sm:text-base text-slate-400 leading-relaxed">신이 되어 나라의 기초가 될 5가지 계명을 정하세요</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">👥</div>
-          <h3>전설의 장수</h3>
-          <p>고유한 스킬을 가진 장수들을 수집하고 육성하세요</p>
+          <div class="text-5xl sm:text-6xl md:text-7xl mb-4 sm:mb-5 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">👥</div>
+          <h3 class="text-xl sm:text-2xl font-bold text-slate-200 mb-3 sm:mb-4 font-serif">전설의 장수</h3>
+          <p class="text-sm sm:text-base text-slate-400 leading-relaxed">고유한 스킬을 가진 장수들을 수집하고 육성하세요</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">⚔️</div>
-          <h3>전략적 전투</h3>
-          <p>텍스트 기반 전투로 장수의 스킬을 활용하세요</p>
+          <div class="text-5xl sm:text-6xl md:text-7xl mb-4 sm:mb-5 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">⚔️</div>
+          <h3 class="text-xl sm:text-2xl font-bold text-slate-200 mb-3 sm:mb-4 font-serif">전략적 전투</h3>
+          <p class="text-sm sm:text-base text-slate-400 leading-relaxed">텍스트 기반 전투로 장수의 스킬을 활용하세요</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">🏰</div>
-          <h3>왕국 경영</h3>
-          <p>식량, 금, 병력을 관리하며 왕국을 성장시키세요</p>
+          <div class="text-5xl sm:text-6xl md:text-7xl mb-4 sm:mb-5 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">🏰</div>
+          <h3 class="text-xl sm:text-2xl font-bold text-slate-200 mb-3 sm:mb-4 font-serif">왕국 경영</h3>
+          <p class="text-sm sm:text-base text-slate-400 leading-relaxed">식량, 금, 병력을 관리하며 왕국을 성장시키세요</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">🎴</div>
-          <h3>랜덤 이벤트</h3>
-          <p>매일 다른 이벤트로 독특한 스토리를 만들어가세요</p>
+          <div class="text-5xl sm:text-6xl md:text-7xl mb-4 sm:mb-5 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">🎴</div>
+          <h3 class="text-xl sm:text-2xl font-bold text-slate-200 mb-3 sm:mb-4 font-serif">랜덤 이벤트</h3>
+          <p class="text-sm sm:text-base text-slate-400 leading-relaxed">매일 다른 이벤트로 독특한 스토리를 만들어가세요</p>
         </div>
       </div>
     </section>
 
     <!-- CTA 섹션 -->
-    <section class="cta-section">
-      <div class="cta-content">
-        <h2>지금 당신의 전설을 시작하세요</h2>
-        <p>무료로 플레이하고 최고의 통치자가 되어보세요</p>
-        <NuxtLink to="/story" class="btn btn-primary btn-huge">
-          <span class="btn-icon">✨</span>
-          게임 시작
+    <section class="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-8 bg-gradient-to-br from-purple-900/10 to-pink-900/10">
+      <div class="max-w-3xl mx-auto text-center">
+        <h2 class="text-3xl sm:text-4xl md:text-5xl font-serif font-black text-slate-200 mb-4 sm:mb-6">지금 당신의 전설을 시작하세요</h2>
+        <p class="text-base sm:text-lg md:text-xl text-slate-400 mb-8 sm:mb-10 md:mb-12">무료로 플레이하고 최고의 통치자가 되어보세요</p>
+        <NuxtLink to="/story" class="game-btn">
+          <span class="text-xl sm:text-2xl md:text-3xl relative z-10">✨</span>
+          <span class="relative z-10">게임 시작</span>
         </NuxtLink>
       </div>
     </section>
 
     <!-- 푸터 -->
-    <footer class="main-footer">
-      <p>&copy; 2025 Kingdom Wars. Made with ❤️ by Claude</p>
+    <footer class="py-8 sm:py-10 md:py-12 px-4 sm:px-6 text-center text-slate-500 text-xs sm:text-sm border-t border-purple-500/20">
+      <p>&copy; 2025 갓 블레스 유 (GBU). Made with ❤️</p>
     </footer>
   </div>
 </template>
@@ -145,94 +147,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.welcome-page {
-  min-height: 100vh;
-}
-
-/* 헤더 */
-.main-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  padding: 20px 60px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 24px;
-  font-weight: 900;
-  font-family: 'Cinzel', serif;
-  color: #e2e8f0;
-}
-
-.logo-icon {
-  font-size: 32px;
-  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.6));
-}
-
-.nav-links {
-  display: flex;
-  gap: 30px;
-}
-
-.nav-link {
-  color: #e2e8f0;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 16px;
-  transition: all 0.3s;
-  padding: 8px 20px;
-  border-radius: 8px;
-}
-
-.nav-link:hover {
-  background: rgba(139, 92, 246, 0.2);
-  color: #a78bfa;
-}
-
-/* 히어로 섹션 */
-.hero-section {
-  position: relative;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 100px 20px 50px;
-  overflow: hidden;
-}
-
-.hero-content {
-  max-width: 900px;
-  text-align: center;
-  z-index: 10;
-  position: relative;
-}
-
-.hero-title {
-  font-family: 'Cinzel', serif;
-  font-size: 80px;
-  font-weight: 900;
-  line-height: 1.1;
-  margin-bottom: 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
+/* 타이틀 그라데이션 애니메이션 */
 .title-line-1 {
   background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
   animation: titleGlow 3s ease-in-out infinite;
 }
 
@@ -240,6 +160,7 @@ onMounted(() => {
   background: linear-gradient(135deg, #ec4899 0%, #f59e0b 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
   animation: titleGlow 3s ease-in-out infinite;
   animation-delay: 0.5s;
 }
@@ -249,40 +170,59 @@ onMounted(() => {
   50% { filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.8)); }
 }
 
-.hero-description {
-  font-size: 20px;
-  color: #94a3b8;
-  line-height: 1.8;
-  margin-bottom: 50px;
+/* 섹션 타이틀 그라데이션 */
+.section-title {
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.hero-buttons {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  margin-bottom: 80px;
-}
-
-.btn {
-  padding: 18px 40px;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 18px;
-  font-weight: 700;
-  transition: all 0.3s;
-  text-decoration: none;
+/* 게임 버튼 */
+.game-btn {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 0.75rem;
+  padding: 0.875rem 2rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: white;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+  cursor: pointer;
   position: relative;
   overflow: hidden;
-  font-family: 'Cinzel', serif;
-  text-transform: uppercase;
-  letter-spacing: 2px;
+  transition: all 0.3s ease;
+  text-decoration: none;
 }
 
-.btn::before {
+@media (min-width: 640px) {
+  .game-btn {
+    padding: 1rem 2.5rem;
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .game-btn {
+    padding: 1.25rem 3rem;
+    font-size: 1.125rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .game-btn {
+    padding: 1.5rem 3.75rem;
+    font-size: 1.25rem;
+  }
+}
+
+.game-btn::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -295,86 +235,57 @@ onMounted(() => {
   transition: width 0.6s, height 0.6s;
 }
 
-.btn:hover::before {
+.game-btn:hover::before {
   width: 400px;
   height: 400px;
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-  color: white;
-  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
-}
-
-.btn-primary:hover {
+.game-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 15px 40px rgba(139, 92, 246, 0.6);
 }
 
-.btn-huge {
-  padding: 24px 60px;
-  font-size: 22px;
-}
-
-.btn-icon {
-  font-size: 28px;
-  position: relative;
-  z-index: 1;
-}
-
-/* 게임 통계 */
-.game-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 40px;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 40px;
-  background: rgba(30, 41, 59, 0.6);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  border: 1px solid rgba(139, 92, 246, 0.2);
-}
-
-.stat-item {
-  text-align: center;
-}
-
+/* 통계 숫자 그라데이션 */
 .stat-number {
-  font-size: 48px;
-  font-weight: 900;
   font-family: 'Cinzel', serif;
+  font-weight: 900;
   background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 10px;
+  background-clip: text;
 }
 
-.stat-label {
-  font-size: 14px;
-  color: #94a3b8;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+/* 특징 카드 */
+.feature-card {
+  background: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(20px);
+  border-radius: 1.25rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  border: 2px solid rgba(139, 92, 246, 0.2);
+  transition: all 0.4s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.feature-card:hover {
+  transform: translateY(-10px);
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 20px 50px rgba(139, 92, 246, 0.3);
 }
 
 /* 배경 애니메이션 */
-.hero-background {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  overflow: hidden;
-  z-index: 0;
-}
-
 .floating-element {
   position: absolute;
-  font-size: 60px;
+  font-size: 3rem;
   opacity: 0.1;
   animation: floatElement 20s ease-in-out infinite;
   filter: blur(2px);
+}
+
+@media (min-width: 768px) {
+  .floating-element {
+    font-size: 3.75rem;
+  }
 }
 
 .element-1 { top: 10%; left: 10%; animation-delay: 0s; }
@@ -389,121 +300,5 @@ onMounted(() => {
   25% { transform: translate(30px, -30px) rotate(90deg); }
   50% { transform: translate(0, -60px) rotate(180deg); }
   75% { transform: translate(-30px, -30px) rotate(270deg); }
-}
-
-/* 특징 섹션 */
-.features-section {
-  padding: 100px 60px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.section-title {
-  font-size: 48px;
-  font-family: 'Cinzel', serif;
-  font-weight: 900;
-  text-align: center;
-  margin-bottom: 60px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 40px;
-}
-
-.feature-card {
-  background: rgba(30, 41, 59, 0.6);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  padding: 40px 30px;
-  text-align: center;
-  border: 2px solid rgba(139, 92, 246, 0.2);
-  transition: all 0.4s;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.feature-card:hover {
-  transform: translateY(-10px);
-  border-color: rgba(139, 92, 246, 0.5);
-  box-shadow: 0 20px 50px rgba(139, 92, 246, 0.3);
-}
-
-.feature-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-  filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.4));
-}
-
-.feature-card h3 {
-  font-size: 24px;
-  font-weight: 700;
-  color: #e2e8f0;
-  margin-bottom: 15px;
-  font-family: 'Cinzel', serif;
-}
-
-.feature-card p {
-  font-size: 16px;
-  color: #94a3b8;
-  line-height: 1.6;
-}
-
-/* CTA 섹션 */
-.cta-section {
-  padding: 100px 60px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
-}
-
-.cta-content {
-  max-width: 800px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.cta-content h2 {
-  font-size: 48px;
-  font-family: 'Cinzel', serif;
-  font-weight: 900;
-  color: #e2e8f0;
-  margin-bottom: 20px;
-}
-
-.cta-content p {
-  font-size: 20px;
-  color: #94a3b8;
-  margin-bottom: 40px;
-}
-
-/* 푸터 */
-.main-footer {
-  padding: 40px 60px;
-  text-align: center;
-  color: #64748b;
-  font-size: 14px;
-  border-top: 1px solid rgba(139, 92, 246, 0.2);
-}
-
-/* 반응형 */
-@media (max-width: 768px) {
-  .hero-title {
-    font-size: 48px;
-  }
-
-  .game-stats {
-    grid-template-columns: 1fr;
-    gap: 30px;
-  }
-
-  .features-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .main-header {
-    padding: 20px 30px;
-  }
 }
 </style>
