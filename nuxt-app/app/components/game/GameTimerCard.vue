@@ -7,25 +7,10 @@
       <span class="text-2xl">⏰</span>
       <span class="text-base font-semibold">제국 정복 기한</span>
     </div>
-    <div v-if="!isExpired" class="flex justify-around text-center">
+    <div v-if="!isExpired" class="flex justify-center gap-4 text-center">
       <div class="flex flex-col">
-        <span class="text-2xl font-bold">{{ weeks }}</span>
-        <span class="text-xs text-slate-400">주</span>
-      </div>
-      <div class="text-2xl">:</div>
-      <div class="flex flex-col">
-        <span class="text-2xl font-bold">{{ remainingDays }}</span>
-        <span class="text-xs text-slate-400">일</span>
-      </div>
-      <div class="text-2xl">:</div>
-      <div class="flex flex-col">
-        <span class="text-2xl font-bold">{{ hours }}</span>
-        <span class="text-xs text-slate-400">시</span>
-      </div>
-      <div class="text-2xl">:</div>
-      <div class="flex flex-col">
-        <span class="text-2xl font-bold">{{ minutes }}</span>
-        <span class="text-xs text-slate-400">분</span>
+        <span class="text-3xl font-bold">{{ days }}</span>
+        <span class="text-sm text-slate-400">일 남음</span>
       </div>
     </div>
     <div v-else class="text-center text-red-400 font-bold text-xl">시간 종료!</div>
@@ -44,10 +29,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
-// 주와 남은 일 계산
-const weeks = computed(() => Math.floor(props.days / 7))
-const remainingDays = computed(() => props.days % 7)
 
 const borderClass = computed(() => {
   if (props.isExpired) return 'border-red-500'

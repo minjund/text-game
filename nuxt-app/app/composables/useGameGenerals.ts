@@ -80,7 +80,7 @@ export const useGameGenerals = (
       return
     }
 
-    kingdom.value.resources.soldiers -= amount
+    kingdom.value.resources.soldiers = Math.max(0, kingdom.value.resources.soldiers - amount)
     general.assignedSoldiers += amount
     showNotification(`${general.name}에게 병력 ${amount}을 배치했습니다!`, 'success')
   }

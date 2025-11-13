@@ -88,7 +88,6 @@ export interface EventChoice {
     soldiers?: number
     morale?: number
   }
-  general?: General // 새 장수 영입
 }
 
 // 갈림길 카드 (25일마다)

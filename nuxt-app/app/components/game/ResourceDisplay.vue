@@ -1,10 +1,18 @@
 <template>
-  <div :class="['resource-display', variant]">
+  <div :class="['resource-display', variant, 'group relative']">
     <span class="resource-icon">{{ icon }}</span>
     <div class="resource-info">
       <span class="resource-label">{{ label }}</span>
       <span class="resource-value">{{ formattedValue }}</span>
     </div>
+    <button
+      v-if="helpEnabled"
+      @click="$emit('show-help')"
+      :class="['help-button', `help-${label.toLowerCase()}`]"
+      :title="`${label} 도움말`"
+    >
+      ?
+    </button>
   </div>
 </template>
 
@@ -17,12 +25,18 @@ interface Props {
   value: number
   variant?: 'default' | 'compact'
   showPlus?: boolean
+  helpEnabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   variant: 'default',
-  showPlus: false
+  showPlus: false,
+  helpEnabled: true
 })
+
+defineEmits<{
+  'show-help': []
+}>()
 
 const formattedValue = computed(() => {
   const val = Math.floor(props.value)
@@ -97,5 +111,65 @@ const formattedValue = computed(() => {
 
 .resource-display.compact .resource-value {
   font-size: 14px;
+}
+
+/* Help button */
+.help-button {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: auto;
+}
+
+.group:hover .help-button {
+  opacity: 1;
+}
+
+.help-button:hover {
+  transform: scale(1.1);
+}
+
+.help-button.help-식량 {
+  background-color: #16a34a;
+}
+
+.help-button.help-식량:hover {
+  background-color: #15803d;
+}
+
+.help-button.help-금 {
+  background-color: #ca8a04;
+}
+
+.help-button.help-금:hover {
+  background-color: #a16207;
+}
+
+.help-button.help-병사 {
+  background-color: #dc2626;
+}
+
+.help-button.help-병사:hover {
+  background-color: #b91c1c;
+}
+
+.help-button.help-민심 {
+  background-color: #db2777;
+}
+
+.help-button.help-민심:hover {
+  background-color: #be185d;
 }
 </style>

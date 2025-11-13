@@ -1,12 +1,11 @@
 import { ref, type Ref } from 'vue'
-import type { Kingdom, General, PermanentEffect } from '~/types/game'
+import type { Kingdom, PermanentEffect } from '~/types/game'
 import type { PassiveCard } from '~/types/passive-cards'
 import type { ReincarnationData } from '~/types/reincarnation'
 import { calculateReincarnationBonuses, getTotalBonuses } from '~/types/reincarnation'
 
 export const useGameReincarnation = (
   kingdom: Ref<Kingdom>,
-  generals: Ref<General[]>,
   playerPassiveCards: Ref<PassiveCard[]>,
   godGameState: Ref<any>,
   showNotification: (message: string, type: 'success' | 'error' | 'info') => void
@@ -87,9 +86,6 @@ export const useGameReincarnation = (
       population: godGameState.value?.stats.population || 1000
     }
 
-    // 장수는 초기화 (0명으로 시작)
-    generals.value = []
-
     // 패시브 카드는 누적된 상속 카드들만 유지
     playerPassiveCards.value = [...reincarnationData.value.inheritedCards]
 
@@ -114,6 +110,11 @@ export const useGameReincarnation = (
 
     reincarnationData.value.count++
     reincarnationData.value.bonuses = calculateReincarnationBonuses(reincarnationData.value.count)
+
+    // 왕국 이름 저장 (첫 환생 시에만)
+    if (!reincarnationData.value.kingdomName && kingdom.value.name) {
+      reincarnationData.value.kingdomName = kingdom.value.name
+    }
 
     // 로컬 스토리지에 환생 데이터 저장
     if (process.client) {
@@ -147,6 +148,11 @@ export const useGameReincarnation = (
     reincarnationData.value.inheritedCard = null
     reincarnationData.value.count++
     reincarnationData.value.bonuses = calculateReincarnationBonuses(reincarnationData.value.count)
+
+    // 왕국 이름 저장 (첫 환생 시에만)
+    if (!reincarnationData.value.kingdomName && kingdom.value.name) {
+      reincarnationData.value.kingdomName = kingdom.value.name
+    }
 
     if (process.client) {
       localStorage.setItem('reincarnationData', JSON.stringify(reincarnationData.value))

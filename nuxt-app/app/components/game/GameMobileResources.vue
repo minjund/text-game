@@ -2,10 +2,10 @@
   <div class="md:hidden fixed top-2 left-2 right-2 z-50 flex flex-col gap-1.5 pointer-events-none">
     <!-- All resources in grid layout -->
     <div class="flex flex-col gap-1.5">
-      <!-- Row 1: Timer and Turn -->
+      <!-- Row 1: Timer -->
       <div class="flex justify-between gap-1.5">
-        <!-- Timer - compact size -->
-        <div class="flex-1 pointer-events-auto">
+        <!-- Timer - full width -->
+        <div class="w-full pointer-events-auto">
           <div
             class="resource-display compact"
             :class="timer.isExpired ? 'border-red-500' : timer.days < 7 ? 'border-yellow-500' : 'border-indigo-500'"
@@ -14,30 +14,9 @@
             <div class="resource-info">
               <span class="resource-label">제국 정복 기한</span>
               <span v-if="!timer.isExpired" class="resource-value text-xs">
-                {{ weeks }}주 {{ remainingDays }}일 {{ timer.hours }}:{{ String(timer.minutes).padStart(2, '0') }}
+                {{ timer.days }}일 남음
               </span>
               <span v-else class="resource-value text-xs text-red-400">종료!</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Turn Counter - compact size -->
-        <div class="flex-1 pointer-events-auto">
-          <div class="resource-display compact border-purple-500">
-            <span class="resource-icon">🎯</span>
-            <div class="resource-info">
-              <span class="resource-label">남은 턴</span>
-              <div class="flex items-center justify-between gap-2">
-                <span
-                  class="resource-value"
-                  :class="turnData.currentTurns < 20 ? 'text-red-400' : 'text-purple-300'"
-                >
-                  {{ turnData.currentTurns }}/{{ turnData.maxTurns }}
-                </span>
-                <span v-if="turnData.timeUntilNext && turnData.currentTurns < turnData.maxTurns" class="text-[10px] text-slate-400">
-                  {{ formatTimeUntilNext }}
-                </span>
-              </div>
             </div>
           </div>
         </div>
@@ -114,12 +93,14 @@
           label="식량"
           :value="resources.food"
           variant="compact"
+          @show-help="$emit('show-resource-help', 'food')"
         />
         <ResourceDisplay
           icon="💰"
           label="금"
           :value="resources.gold"
           variant="compact"
+          @show-help="$emit('show-resource-help', 'gold')"
         />
       </div>
 
@@ -130,12 +111,14 @@
           label="병사"
           :value="resources.soldiers"
           variant="compact"
+          @show-help="$emit('show-resource-help', 'soldiers')"
         />
         <ResourceDisplay
           icon="❤️"
           label="민심"
           :value="resources.morale"
           variant="compact"
+          @show-help="$emit('show-resource-help', 'morale')"
         />
       </div>
     </div>
@@ -155,23 +138,6 @@ interface TimerData {
   isExpired: boolean
 }
 
-interface TurnData {
-  currentTurns: number
-  maxTurns: number
-  timeUntilNext: {
-    days: number
-    hours: number
-    minutes: number
-    seconds: number
-  } | null
-  timeUntilFull: {
-    days: number
-    hours: number
-    minutes: number
-    seconds: number
-  } | null
-}
-
 interface CommandmentEffects {
   morale: number
   gold: number
@@ -183,7 +149,6 @@ interface CommandmentEffects {
 interface Props {
   resources: Resources
   timer: TimerData
-  turnData: TurnData
   currentDay: number
   reincarnationCount?: number
   commandmentEffects?: CommandmentEffects | null
@@ -194,9 +159,12 @@ const props = withDefaults(defineProps<Props>(), {
   commandmentEffects: null
 })
 
-// 주와 남은 일 계산
-const weeks = computed(() => Math.floor(props.timer.days / 7))
-const remainingDays = computed(() => props.timer.days % 7)
+type ResourceType = 'food' | 'gold' | 'morale' | 'soldiers'
+
+defineEmits<{
+  'show-resource-help': [type: ResourceType]
+}>()
+
 
 // 다음 제국 침략까지 남은 일수 계산
 const daysUntilInvasion = computed(() => {
@@ -211,20 +179,6 @@ const invasionWarning = computed(() => {
   if (daysUntilInvasion.value === 0) return '⚔️ 오늘 제국 침략!'
   if (daysUntilInvasion.value === 1) return '⚔️ 내일 제국 침략!'
   return `⚔️ ${daysUntilInvasion.value}일 후 제국 침략`
-})
-
-// 다음 턴까지 남은 시간 포맷
-const formatTimeUntilNext = computed(() => {
-  if (!props.turnData.timeUntilNext) return ''
-  const time = props.turnData.timeUntilNext
-
-  if (time.hours > 0) {
-    return `${time.hours}:${String(time.minutes).padStart(2, '0')}`
-  } else if (time.minutes > 0) {
-    return `${time.minutes}:${String(time.seconds).padStart(2, '0')}`
-  } else {
-    return `${time.seconds}초`
-  }
 })
 
 // 계명 효과가 있는지 확인

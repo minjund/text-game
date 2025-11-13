@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue'
-import type { Battle, BattleLog, General, Kingdom } from '../types/game'
+import type { Battle, BattleLog, Kingdom, General } from '../types/game'
 import { empireKingdom } from '../data/mockData'
 
 export interface BattleRecord extends Battle {
@@ -9,23 +9,22 @@ export interface BattleRecord extends Battle {
 
 interface UseBattleSystemOptions {
   kingdom: Ref<Kingdom>
-  generals: Ref<General[]>
   enemyKingdoms: any[]
   permanentEffects: Ref<any[]>
   empire: Ref<{ name: string; defeated: boolean; totalFortresses: number }>
   showNotification: (message: string, type: 'success' | 'error' | 'info') => void
-  showGenerals: Ref<boolean>
   synergyBattleEffects?: Ref<{ military: number; attackBonus: number; defenseBonus: number }>
   isWeeklyInvasion?: Ref<boolean>
   showReincarnationModal?: Ref<boolean>
 }
 
 export const useBattleSystem = (options: UseBattleSystemOptions) => {
-  const { kingdom, generals, enemyKingdoms, permanentEffects, empire, showNotification, showGenerals, synergyBattleEffects, isWeeklyInvasion, showReincarnationModal } = options
+  const { kingdom, enemyKingdoms, permanentEffects, empire, showNotification, synergyBattleEffects, isWeeklyInvasion, showReincarnationModal } = options
 
   // State
   const currentBattle = ref<Battle | null>(null)
   const battleType = ref<'pve' | 'pvp'>('pve')
+  const currentBattleMode = ref<'empire' | 'normal'>('normal') // 제국 전투 vs 일반 전투
   const battleRecords = ref<BattleRecord[]>([])
   const battleLogContainer = ref<HTMLElement | null>(null)
   const isScrolling = ref(false)
@@ -269,32 +268,59 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
   }
 
   // 스토리 기반 전투 시작
-  const startStoryBattle = async () => {
-    const assignedGenerals = generals.value.filter(g => g.assignedSoldiers > 0)
-
-    if (assignedGenerals.length === 0) {
-      showNotification('장수에게 병력을 배치해주세요!', 'error')
-      showGenerals.value = true
+  const startStoryBattle = async (mode: 'empire' | 'normal' = 'normal') => {
+    // 병력이 없으면 전투 불가
+    if (kingdom.value.resources.soldiers <= 0) {
+      showNotification('병력이 부족합니다!', 'error')
       return
     }
+
+    // 전투 모드 설정
+    currentBattleMode.value = mode
+
+    // 전투용 임시 지휘관 생성 (장수 시스템 제거로 인한 대체)
+    const battleCommander = {
+      id: 'battle-commander',
+      name: kingdom.value.ruler || '사령관',
+      title: '지휘관',
+      rarity: 'common' as const,
+      stats: {
+        power: 50,
+        intelligence: 50,
+        leadership: 50
+      },
+      skills: [
+        {
+          id: 'basic-attack',
+          name: '전군 돌격',
+          description: '전군이 일제히 돌격한다',
+          successRate: 65,
+          effect: {
+            type: 'damage',
+            value: 100
+          }
+        }
+      ],
+      assignedSoldiers: kingdom.value.resources.soldiers
+    }
+
+    const battleGenerals = [battleCommander]
 
     // 시너지 카드 전투 효과 적용 (병력 추가)
     if (synergyBattleEffects?.value?.military && synergyBattleEffects.value.military > 0) {
       // 임시로 첫 번째 장수에게 추가 병력 배치
-      const generalsWithBonus = assignedGenerals.map((g, index) => {
+      const generalsWithBonus = battleGenerals.map((g, index) => {
         if (index === 0) {
           return {
             ...g,
-            assignedSoldiers: g.assignedSoldiers + synergyBattleEffects.value.military,
-            // 원본 병력 저장 (전투 후 복원용)
-            _originalSoldiers: g.assignedSoldiers
+            assignedSoldiers: g.assignedSoldiers + synergyBattleEffects.value.military
           }
         }
         return g
       })
 
-      // 7일차 침략인 경우 제국군과 전투, 아니면 일반 적
-      const enemy = (isWeeklyInvasion && isWeeklyInvasion.value)
+      // 제국 전투 모드면 제국군, 아니면 일반 적
+      const enemy = mode === 'empire'
         ? empireKingdom
         : enemyKingdoms[Math.floor(Math.random() * enemyKingdoms.length)]
       const enemyName = enemy.name
@@ -314,8 +340,8 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
         result: undefined
       }
     } else {
-      // 7일차 침략인 경우 제국군과 전투, 아니면 일반 적
-      const enemy = (isWeeklyInvasion && isWeeklyInvasion.value)
+      // 제국 전투 모드면 제국군, 아니면 일반 적
+      const enemy = mode === 'empire'
         ? empireKingdom
         : enemyKingdoms[Math.floor(Math.random() * enemyKingdoms.length)]
       const enemyName = enemy.name
@@ -325,7 +351,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
         id: '1',
         attacker: {
           kingdomName: kingdom.value.name,
-          generals: assignedGenerals
+          generals: battleGenerals
         },
         defender: {
           kingdomName: enemyName,
@@ -341,19 +367,17 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
   }
 
   // 전투 타입 선택 (PVE 전용으로 간소화)
-  const selectBattleType = (type: 'pve' | 'pvp') => {
+  const selectBattleType = (type: 'pve' | 'pvp', mode: 'empire' | 'normal' = 'normal') => {
     battleType.value = 'pve' // 항상 PVE로 고정
 
-    const assignedGenerals = generals.value.filter(g => g.assignedSoldiers > 0)
-
-    if (assignedGenerals.length === 0) {
-      showNotification('장수에게 병력을 배치해주세요!', 'error')
-      showGenerals.value = true
+    // 병력이 없으면 전투 불가
+    if (kingdom.value.resources.soldiers <= 0) {
+      showNotification('병력이 부족합니다!', 'error')
       return
     }
 
     // PVE 전투 시작
-    startStoryBattle()
+    startStoryBattle(mode)
   }
 
   // 텍스트 클래스 판별 (아군/적군/나레이션)
@@ -380,14 +404,9 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
       saveBattleRecord(currentBattle.value)
     }
 
-    // 배치된 병력 소모
-    generals.value.forEach(g => {
-      if (g.assignedSoldiers > 0) {
-        const casualty = Math.floor(g.assignedSoldiers * 0.3)
-        kingdom.value.resources.soldiers -= casualty
-        g.assignedSoldiers = 0
-      }
-    })
+    // 전투 병력 손실 (전체 병력의 30%)
+    const casualty = Math.floor(kingdom.value.resources.soldiers * 0.3)
+    kingdom.value.resources.soldiers = Math.max(0, kingdom.value.resources.soldiers - casualty)
 
     currentBattle.value = null
   }
@@ -398,14 +417,10 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
       kingdom.value.resources.gold += 500
       kingdom.value.resources.food += 300
 
-      // 7일차 침략 전투인 경우 제국 정복 여부 결정
-      if (isWeeklyInvasion && isWeeklyInvasion.value) {
-        // 제국과의 전투에서 승리 - 한 번에 제국 정복!
+      // 제국 전투 승리
+      if (currentBattleMode.value === 'empire') {
         empire.value.defeated = true
         showNotification('🎉 아카샤 대제국을 무너뜨렸습니다! 당신의 왕국이 승리했습니다! 🎉', 'success')
-
-        // 7일차 침략 플래그 초기화
-        isWeeklyInvasion.value = false
 
         // 환생 모달 표시
         if (showReincarnationModal) {
@@ -415,22 +430,21 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
         }
       } else {
         // 일반 전투 승리
-        showNotification('제국군 선봉대를 물리쳤습니다!', 'success')
+        showNotification('전투에서 승리했습니다!', 'success')
       }
     } else {
-      // 패배 처리 - 모든 침략 전투 패배 시 환생
-      setTimeout(() => {
-        showNotification('💀 침략군을 막지 못했습니다. 왕국이 멸망했습니다...', 'error')
-        // 환생 모달 표시
-        if (showReincarnationModal) {
-          setTimeout(() => {
-            if (isWeeklyInvasion) {
-              isWeeklyInvasion.value = false
-            }
-            showReincarnationModal.value = true
-          }, 2000)
-        }
-      }, 1000)
+      // 패배 처리
+      if (currentBattleMode.value === 'empire') {
+        // 제국 전투 패배 - 멸망 (환생 모달은 사용자가 전투 모달을 닫을 때 표시)
+        setTimeout(() => {
+          showNotification('💀 제국군을 막지 못했습니다. 왕국이 멸망했습니다...', 'error')
+        }, 1000)
+      } else {
+        // 일반 전투 패배 - 병사만 손실
+        setTimeout(() => {
+          showNotification('전투에서 패배했습니다. 병력을 잃었습니다.', 'error')
+        }, 1000)
+      }
     }
   }
 
@@ -438,6 +452,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     // State
     currentBattle,
     battleType,
+    currentBattleMode,
     battleRecords,
     battleLogContainer,
     isScrolling,

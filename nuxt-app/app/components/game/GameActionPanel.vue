@@ -1,14 +1,6 @@
 <template>
   <div class="w-80 space-y-3">
     <ActionButton
-      icon="👥"
-      title="장수 관리"
-      description="장수를 확인하고 병력을 배치합니다"
-      variant="info"
-      @click="$emit('show-generals')"
-    />
-
-    <ActionButton
       icon="✨"
       title="신의 계명"
       description="신이 내린 계명을 확인합니다"
@@ -34,10 +26,10 @@
 
     <ActionButton
       icon="⚔️"
-      title="제국 침략"
-      description="제국의 요새를 공격합니다"
-      variant="danger"
-      @click="$emit('start-battle')"
+      title="일반 전투"
+      description="적 세력과 전투를 벌입니다"
+      variant="success"
+      @click="$emit('start-normal-battle')"
     />
 
     <ActionButton
@@ -66,7 +58,7 @@ defineEmits<{
   'show-commandments': []
   'show-passive-cards': []
   'show-card-guide': []
-  'start-battle': []
+  'start-normal-battle': []
   'next-day': []
   'recruit-soldiers': []
 }>()

@@ -10,33 +10,61 @@
       </div>
 
       <div class="flex items-center gap-6">
-        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2">
+        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2 relative group">
           <span class="text-2xl">🍖</span>
           <div>
             <p class="text-xs text-slate-400">식량</p>
             <p class="text-lg font-bold">{{ resources.food }}</p>
           </div>
+          <button
+            @click="$emit('show-resource-help', 'food')"
+            class="absolute -top-1 -right-1 w-5 h-5 bg-green-600 hover:bg-green-500 rounded-full text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            title="식량 도움말"
+          >
+            ?
+          </button>
         </div>
-        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2">
+        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2 relative group">
           <span class="text-2xl">💰</span>
           <div>
             <p class="text-xs text-slate-400">금화</p>
             <p class="text-lg font-bold">{{ resources.gold }}</p>
           </div>
+          <button
+            @click="$emit('show-resource-help', 'gold')"
+            class="absolute -top-1 -right-1 w-5 h-5 bg-yellow-600 hover:bg-yellow-500 rounded-full text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            title="금 도움말"
+          >
+            ?
+          </button>
         </div>
-        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2">
+        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2 relative group">
           <span class="text-2xl">⚔️</span>
           <div>
             <p class="text-xs text-slate-400">병사</p>
             <p class="text-lg font-bold">{{ resources.soldiers }}</p>
           </div>
+          <button
+            @click="$emit('show-resource-help', 'soldiers')"
+            class="absolute -top-1 -right-1 w-5 h-5 bg-red-600 hover:bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            title="병사 도움말"
+          >
+            ?
+          </button>
         </div>
-        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2">
+        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2 relative group">
           <span class="text-2xl">❤️</span>
           <div>
             <p class="text-xs text-slate-400">사기</p>
             <p class="text-lg font-bold">{{ resources.morale }}</p>
           </div>
+          <button
+            @click="$emit('show-resource-help', 'morale')"
+            class="absolute -top-1 -right-1 w-5 h-5 bg-pink-600 hover:bg-pink-500 rounded-full text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            title="민심 도움말"
+          >
+            ?
+          </button>
         </div>
       </div>
     </div>
@@ -46,6 +74,8 @@
 <script setup lang="ts">
 import type { Resources } from '~/composables/useGameResources'
 
+type ResourceType = 'food' | 'gold' | 'morale' | 'soldiers'
+
 interface Props {
   kingdomName: string
   day: number
@@ -53,4 +83,8 @@ interface Props {
 }
 
 defineProps<Props>()
+
+defineEmits<{
+  'show-resource-help': [type: ResourceType]
+}>()
 </script>

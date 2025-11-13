@@ -14,30 +14,31 @@
 
     <!-- Mobile Top Resources (Fixed) -->
     <GameMobileResources
+      v-if="!adventureState.active"
       :resources="kingdom.resources"
       :timer="remainingTime"
-      :turn-data="turnData"
       :current-day="kingdom.day"
       :reincarnation-count="reincarnationData.count"
       :commandment-effects="commandmentEffects"
+      @show-resource-help="handleShowResourceHelp"
     />
 
     <!-- Desktop Header -->
     <GameDesktopHeader
+      v-if="!adventureState.active"
       :kingdom-name="kingdom.name"
       :day="kingdom.day"
       :resources="kingdom.resources"
+      @show-resource-help="handleShowResourceHelp"
     />
 
     <!-- Desktop Main Content -->
-    <div class="hidden md:flex flex-1 max-w-7xl mx-auto w-full p-8 gap-8">
+    <div v-if="!adventureState.active" class="hidden md:flex flex-1 max-w-7xl mx-auto w-full p-8 gap-8">
       <!-- Left Sidebar - Stats -->
       <GameLeftSidebar
         :timer="remainingTime"
-        :turn-data="turnData"
         :current-day="kingdom.day"
         :commandment-effects="commandmentEffects"
-        @recharge-all-turns="rechargeAllTurns"
       />
 
       <!-- Center - Main Game Area with Character -->
@@ -48,11 +49,10 @@
           <!-- Right Sidebar - Actions -->
       <GameActionPanel
         :unlocked-features="tutorialState.unlockedFeatures"
-        @show-generals="showGenerals = true"
         @show-commandments="showCommandments = true"
         @show-passive-cards="showPassiveCardsCollection = true"
         @show-card-guide="showSynergyGuide = true"
-        @start-battle="selectBattleType('pve')"
+        @start-normal-battle="startAdventure"
         @next-day="handleNextDay"
         @recruit-soldiers="recruitSoldiers"
       />
@@ -65,25 +65,16 @@
 
     <!-- Mobile Bottom Action Buttons (Fixed) -->
     <GameMobileActions
+      v-if="!adventureState.active"
       :unlocked-features="tutorialState.unlockedFeatures"
-      @show-generals="showGenerals = true"
       @show-commandments="showCommandments = true"
       @show-passive-cards="showPassiveCardsCollection = true"
       @show-card-guide="showSynergyGuide = true"
-      @start-battle="selectBattleType('pve')"
+      @start-normal-battle="startAdventure"
       @next-day="handleNextDay"
       @recruit-soldiers="recruitSoldiers"
     />
 
-    <!-- Generals Modal -->
-    <GameGeneralsModal
-      :show="showGenerals"
-      :generals="generals"
-      :max-soldiers="kingdom.resources.soldiers"
-      @close="handleCloseGeneralsModal"
-      @dismiss-general="dismissGeneral"
-      @assign-soldiers="handleAssignSoldiers"
-    />
 
     <!-- Event Card Modal -->
     <GameEventModal
@@ -175,6 +166,13 @@
       @close="showSynergyGuide = false"
     />
 
+    <!-- Resource Help Modal -->
+    <GameResourceHelp
+      :show="showResourceHelp"
+      :resource-type="selectedResourceType"
+      @close="showResourceHelp = false"
+    />
+
     <!-- Daily Card Exchange Modal -->
     <GameDailyCardExchange
       :show="showDailyCardExchange"
@@ -184,6 +182,32 @@
       @skip="handleSkipDailyExchange"
       @exchange="handleCardExchange"
       @add="handleAddDailyCard"
+    />
+
+    <!-- Adventure Map -->
+    <GameAdventureMap
+      v-if="adventureState.active"
+      :nodes="adventureState.nodes"
+      :current-node-id="adventureState.currentNodeId"
+      :accumulated-rewards="adventureState.accumulatedRewards"
+      @node-click="handleAdventureNodeClick"
+      @retreat="retreatAdventure"
+    />
+
+    <!-- Adventure Shop Modal -->
+    <GameAdventureShop
+      :show="showAdventureShop"
+      :current-gold="kingdom.resources.gold"
+      :current-food="kingdom.resources.food"
+      @close="() => { showAdventureShop = false; if (currentNode) moveToNode(currentNode.id) }"
+      @buy="handleAdventureShopBuy"
+    />
+
+    <!-- Adventure Rest Modal -->
+    <GameAdventureRest
+      :show="showAdventureRest"
+      @close="showAdventureRest = false"
+      @select="handleAdventureRestSelect"
     />
 
     <!-- Notification -->
@@ -233,19 +257,21 @@ import GameSynergyCardSelection from '~/components/game/GameSynergyCardSelection
 import GameSynergyCollection from '~/components/game/GameSynergyCollection.vue'
 import GameSynergyGuide from '~/components/game/GameSynergyGuide.vue'
 import GameDailyCardExchange from '~/components/game/GameDailyCardExchange.vue'
+import GameResourceHelp from '~/components/game/GameResourceHelp.vue'
+import GameAdventureMap from '~/components/game/GameAdventureMap.vue'
+import GameAdventureShop from '~/components/game/GameAdventureShop.vue'
+import GameAdventureRest from '~/components/game/GameAdventureRest.vue'
 
 // Composables
 import { useNotification } from '~/composables/useNotification'
-import { useRealTimeGameTimer } from '~/composables/useRealTimeGameTimer'
-import { useTurnSystem } from '~/composables/useTurnSystem'
 import { useTutorial } from '~/composables/useTutorial'
 import { useGameKingdom } from '~/composables/useGameKingdom'
-import { useGameGenerals } from '~/composables/useGameGenerals'
 import { useGamePassiveCards } from '~/composables/useGamePassiveCards'
 import { useGameReincarnation } from '~/composables/useGameReincarnation'
 import { useBattleSystem } from '~/composables/useBattleSystem'
 import { useEventSystem } from '~/composables/useEventSystem'
 import { useSynergyCards } from '~/composables/useSynergyCards'
+import { useAdventureSystem } from '~/composables/useAdventureSystem'
 
 // 신 게임 상태 가져오기
 const { nationState: godGameState, startCards: godStartCards } = useGodGame()
@@ -274,34 +300,17 @@ const {
 const showAdvisorModal = ref(false)
 const currentAdvisorMessage = ref<any>(null)
 
-// 게임 타이머
-const {
-  gameStartTime,
-  gameEndTime,
-  remainingTime,
-  currentWeek,
-  elapsedDays,
-  shouldInvadeThisWeek,
-  markInvasionOccurred
-} = useRealTimeGameTimer()
-
-// 턴 시스템
-const {
-  currentTurns,
-  maxTurns,
-  formattedTimeUntilNext,
-  formattedTimeUntilFull,
-  useTurn,
-  rechargeAllTurns
-} = useTurnSystem()
-
-// 턴 데이터 (GameLeftSidebar에 전달)
-const turnData = computed(() => ({
-  currentTurns: currentTurns.value,
-  maxTurns: maxTurns,
-  timeUntilNext: formattedTimeUntilNext.value,
-  timeUntilFull: formattedTimeUntilFull.value
-}))
+// 게임 타이머 (게임 일수 기반)
+const remainingTime = computed(() => {
+  const daysLeft = Math.max(0, 42 - kingdom.value.day)
+  return {
+    days: daysLeft,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    isExpired: daysLeft === 0
+  }
+})
 
 // 계명 효과 계산 (일일 변동사항)
 const commandmentEffects = computed(() => {
@@ -369,12 +378,6 @@ const recruitSoldiers = () => {
   tutorialOnRecruitSoldiers()
 }
 
-// 장수 관리
-const { generals, showGenerals, generateRandomGeneral, assignSoldiers, unassignSoldiers, dismissGeneral } = useGameGenerals(
-  kingdom,
-  showNotification
-)
-
 // 패시브 카드 컬렉션 모달
 const showPassiveCardsCollection = ref(false)
 
@@ -391,6 +394,16 @@ const availableDailyCards = ref<PassiveCard[]>([])
 // 신의 계명 모달
 const showCommandments = ref(false)
 
+// 자원 도움말 모달
+const showResourceHelp = ref(false)
+const selectedResourceType = ref<'food' | 'gold' | 'morale' | 'soldiers' | null>(null)
+
+// 자원 도움말 핸들러
+const handleShowResourceHelp = (type: 'food' | 'gold' | 'morale' | 'soldiers') => {
+  selectedResourceType.value = type
+  showResourceHelp.value = true
+}
+
 // 환생 시스템
 const {
   showReincarnationModal,
@@ -401,7 +414,6 @@ const {
   reincarnateWithoutCard
 } = useGameReincarnation(
   kingdom,
-  generals,
   playerPassiveCards,
   godGameState,
   showNotification
@@ -411,6 +423,24 @@ const {
 if (process.client) {
   loadReincarnationData()
 }
+
+// 모험 시스템
+const {
+  adventureState,
+  currentNode,
+  availableNodes,
+  startAdventure,
+  moveToNode,
+  completeNode,
+  completeAdventure,
+  retreatAdventure,
+  failAdventure,
+  NODE_INFO
+} = useAdventureSystem(kingdom.value.resources, showNotification)
+
+// 모험 관련 모달 상태
+const showAdventureShop = ref(false)
+const showAdventureRest = ref(false)
 
 // ==================== PVP 관련 State - 주석 처리됨 ====================
 // 멀티플레이 상태
@@ -461,20 +491,45 @@ const {
   generateActionNarration,
   generateDialogue,
   getTextClass,
-  closeBattle,
-  handleBattleEnd
+  closeBattle: closeBattleInternal,
+  handleBattleEnd,
+  currentBattleMode
 } = useBattleSystem({
   kingdom,
-  generals,
   enemyKingdoms,
   permanentEffects,
   empire,
   showNotification,
-  showGenerals,
   synergyBattleEffects,
   isWeeklyInvasion,
   showReincarnationModal
 })
+
+// 전투 종료 처리 (제국 전투 패배 시에만 환생 모달 표시)
+const closeBattle = () => {
+  // 전투 결과 및 모드 확인
+  const battleResult = currentBattle.value?.result
+  const battleMode = currentBattleMode.value
+
+  // 기존 closeBattle 로직 실행
+  closeBattleInternal()
+
+  // 모험 모드인 경우
+  if (adventureState.value.active) {
+    handleAdventureBattleEnd(battleResult as 'victory' | 'defeat')
+    return
+  }
+
+  // 제국 전투 패배한 경우에만 환생 모달 표시
+  if (battleResult === 'defeat' && battleMode === 'empire') {
+    setTimeout(() => {
+      if (isWeeklyInvasion) {
+        isWeeklyInvasion.value = false
+      }
+      showReincarnationModal.value = true
+    }, 500)
+  }
+}
 
 // 게임 시작시 전투 기록 불러오기
 loadBattleRecords()
@@ -505,7 +560,6 @@ const {
   closeCrossroad
 } = useEventSystem({
   kingdom,
-  generals,
   playerPassiveCards,
   showPassiveCardSelection,
   availablePassiveCards,
@@ -514,26 +568,11 @@ const {
   showReincarnationModal,
   showNotification,
   calculateProduction,
-  generateRandomGeneral,
   synergyDailyEffects,
   godGameState
 })
 
-// 현실 시간 기반 7일마다 제국 침략 감시
-watch(shouldInvadeThisWeek, (shouldInvade) => {
-  if (shouldInvade && process.client) {
-    // 침략 발생
-    const week = currentWeek.value
-    showNotification(`⚔️ ${week}주차! 제국군이 전면 침략해옵니다!`, 'error')
-
-    // 7일차 침략 플래그 설정
-    isWeeklyInvasion.value = true
-    selectBattleType('pve')
-
-    // 침략 발생 기록
-    markInvasionOccurred(week)
-  }
-}, { immediate: true })
+// 게임 일수 기반 침략으로 변경 (handleNextDay에서 처리)
 
 // 환생 모달이 열릴 때 랜덤 카드 3장 생성
 watch(showReincarnationModal, (isOpen) => {
@@ -564,25 +603,167 @@ const closeAdvisorModal = () => {
   currentAdvisorMessage.value = null
 }
 
-// 장수 관리 모달 닫기
-const handleCloseGeneralsModal = () => {
-  showGenerals.value = false
+// ==================== 모험 시스템 핸들러 ====================
+// 모험 노드 클릭 처리
+const handleAdventureNodeClick = (node: any) => {
+  console.log('Node clicked:', node.type, node)
 
-  // 튜토리얼: 장수에게 병력이 배치되었는지 확인
-  const hasAssignedSoldiers = generals.value.some(g => g.assignedSoldiers > 0)
-  if (hasAssignedSoldiers) {
-    tutorialOnAssignGenerals()
+  switch (node.type) {
+    case 'start':
+      // 시작 노드는 자동으로 다음으로 이동
+      moveToNode(node.id)
+      break
+
+    case 'battle':
+    case 'elite':
+    case 'boss':
+      // 전투 시작 (전투 후 handleAdventureBattleEnd에서 노드 이동)
+      if (node.enemy) {
+        startStoryBattle(
+          node.enemy.name,
+          node.enemy.power,
+          node.type === 'boss' ? 'empire' : 'normal'
+        )
+      }
+      break
+
+    case 'event':
+      // 랜덤 이벤트 발생 (다음날 기능과 동일)
+      const cardEventChance = Math.random()
+      if (cardEventChance < 0.1) { // 10% 확률로 카드 교환 이벤트
+        availableDailyCards.value = drawRandomCards(3)
+        showDailyCardExchange.value = true
+      } else {
+        // 일반 이벤트 발생
+        drawEventCard()
+      }
+      moveToNode(node.id)
+      break
+
+    case 'shop':
+      // 상점 모달 열기
+      showAdventureShop.value = true
+      break
+
+    case 'rest':
+      // 휴식처 모달 열기
+      showAdventureRest.value = true
+      break
+
+    case 'treasure':
+      // 보물 즉시 지급
+      const treasureReward = {
+        gold: Math.floor(Math.random() * 300) + 200, // 200~500
+        food: Math.floor(Math.random() * 200) + 100, // 100~300
+        cards: drawRandomCards(1)
+      }
+      completeNode(treasureReward)
+      showNotification(
+        `💎 보물 발견! 금 +${treasureReward.gold}, 식량 +${treasureReward.food}`,
+        'success'
+      )
+      moveToNode(node.id)
+      break
   }
 }
 
-// 장수 병력 배치/회수
-const handleAssignSoldiers = (generalId: string, amount: number) => {
-  if (amount > 0) {
-    // 병력 배치
-    assignSoldiers(generalId, amount)
-  } else if (amount < 0) {
-    // 병력 회수
-    unassignSoldiers(generalId, Math.abs(amount))
+// 상점 구매 처리
+const handleAdventureShopBuy = (itemType: 'soldiers' | 'food' | 'card' | 'heal') => {
+  switch (itemType) {
+    case 'soldiers':
+      if (kingdom.value.resources.gold >= 400) {
+        kingdom.value.resources.gold -= 400
+        kingdom.value.resources.soldiers += 200
+        showNotification('병사 200명 모집!', 'success')
+      }
+      break
+
+    case 'food':
+      if (kingdom.value.resources.gold >= 200) {
+        kingdom.value.resources.gold -= 200
+        kingdom.value.resources.food += 500
+        showNotification('식량 500 구매!', 'success')
+      }
+      break
+
+    case 'card':
+      if (kingdom.value.resources.gold >= 300) {
+        kingdom.value.resources.gold -= 300
+        // 카드 선택 모달 표시
+        showPassiveCardSelection.value = true
+        showNotification('카드를 선택하세요!', 'info')
+      }
+      break
+
+    case 'heal':
+      if (kingdom.value.resources.food >= 200) {
+        kingdom.value.resources.food -= 200
+        const healAmount = Math.floor(adventureState.value.startingResources.soldiers * 0.1)
+        kingdom.value.resources.soldiers += healAmount
+        showNotification(`병력 ${healAmount}명 회복!`, 'success')
+      }
+      break
+  }
+}
+
+// 휴식처 선택 처리
+const handleAdventureRestSelect = (option: 'heal' | 'remove-card' | 'meditate') => {
+  switch (option) {
+    case 'heal':
+      const healAmount = Math.floor(adventureState.value.startingResources.soldiers * 0.2)
+      kingdom.value.resources.soldiers += healAmount
+      showNotification(`🏕️ 휴식으로 병력 ${healAmount}명 회복!`, 'success')
+      break
+
+    case 'remove-card':
+      // TODO: 카드 제거 모달 표시 (나중에 구현)
+      showNotification('🗑️ 카드 정리 기능은 준비 중입니다', 'info')
+      break
+
+    case 'meditate':
+      const randomGold = Math.floor(Math.random() * 200) + 100 // 100~300
+      const randomFood = Math.floor(Math.random() * 150) + 50 // 50~200
+      kingdom.value.resources.gold += randomGold
+      kingdom.value.resources.food += randomFood
+      showNotification(`🧘 명상... 금 +${randomGold}, 식량 +${randomFood}`, 'success')
+      break
+  }
+
+  showAdventureRest.value = false
+  if (currentNode.value) {
+    moveToNode(currentNode.value.id)
+  }
+}
+
+// 모험 전투 종료 후 처리
+const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
+  if (!currentNode.value || !currentNode.value.enemy) return
+
+  if (result === 'victory') {
+    // 보상 지급
+    completeNode(currentNode.value.enemy.rewards)
+    showNotification(
+      `승리! 금 +${currentNode.value.enemy.rewards.gold}, 식량 +${currentNode.value.enemy.rewards.food}`,
+      'success'
+    )
+
+    // 카드 보상이 있으면 카드 선택 모달 표시
+    if (currentNode.value.enemy.rewards.cards && currentNode.value.enemy.rewards.cards.length > 0) {
+      availablePassiveCards.value = currentNode.value.enemy.rewards.cards
+      showPassiveCardSelection.value = true
+    }
+
+    // 보스 처치 시 모험 완료
+    if (currentNode.value.type === 'boss') {
+      completeAdventure()
+      return
+    }
+
+    // 다음 노드로 이동 가능하게 만들기
+    moveToNode(currentNode.value.id)
+  } else {
+    // 패배
+    failAdventure()
   }
 }
 
@@ -593,7 +774,6 @@ const resetToZero = () => {
     localStorage.removeItem('reincarnationData')
     localStorage.removeItem('gameData')
     localStorage.removeItem('passiveCards')
-    localStorage.removeItem('turnSystemState')
     localStorage.removeItem('gameStartTime')
     localStorage.removeItem('tutorialState')
     localStorage.removeItem('synergyCards')
@@ -607,63 +787,67 @@ const resetToZero = () => {
   }
 }
 
-// 다음 날 진행 핸들러 (턴 소모 + 튜토리얼)
+// 다음 날 진행 핸들러
 const handleNextDay = () => {
-  // 턴 체크
-  if (currentTurns.value <= 0) {
-    showNotification('턴이 부족합니다! 시간이 지나면 턴이 회복됩니다.', 'error')
+  // 튜토리얼 이벤트 체크
+  const tutorialEvent = advanceDay(kingdom.value.day + 1)
+  if (tutorialEvent) {
+    // 조언자 모달 표시
+    showAdvisorMessage(tutorialEvent)
     return
   }
 
-  // 턴 소모
-  if (useTurn()) {
-    showNotification(`턴을 1 소모했습니다. (남은 턴: ${currentTurns.value})`, 'info')
+  // 제국 침략 체크 (다음 날짜가 7일마다: 7, 14, 21, 28, 35일)
+  const nextDay = kingdom.value.day + 1
+  if (nextDay % 7 === 0 && nextDay > 0 && nextDay < 42) {
+    // 먼저 day를 증가시킴
+    kingdom.value.day++
 
-    // 튜토리얼 이벤트 체크
-    const tutorialEvent = advanceDay(kingdom.value.day + 1)
-    if (tutorialEvent) {
-      // 조언자 모달 표시
-      showAdvisorMessage(tutorialEvent)
-      return
-    }
+    const weekNumber = kingdom.value.day / 7
+    showNotification(`⚔️ ${weekNumber}주차! 제국군이 전면 침략해옵니다!`, 'error')
 
-    // 42일 도달 시 최종 체크 (현실 시간 기반)
-    if (elapsedDays.value >= 42) {
-      if (empire.value?.defeated) {
-        showNotification('🎉 축하합니다! 아카샤 대제국을 무너뜨렸습니다!', 'success')
-        // 환생 모달 표시
-        setTimeout(() => {
-          showReincarnationModal.value = true
-        }, 2000)
-      } else {
-        showNotification('😢 시간 초과! 제국을 무너뜨리지 못했습니다...', 'error')
-        // 환생 모달 표시
-        setTimeout(() => {
-          showReincarnationModal.value = true
-        }, 2000)
-      }
-      return
-    }
+    // 침략 플래그 설정
+    isWeeklyInvasion.value = true
+    selectBattleType('pve', 'empire')
+    return
+  }
 
-    // 25일마다 시너지 카드 선택 (100일 제외)
-    if ((kingdom.value.day + 1) % 25 === 0 && kingdom.value.day + 1 !== 100) {
-      // 먼저 하루를 진행
-      drawEventCard()
-      // 시너지 카드 선택 모달 표시
-      drawSynergyCards()
-      showNotification('🎴 25일이 지났습니다! 시너지 카드를 선택하세요!', 'info')
-      return
-    }
-
-    // 일반 날짜: 랜덤으로 카드 교환 이벤트 또는 일반 이벤트
-    const cardEventChance = Math.random()
-    if (cardEventChance < 0.1) { // 10% 확률로 카드 교환 이벤트 발생
-      availableDailyCards.value = drawRandomCards(3)
-      showDailyCardExchange.value = true
+  // 42일 도달 시 최종 체크 (게임 일수 기반)
+  if (kingdom.value.day >= 42) {
+    if (empire.value?.defeated) {
+      showNotification('🎉 축하합니다! 아카샤 대제국을 무너뜨렸습니다!', 'success')
+      // 환생 모달 표시
+      setTimeout(() => {
+        showReincarnationModal.value = true
+      }, 2000)
     } else {
-      // 일반 이벤트 카드 뽑기
-      drawEventCard()
+      showNotification('😢 시간 초과! 제국을 무너뜨리지 못했습니다...', 'error')
+      // 환생 모달 표시
+      setTimeout(() => {
+        showReincarnationModal.value = true
+      }, 2000)
     }
+    return
+  }
+
+  // 25일마다 시너지 카드 선택 (100일 제외)
+  if (kingdom.value.day % 25 === 0 && kingdom.value.day > 0 && kingdom.value.day !== 100) {
+    // 먼저 하루를 진행
+    drawEventCard()
+    // 시너지 카드 선택 모달 표시
+    drawSynergyCards()
+    showNotification('🎴 25일이 지났습니다! 시너지 카드를 선택하세요!', 'info')
+    return
+  }
+
+  // 일반 날짜: 랜덤으로 카드 교환 이벤트 또는 일반 이벤트
+  const cardEventChance = Math.random()
+  if (cardEventChance < 0.1) { // 10% 확률로 카드 교환 이벤트 발생
+    availableDailyCards.value = drawRandomCards(3)
+    showDailyCardExchange.value = true
+  } else {
+    // 일반 이벤트 카드 뽑기
+    drawEventCard()
   }
 }
 

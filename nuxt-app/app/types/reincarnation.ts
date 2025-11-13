@@ -8,6 +8,7 @@ export interface ReincarnationData {
   totalDaysPlayed: number // 총 플레이한 일수
   highestDay: number // 최고 도달 일수
   bonuses: ReincarnationBonus[] // 환생 보너스
+  kingdomName?: string // 왕국 이름 (환생 시 유지)
 }
 
 // 환생 보너스

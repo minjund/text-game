@@ -257,12 +257,14 @@ const { setNationName, setSelectedCommandments, setStartCards, initializeNation 
 
 // 환생 데이터 불러오기
 const reincarnationCount = ref(0)
+const savedKingdomName = ref('')
 if (process.client) {
   const savedData = localStorage.getItem('reincarnationData')
   if (savedData) {
     try {
       const data = JSON.parse(savedData)
       reincarnationCount.value = data.count || 0
+      savedKingdomName.value = data.kingdomName || ''
     } catch (e) {
       console.error('환생 데이터 로드 실패:', e)
     }
@@ -334,7 +336,7 @@ const startCardOptions = computed(() => {
 // 선택지 표시 여부
 const showPathChoices = computed(() => {
   const chapterId = currentChapter.value?.id
-  return chapterId === 'choice_intro'
+  return chapterId === 'choice_intro' || chapterId === 'reborn_choice_intro'
 })
 
 // 세부 선택지 표시 여부 (각 이벤트 선택)
@@ -348,13 +350,37 @@ const showLocationChoices = computed(() => {
           chapterId === 'path_military_choice_3' ||
           chapterId === 'path_market_choice_1' ||
           chapterId === 'path_market_choice_2' ||
-          chapterId === 'path_market_choice_3'
+          chapterId === 'path_market_choice_3' ||
+          // 환생 스토리 선택지들
+          chapterId === 'reborn_library_choice_1' ||
+          chapterId === 'reborn_library_choice_2' ||
+          chapterId === 'reborn_library_choice_3' ||
+          chapterId === 'reborn_training_choice_1' ||
+          chapterId === 'reborn_training_choice_2' ||
+          chapterId === 'reborn_training_choice_3' ||
+          chapterId === 'reborn_treasury_choice_1' ||
+          chapterId === 'reborn_treasury_choice_2' ||
+          chapterId === 'reborn_treasury_choice_3'
 })
 
-// 왕국 이름 입력 표시 여부 (chapter5 또는 nation_name)
+// 왕국 이름 입력 표시 여부 (chapter5 또는 nation_name, 단 환생 시 이미 이름이 있으면 건너뛰기)
 const showNationNameInput = computed(() => {
   const chapterId = currentChapter.value?.id
-  return chapterId === 'chapter5' || chapterId === 'nation_name'
+  const needsInput = chapterId === 'chapter5' || chapterId === 'nation_name'
+
+  // 환생 시 이미 왕국 이름이 있으면 입력 건너뛰기
+  if (needsInput && reincarnationCount.value > 0 && savedKingdomName.value) {
+    // 자동으로 저장된 이름 사용하고 다음 챕터로 진행
+    if (!localNationName.value) {
+      localNationName.value = savedKingdomName.value
+      setTimeout(() => {
+        confirmNationName()
+      }, 500)
+    }
+    return false
+  }
+
+  return needsInput
 })
 
 // 계명 선택 섹션 표시 여부 (commandments 챕터에 도달했을 때)
@@ -371,6 +397,18 @@ const showCardSelection = computed(() => {
 
 // 사용 가능한 경로
 const availablePaths = computed(() => {
+  const chapterId = currentChapter.value?.id
+
+  // 환생 스토리의 경로
+  if (chapterId === 'reborn_choice_intro') {
+    return [
+      { id: 'library', name: '기억의 서재', icon: '📚' },
+      { id: 'training', name: '훈련장 회상', icon: '⚔️' },
+      { id: 'treasury', name: '왕실 보물고', icon: '💎' }
+    ]
+  }
+
+  // 기존 튜토리얼 스토리의 경로
   return [
     { id: 'admin', name: '행정실', icon: '📜' },
     { id: 'military', name: '훈련장', icon: '⚔️' },
@@ -431,6 +469,57 @@ const locationChoices = computed(() => {
     return [
       { id: 'success', name: '금화를 잡는다', icon: '💰', description: '금화 주머니를 잡는다' },
       { id: 'fail', name: '땅에 넘어진다', icon: '💨', description: '그냥 땅바닥에 넘어진다' }
+    ]
+  }
+  // 환생 스토리 - 서재 이벤트들
+  else if (chapterId === 'reborn_library_choice_1') {
+    return [
+      { id: 'success', name: '빛나는 책을 잡는다', icon: '✨', description: '빛을 발하는 책을 재빨리 잡는다' },
+      { id: 'fail', name: '두꺼운 책을 잡는다', icon: '📖', description: '두꺼운 책을 먼저 잡는다' }
+    ]
+  } else if (chapterId === 'reborn_library_choice_2') {
+    return [
+      { id: 'success', name: '빛나는 두루마리', icon: '✨', description: '빛을 발하는 두루마리를 선택한다' },
+      { id: 'fail', name: '평범한 두루마리', icon: '📜', description: '평범해 보이는 두루마리를 선택한다' }
+    ]
+  } else if (chapterId === 'reborn_library_choice_3') {
+    return [
+      { id: 'success', name: '빛나는 길을 따라간다', icon: '💫', description: '빛나는 쪽 지도를 따라간다' },
+      { id: 'fail', name: '어두운 길을 따라간다', icon: '🌑', description: '어두운 쪽 지도를 따라간다' }
+    ]
+  }
+  // 환생 스토리 - 훈련장 이벤트들
+  else if (chapterId === 'reborn_training_choice_1') {
+    return [
+      { id: 'success', name: '조심스럽게 든다', icon: '⚔️', description: '천천히 조심스럽게 검을 든다' },
+      { id: 'fail', name: '단번에 들어올린다', icon: '💥', description: '빠르게 검을 들어올린다' }
+    ]
+  } else if (chapterId === 'reborn_training_choice_2') {
+    return [
+      { id: 'success', name: '계속 관찰한다', icon: '👁️', description: '계속 대련을 관찰한다' },
+      { id: 'fail', name: '도와주러 간다', icon: '🤝', description: '넘어진 병사를 도와준다' }
+    ]
+  } else if (chapterId === 'reborn_training_choice_3') {
+    return [
+      { id: 'success', name: '조사만 한다', icon: '🔍', description: '갑옷을 조심스럽게 조사한다' },
+      { id: 'fail', name: '입어본다', icon: '🛡️', description: '갑옷을 직접 입어본다' }
+    ]
+  }
+  // 환생 스토리 - 보물고 이벤트들
+  else if (chapterId === 'reborn_treasury_choice_1') {
+    return [
+      { id: 'success', name: '함정을 해체한다', icon: '🔧', description: '천천히 함정을 해체하고 연다' },
+      { id: 'fail', name: '빠르게 연다', icon: '⚡', description: '급하게 상자를 연다' }
+    ]
+  } else if (chapterId === 'reborn_treasury_choice_2') {
+    return [
+      { id: 'success', name: '작은 표시를 따라간다', icon: '🔹', description: '작은 표시를 선택한다' },
+      { id: 'fail', name: '큰 표시를 따라간다', icon: '🔶', description: '큰 표시를 선택한다' }
+    ]
+  } else if (chapterId === 'reborn_treasury_choice_3') {
+    return [
+      { id: 'success', name: '타일을 누른다', icon: '🔘', description: '조심스럽게 타일을 누른다' },
+      { id: 'fail', name: '타일을 피한다', icon: '🚫', description: '타일을 피해서 지나간다' }
     ]
   }
 
@@ -553,7 +642,7 @@ const handleNext = () => {
       commandmentsSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 100)
     return
-  } else if (chapterId === 'choice_intro') {
+  } else if (chapterId === 'choice_intro' || chapterId === 'reborn_choice_intro') {
     // choice_intro 끝나면 선택지 대기 (showPathChoices가 true가 됨)
     return
   } else if (chapterId === 'path_admin_event_1_success' || chapterId === 'path_admin_event_1_fail' ||
@@ -564,11 +653,22 @@ const handleNext = () => {
              chapterId === 'path_military_event_3_success' || chapterId === 'path_military_event_3_fail' ||
              chapterId === 'path_market_event_1_success' || chapterId === 'path_market_event_1_fail' ||
              chapterId === 'path_market_event_2_success' || chapterId === 'path_market_event_2_fail' ||
-             chapterId === 'path_market_event_3_success' || chapterId === 'path_market_event_3_fail') {
+             chapterId === 'path_market_event_3_success' || chapterId === 'path_market_event_3_fail' ||
+             // 환생 스토리 이벤트들
+             chapterId === 'reborn_library_event_1_success' || chapterId === 'reborn_library_event_1_fail' ||
+             chapterId === 'reborn_library_event_2_success' || chapterId === 'reborn_library_event_2_fail' ||
+             chapterId === 'reborn_library_event_3_success' || chapterId === 'reborn_library_event_3_fail' ||
+             chapterId === 'reborn_training_event_1_success' || chapterId === 'reborn_training_event_1_fail' ||
+             chapterId === 'reborn_training_event_2_success' || chapterId === 'reborn_training_event_2_fail' ||
+             chapterId === 'reborn_training_event_3_success' || chapterId === 'reborn_training_event_3_fail' ||
+             chapterId === 'reborn_treasury_event_1_success' || chapterId === 'reborn_treasury_event_1_fail' ||
+             chapterId === 'reborn_treasury_event_2_success' || chapterId === 'reborn_treasury_event_2_fail' ||
+             chapterId === 'reborn_treasury_event_3_success' || chapterId === 'reborn_treasury_event_3_fail') {
     // 이벤트 완료 후
     if (eventCount.value >= 3) {
       // 3개 이벤트 다 완료했으면 epilogue로
-      const epilogueIndex = tutorialStory.findIndex(ch => ch.id === 'epilogue')
+      const epilogueId = reincarnationCount.value > 0 ? 'reborn_epilogue' : 'epilogue'
+      const epilogueIndex = currentStory.value.findIndex(ch => ch.id === epilogueId)
       if (epilogueIndex !== -1) {
         currentChapterIndex.value = epilogueIndex
       }
@@ -579,7 +679,7 @@ const handleNext = () => {
       }
     }
     return
-  } else if (chapterId === 'epilogue') {
+  } else if (chapterId === 'epilogue' || chapterId === 'reborn_epilogue') {
     // epilogue 끝나면 게임 시작
     startActualGame()
     return
@@ -601,11 +701,26 @@ const selectPathFromStory = async (pathId: string) => {
   selectedPath.value = pathId
   eventCount.value = 0
 
+  // 환생 스토리인지 확인
+  const isReborn = reincarnationCount.value > 0
+
   // 해당 경로의 첫 챕터 찾기
-  const pathChapters: Record<string, number> = {
-    admin: tutorialStory.findIndex(ch => ch.id === 'path_admin_1'),
-    military: tutorialStory.findIndex(ch => ch.id === 'path_military_1'),
-    market: tutorialStory.findIndex(ch => ch.id === 'path_market_1')
+  let pathChapters: Record<string, number> = {}
+
+  if (isReborn) {
+    // 환생 스토리 경로
+    pathChapters = {
+      library: currentStory.value.findIndex(ch => ch.id === 'reborn_library_1'),
+      training: currentStory.value.findIndex(ch => ch.id === 'reborn_training_1'),
+      treasury: currentStory.value.findIndex(ch => ch.id === 'reborn_treasury_1')
+    }
+  } else {
+    // 기존 튜토리얼 스토리 경로
+    pathChapters = {
+      admin: currentStory.value.findIndex(ch => ch.id === 'path_admin_1'),
+      military: currentStory.value.findIndex(ch => ch.id === 'path_military_1'),
+      market: currentStory.value.findIndex(ch => ch.id === 'path_market_1')
+    }
   }
 
   const chapterIndex = pathChapters[pathId]
@@ -639,6 +754,30 @@ const selectLocationChoice = async (choiceId: string) => {
   } else if (chapterId === 'path_market_choice_3') {
     targetChapterId = choiceId === 'success' ? 'path_market_event_3_success' : 'path_market_event_3_fail'
   }
+  // 환생 스토리 - 서재 이벤트들
+  else if (chapterId === 'reborn_library_choice_1') {
+    targetChapterId = choiceId === 'success' ? 'reborn_library_event_1_success' : 'reborn_library_event_1_fail'
+  } else if (chapterId === 'reborn_library_choice_2') {
+    targetChapterId = choiceId === 'success' ? 'reborn_library_event_2_success' : 'reborn_library_event_2_fail'
+  } else if (chapterId === 'reborn_library_choice_3') {
+    targetChapterId = choiceId === 'success' ? 'reborn_library_event_3_success' : 'reborn_library_event_3_fail'
+  }
+  // 환생 스토리 - 훈련장 이벤트들
+  else if (chapterId === 'reborn_training_choice_1') {
+    targetChapterId = choiceId === 'success' ? 'reborn_training_event_1_success' : 'reborn_training_event_1_fail'
+  } else if (chapterId === 'reborn_training_choice_2') {
+    targetChapterId = choiceId === 'success' ? 'reborn_training_event_2_success' : 'reborn_training_event_2_fail'
+  } else if (chapterId === 'reborn_training_choice_3') {
+    targetChapterId = choiceId === 'success' ? 'reborn_training_event_3_success' : 'reborn_training_event_3_fail'
+  }
+  // 환생 스토리 - 보물고 이벤트들
+  else if (chapterId === 'reborn_treasury_choice_1') {
+    targetChapterId = choiceId === 'success' ? 'reborn_treasury_event_1_success' : 'reborn_treasury_event_1_fail'
+  } else if (chapterId === 'reborn_treasury_choice_2') {
+    targetChapterId = choiceId === 'success' ? 'reborn_treasury_event_2_success' : 'reborn_treasury_event_2_fail'
+  } else if (chapterId === 'reborn_treasury_choice_3') {
+    targetChapterId = choiceId === 'success' ? 'reborn_treasury_event_3_success' : 'reborn_treasury_event_3_fail'
+  }
 
   // 선택에 따라 카드 지급
   const eventNumber = eventCount.value + 1
@@ -647,7 +786,7 @@ const selectLocationChoice = async (choiceId: string) => {
   eventCount.value++
 
   // 해당 챕터로 이동
-  const targetChapterIndex = tutorialStory.findIndex(ch => ch.id === targetChapterId)
+  const targetChapterIndex = currentStory.value.findIndex(ch => ch.id === targetChapterId)
   if (targetChapterIndex !== -1) {
     currentChapterIndex.value = targetChapterIndex
   }
@@ -657,6 +796,213 @@ const selectLocationChoice = async (choiceId: string) => {
 const getCardForChoice = async (pathType: string, eventNumber: number, isSuccess: boolean): Promise<PassiveCard> => {
   // 시나리오에 맞는 커스텀 카드 생성
   const cardData: Record<string, Record<number, { success: PassiveCard, fail: PassiveCard }>> = {
+    // 환생 스토리 - 서재 루트
+    library: {
+      1: {
+        success: {
+          id: 'library_1_success',
+          name: '고대의 빛나는 서적',
+          description: '전생의 기억이 담긴 책. 지혜가 깃들어 있다.',
+          rarity: 'rare',
+          icon: '✨',
+          image: '✨',
+          trigger: 'daily',
+          effect: { type: 'resource', gold: 12 }
+        },
+        fail: {
+          id: 'library_1_fail',
+          name: '찢어진 낡은 책',
+          description: '너무 늦게 잡아 책장이 찢어졌다. 내용을 읽을 수 없다.',
+          rarity: 'common',
+          icon: '📖',
+          image: '📖',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      },
+      2: {
+        success: {
+          id: 'library_2_success',
+          name: '신성한 두루마리',
+          description: '빛을 발하는 고대 문자. 전생의 지식이 흘러든다.',
+          rarity: 'rare',
+          icon: '✨',
+          image: '✨',
+          trigger: 'daily',
+          effect: { type: 'resource', gold: 15 }
+        },
+        fail: {
+          id: 'library_2_fail',
+          name: '흐릿한 두루마리',
+          description: '글자가 거의 보이지 않는다. 오래되어 가치가 없다.',
+          rarity: 'common',
+          icon: '📜',
+          image: '📜',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      },
+      3: {
+        success: {
+          id: 'library_3_success',
+          name: '전생의 비밀 서적',
+          description: '숨겨진 고대의 지식. 왕국 경영의 핵심이 담겨있다.',
+          rarity: 'epic',
+          icon: '💫',
+          image: '💫',
+          trigger: 'daily',
+          effect: { type: 'resource', gold: 20 }
+        },
+        fail: {
+          id: 'library_3_fail',
+          name: '먼지 쌓인 빈 공간',
+          description: '아무것도 없었다. 잘못된 선택이었다.',
+          rarity: 'common',
+          icon: '🌑',
+          image: '🌑',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      }
+    },
+    // 환생 스토리 - 훈련장 루트
+    training: {
+      1: {
+        success: {
+          id: 'training_1_success',
+          name: '전생의 검술 기억',
+          description: '전생에서 익힌 검술이 손끝에 남아있다.',
+          rarity: 'rare',
+          icon: '⚔️',
+          image: '⚔️',
+          trigger: 'battle_start',
+          effect: { type: 'combat', attackBonus: 15 }
+        },
+        fail: {
+          id: 'training_1_fail',
+          name: '부서진 검 조각',
+          description: '급하게 다루다 검이 부러졌다. 쓸모가 없다.',
+          rarity: 'common',
+          icon: '💥',
+          image: '💥',
+          trigger: 'battle_start',
+          effect: { type: 'special' }
+        }
+      },
+      2: {
+        success: {
+          id: 'training_2_success',
+          name: '전장의 통찰',
+          description: '대련을 관찰하며 전생의 전술을 떠올렸다.',
+          rarity: 'rare',
+          icon: '👁️',
+          image: '👁️',
+          trigger: 'battle_start',
+          effect: { type: 'combat', attackBonus: 18 }
+        },
+        fail: {
+          id: 'training_2_fail',
+          name: '방해꾼의 낙인',
+          description: '훈련을 방해하여 병사들의 신뢰를 잃었다.',
+          rarity: 'common',
+          icon: '🤝',
+          image: '🤝',
+          trigger: 'battle_start',
+          effect: { type: 'special' }
+        }
+      },
+      3: {
+        success: {
+          id: 'training_3_success',
+          name: '전생의 교훈서',
+          description: '과거 자신이 남긴 메시지. 전투의 핵심을 알려준다.',
+          rarity: 'epic',
+          icon: '🔍',
+          image: '🔍',
+          trigger: 'battle_start',
+          effect: { type: 'combat', attackBonus: 25 }
+        },
+        fail: {
+          id: 'training_3_fail',
+          name: '찢어진 갑옷 조각',
+          description: '무작정 입다가 갑옷이 찢어졌다. 쓸모없다.',
+          rarity: 'common',
+          icon: '🛡️',
+          image: '🛡️',
+          trigger: 'battle_start',
+          effect: { type: 'special' }
+        }
+      }
+    },
+    // 환생 스토리 - 보물고 루트
+    treasury: {
+      1: {
+        success: {
+          id: 'treasury_1_success',
+          name: '왕실의 고대 유물',
+          description: '함정을 해체하고 발견한 진귀한 보물. 왕국의 힘이다.',
+          rarity: 'rare',
+          icon: '🔧',
+          image: '🔧',
+          trigger: 'daily',
+          effect: { type: 'resource', gold: 25 }
+        },
+        fail: {
+          id: 'treasury_1_fail',
+          name: '발동한 함정의 잔해',
+          description: '함정이 발동하여 모든 것이 사라졌다.',
+          rarity: 'common',
+          icon: '⚡',
+          image: '⚡',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      },
+      2: {
+        success: {
+          id: 'treasury_2_success',
+          name: '숨겨진 왕실 보석',
+          description: '작은 표시를 따라 찾은 진짜 보석. 엄청난 가치다.',
+          rarity: 'rare',
+          icon: '🔹',
+          image: '🔹',
+          trigger: 'daily',
+          effect: { type: 'resource', gold: 30 }
+        },
+        fail: {
+          id: 'treasury_2_fail',
+          name: '빈 금고의 먼지',
+          description: '속임수에 걸렸다. 아무것도 없는 빈 금고였다.',
+          rarity: 'common',
+          icon: '🔶',
+          image: '🔶',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      },
+      3: {
+        success: {
+          id: 'treasury_3_success',
+          name: '고대 왕의 왕관',
+          description: '비밀 공간에서 발견한 전설의 왕관. 신성한 힘이 깃들어 있다.',
+          rarity: 'epic',
+          icon: '🔘',
+          image: '🔘',
+          trigger: 'daily',
+          effect: { type: 'resource', gold: 40 }
+        },
+        fail: {
+          id: 'treasury_3_fail',
+          name: '놓친 기회의 흔적',
+          description: '너무 조심스러워 기회를 놓쳤다. 아무것도 얻지 못했다.',
+          rarity: 'common',
+          icon: '🚫',
+          image: '🚫',
+          trigger: 'daily',
+          effect: { type: 'special' }
+        }
+      }
+    },
     admin: {
       1: {
         success: {

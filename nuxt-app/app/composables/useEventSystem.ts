@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue'
-import type { EventCard, EventChoice, CrossroadCard, CrossroadChoice, Kingdom, General, PermanentEffect } from '../types/game'
+import type { EventCard, EventChoice, CrossroadCard, CrossroadChoice, Kingdom, PermanentEffect } from '../types/game'
 import { eventCards } from '../data/mockData'
 import type { PassiveCard } from '../types/passive-cards'
 import { drawRandomCards } from '../types/passive-cards'
@@ -8,7 +8,6 @@ import type { NationState } from '../types/god-game'
 
 interface UseEventSystemOptions {
   kingdom: Ref<Kingdom>
-  generals: Ref<General[]>
   playerPassiveCards: Ref<PassiveCard[]>
   showPassiveCardSelection: Ref<boolean>
   availablePassiveCards: Ref<PassiveCard[]>
@@ -17,7 +16,6 @@ interface UseEventSystemOptions {
   showReincarnationModal: Ref<boolean>
   showNotification: (message: string, type: 'success' | 'error' | 'info') => void
   calculateProduction: () => { foodProduction: number; goldProduction: number; soldierUpkeep: number }
-  generateRandomGeneral: (rarity: 'common' | 'rare' | 'epic') => General
   synergyDailyEffects?: Ref<{ gold: number; food: number; morale: number; population: number }>
   godGameState?: Ref<NationState | null>
 }
@@ -25,7 +23,6 @@ interface UseEventSystemOptions {
 export const useEventSystem = (options: UseEventSystemOptions) => {
   const {
     kingdom,
-    generals,
     playerPassiveCards,
     showPassiveCardSelection,
     availablePassiveCards,
@@ -34,7 +31,6 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
     showReincarnationModal,
     showNotification,
     calculateProduction,
-    generateRandomGeneral,
     synergyDailyEffects,
     godGameState
   } = options
@@ -48,10 +44,10 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
     const effects = playerPassiveCards.value.filter(card => card.trigger === trigger)
 
     effects.forEach(card => {
-      if (card.effect.gold) kingdom.value.resources.gold += card.effect.gold
-      if (card.effect.food) kingdom.value.resources.food += card.effect.food
+      if (card.effect.gold) kingdom.value.resources.gold = Math.max(0, kingdom.value.resources.gold + card.effect.gold)
+      if (card.effect.food) kingdom.value.resources.food = Math.max(0, kingdom.value.resources.food + card.effect.food)
       if (card.effect.morale) kingdom.value.resources.morale = Math.min(100, Math.max(0, kingdom.value.resources.morale + card.effect.morale))
-      if (card.effect.military) kingdom.value.resources.soldiers += card.effect.military
+      if (card.effect.military) kingdom.value.resources.soldiers = Math.max(0, kingdom.value.resources.soldiers + card.effect.military)
     })
   }
 
@@ -72,11 +68,11 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
     const dailyPassiveCards = playerPassiveCards.value.filter(card => card.trigger === 'daily')
     dailyPassiveCards.forEach(card => {
       if (card.effect.gold) {
-        kingdom.value.resources.gold += card.effect.gold
+        kingdom.value.resources.gold = Math.max(0, kingdom.value.resources.gold + card.effect.gold)
         changes.gold += card.effect.gold
       }
       if (card.effect.food) {
-        kingdom.value.resources.food += card.effect.food
+        kingdom.value.resources.food = Math.max(0, kingdom.value.resources.food + card.effect.food)
         changes.food += card.effect.food
       }
       if (card.effect.morale) {
@@ -85,17 +81,17 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
         changes.morale += (kingdom.value.resources.morale - oldMorale)
       }
       if (card.effect.military) {
-        kingdom.value.resources.soldiers += card.effect.military
+        kingdom.value.resources.soldiers = Math.max(0, kingdom.value.resources.soldiers + card.effect.military)
         changes.soldiers += card.effect.military
       }
     })
 
     // 시너지 카드 일일 효과 적용
     if (synergyDailyEffects?.value) {
-      kingdom.value.resources.gold += synergyDailyEffects.value.gold
+      kingdom.value.resources.gold = Math.max(0, kingdom.value.resources.gold + synergyDailyEffects.value.gold)
       changes.gold += synergyDailyEffects.value.gold
 
-      kingdom.value.resources.food += synergyDailyEffects.value.food
+      kingdom.value.resources.food = Math.max(0, kingdom.value.resources.food + synergyDailyEffects.value.food)
       changes.food += synergyDailyEffects.value.food
 
       const oldMorale = kingdom.value.resources.morale
@@ -115,15 +111,15 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
           changes.morale += (kingdom.value.resources.morale - oldMorale)
         }
         if (commandment.effects.gold !== 0) {
-          kingdom.value.resources.gold += commandment.effects.gold
+          kingdom.value.resources.gold = Math.max(0, kingdom.value.resources.gold + commandment.effects.gold)
           changes.gold += commandment.effects.gold
         }
         if (commandment.effects.military !== 0) {
-          kingdom.value.resources.soldiers += commandment.effects.military
+          kingdom.value.resources.soldiers = Math.max(0, kingdom.value.resources.soldiers + commandment.effects.military)
           changes.soldiers += commandment.effects.military
         }
         if (commandment.effects.food !== 0) {
-          kingdom.value.resources.food += commandment.effects.food
+          kingdom.value.resources.food = Math.max(0, kingdom.value.resources.food + commandment.effects.food)
           changes.food += commandment.effects.food
         }
         if (commandment.effects.population !== 0) {
@@ -135,8 +131,8 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
 
     // 자원 생산
     const { foodProduction, goldProduction, soldierUpkeep } = calculateProduction()
-    kingdom.value.resources.food += foodProduction
-    kingdom.value.resources.gold += goldProduction
+    kingdom.value.resources.food = Math.max(0, kingdom.value.resources.food + foodProduction)
+    kingdom.value.resources.gold = Math.max(0, kingdom.value.resources.gold + goldProduction)
     changes.food += foodProduction
     changes.gold += goldProduction
 
@@ -199,45 +195,15 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
     const randomEvent = eventCards[Math.floor(Math.random() * eventCards.length)]
     const eventCopy = JSON.parse(JSON.stringify(randomEvent))
 
-    // 30% 확률로 장수 영입 선택지 추가
-    if (Math.random() < 0.3) {
-      const rarityRoll = Math.random()
-      let rarity: 'common' | 'rare' | 'epic'
-      let cost = { gold: 0 }
-      let choiceText = ''
-
-      if (rarityRoll < 0.60) {
-        rarity = 'common'
-        cost.gold = 200
-        choiceText = '떠돌이 장수를 영입한다 (금 -200)'
-      } else if (rarityRoll < 0.90) {
-        rarity = 'rare'
-        cost.gold = 500
-        choiceText = '유명한 장수를 영입한다 (금 -500)'
-      } else {
-        rarity = 'epic'
-        cost.gold = 1000
-        choiceText = '전설의 영웅을 영입한다 (금 -1000)'
-      }
-
-      const newGeneral = generateRandomGeneral(rarity)
-
-      eventCopy.choices.push({
-        text: choiceText,
-        cost,
-        general: newGeneral
-      })
-    }
-
     currentEvent.value = eventCopy
   }
 
   // 패시브 카드 선택
   const selectPassiveCard = (card: PassiveCard) => {
     playerPassiveCards.value.push(card)
+    showNotification(`${card.name} 카드를 획득했습니다!`, 'success')
     showPassiveCardSelection.value = false
     availablePassiveCards.value = []
-    showNotification(`${card.name} 카드를 획득했습니다!`, 'success')
   }
 
   // 희귀도 라벨
@@ -278,26 +244,20 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
   const selectChoice = (choice: EventChoice) => {
     // 비용 차감
     if (choice.cost) {
-      if (choice.cost.food) kingdom.value.resources.food -= choice.cost.food
-      if (choice.cost.gold) kingdom.value.resources.gold -= choice.cost.gold
-      if (choice.cost.soldiers) kingdom.value.resources.soldiers -= choice.cost.soldiers
+      if (choice.cost.food) kingdom.value.resources.food = Math.max(0, kingdom.value.resources.food - choice.cost.food)
+      if (choice.cost.gold) kingdom.value.resources.gold = Math.max(0, kingdom.value.resources.gold - choice.cost.gold)
+      if (choice.cost.soldiers) kingdom.value.resources.soldiers = Math.max(0, kingdom.value.resources.soldiers - choice.cost.soldiers)
     }
 
     // 보상 지급
     if (choice.reward) {
       if (choice.reward.food) kingdom.value.resources.food += choice.reward.food
       if (choice.reward.gold) kingdom.value.resources.gold += choice.reward.gold
-      if (choice.reward.soldiers) kingdom.value.resources.soldiers += choice.reward.soldiers
+      if (choice.reward.soldiers) kingdom.value.resources.soldiers = Math.max(0, kingdom.value.resources.soldiers + choice.reward.soldiers)
       if (choice.reward.morale) {
         kingdom.value.resources.morale += choice.reward.morale
         kingdom.value.resources.morale = Math.max(0, Math.min(100, kingdom.value.resources.morale))
       }
-    }
-
-    // 장수 영입
-    if (choice.general) {
-      generals.value.push(choice.general)
-      showNotification(`${choice.general.name}을(를) 영입했습니다!`, 'success')
     }
 
     closeEvent()

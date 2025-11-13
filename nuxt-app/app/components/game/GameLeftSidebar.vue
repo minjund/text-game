@@ -45,22 +45,12 @@
         </div>
       </div>
     </div>
-
-    <GameTurnCounter
-      :current-turns="turnData.currentTurns"
-      :max-turns="turnData.maxTurns"
-      :time-until-next="turnData.timeUntilNext"
-      :time-until-full="turnData.timeUntilFull"
-      :show-debug-buttons="true"
-      @recharge-all="$emit('recharge-all-turns')"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import GameTimerCard from './GameTimerCard.vue'
-import GameTurnCounter from './GameTurnCounter.vue'
 
 interface TimerData {
   days: number
@@ -68,23 +58,6 @@ interface TimerData {
   minutes: number
   seconds: number
   isExpired: boolean
-}
-
-interface TurnData {
-  currentTurns: number
-  maxTurns: number
-  timeUntilNext: {
-    days: number
-    hours: number
-    minutes: number
-    seconds: number
-  } | null
-  timeUntilFull: {
-    days: number
-    hours: number
-    minutes: number
-    seconds: number
-  } | null
 }
 
 interface CommandmentEffects {
@@ -97,16 +70,11 @@ interface CommandmentEffects {
 
 interface Props {
   timer: TimerData
-  turnData: TurnData
   currentDay: number
   commandmentEffects?: CommandmentEffects | null
 }
 
 const props = defineProps<Props>()
-
-defineEmits<{
-  'recharge-all-turns': []
-}>()
 
 // 다음 제국 침략까지 남은 일수 계산
 const daysUntilInvasion = computed(() => {

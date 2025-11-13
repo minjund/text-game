@@ -1,23 +1,23 @@
 <template>
   <Transition name="modal">
-    <div v-if="event" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" @click="$emit('close')">
-      <div class="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-amber-600 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden" @click.stop>
+    <div v-if="event" class="fixed inset-0 bg-black/90 z-[10000]">
+      <div class="w-full h-full flex flex-col bg-gradient-to-br from-slate-800 to-slate-900 sm:border-2 sm:border-amber-600 sm:rounded-lg sm:max-w-2xl sm:max-h-[90vh] sm:m-auto sm:mt-[5vh] overflow-hidden">
         <!-- Header -->
-        <div class="bg-gradient-to-r from-amber-900 to-amber-800 border-b-2 border-amber-600 p-4">
-          <h2 class="text-xl font-bold flex items-center gap-2">
+        <div class="bg-gradient-to-r from-amber-900 to-amber-800 border-b-2 border-amber-600 p-3 sm:p-4 flex-shrink-0">
+          <h2 class="text-lg sm:text-xl font-bold flex items-center gap-2">
             <span>🎴</span> {{ event.title }}
           </h2>
         </div>
 
         <!-- Content -->
-        <div class="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-          <p class="text-slate-300 mb-6">{{ event.description }}</p>
+        <div class="flex-1 overflow-y-auto p-3 sm:p-6">
+          <p class="text-slate-300 text-sm sm:text-base mb-4 sm:mb-6">{{ event.description }}</p>
 
           <!-- Choices -->
-          <div class="space-y-3">
+          <div class="space-y-3 sm:space-y-4">
             <button v-for="(choice, index) in event.choices" :key="index"
-                    @click="$emit('select-choice', choice)" :disabled="!canAffordChoice(choice)"
-                    class="w-full bg-slate-700/50 hover:bg-slate-600/50 disabled:bg-slate-800/50 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-slate-600 hover:border-amber-500 disabled:border-slate-700 rounded-lg p-4 text-left transition-all">
+                    @click.stop="handleSelectChoice(choice)" :disabled="!canAffordChoice(choice)"
+                    class="w-full bg-slate-700/50 hover:bg-slate-600/50 active:bg-slate-500/50 disabled:bg-slate-800/50 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-slate-600 hover:border-amber-500 disabled:border-slate-700 rounded-lg p-4 sm:p-5 text-left transition-all touch-manipulation text-base sm:text-lg">
 
               <div class="font-semibold mb-2">{{ choice.text }}</div>
 
@@ -37,23 +37,6 @@
                   <span v-if="choice.reward.gold" class="text-yellow-300">💰 +{{ choice.reward.gold }}</span>
                   <span v-if="choice.reward.soldiers" class="text-red-300">⚔️ +{{ choice.reward.soldiers }}</span>
                   <span v-if="choice.reward.morale" class="text-pink-300">❤️ {{ choice.reward.morale > 0 ? '+' : '' }}{{ choice.reward.morale }}</span>
-                </div>
-
-                <!-- General -->
-                <div v-if="choice.general" class="bg-slate-800/50 p-2 rounded">
-                  <strong class="text-purple-400">⚔️ 장수:</strong>
-                  <span class="ml-2">{{ choice.general.name }} ({{ choice.general.title }})</span>
-                  <span class="ml-2 px-2 py-0.5 rounded text-xs"
-                        :class="{
-                          'bg-gray-600': choice.general.rarity === 'common',
-                          'bg-blue-600': choice.general.rarity === 'rare',
-                          'bg-purple-600': choice.general.rarity === 'epic'
-                        }">
-                    {{ getRarityLabel(choice.general.rarity) }}
-                  </span>
-                  <div class="mt-1 text-xs text-slate-400">
-                    무력 {{ choice.general.stats.power }} | 지력 {{ choice.general.stats.intelligence }} | 통솔 {{ choice.general.stats.leadership }}
-                  </div>
                 </div>
               </div>
             </button>
@@ -78,10 +61,16 @@ interface Props {
 
 const props = defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   close: []
   'select-choice': [choice: EventChoice]
 }>()
+
+const handleSelectChoice = (choice: EventChoice) => {
+  if (canAffordChoice(choice)) {
+    emit('select-choice', choice)
+  }
+}
 
 const canAffordChoice = (choice: EventChoice): boolean => {
   if (!choice.cost) return true

@@ -148,20 +148,13 @@ export const eventCards: EventCard[] = [
   },
   {
     id: 'event4',
-    title: '훌륭한 인재 발견',
-    description: '마을에서 뛰어난 재능을 가진 무사를 발견했습니다.',
+    title: '무기 상인',
+    description: '먼 나라에서 온 무기 상인이 훌륭한 검과 갑옷을 팔고 있습니다.',
     choices: [
       {
-        text: '금 1000을 주고 영입한다',
+        text: '금 1000을 주고 무기를 구매한다',
         cost: { gold: 1000 },
-        general: {
-          id: '5',
-          name: '신예 무사',
-          title: '신진 무장',
-          stats: { power: 70, intelligence: 55, leadership: 60 },
-          skills: [skills.duel],
-          assignedSoldiers: 0
-        }
+        reward: { soldiers: 300, morale: 5 }
       },
       {
         text: '거절한다',
