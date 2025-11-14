@@ -4,7 +4,7 @@
       <div class="w-full h-full flex flex-col bg-gradient-to-br from-slate-800 to-slate-900 sm:border-2 sm:border-red-600 sm:rounded-lg sm:max-w-5xl sm:max-h-[90vh] sm:m-auto sm:mt-[5vh]">
         <!-- Header -->
         <div class="bg-gradient-to-r from-red-900 to-red-800 border-b-2 border-red-600 p-3 sm:p-4 flex-shrink-0">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between mb-2">
             <h2 class="text-base sm:text-xl font-bold flex items-center gap-2">
               <span>⚔️</span> 전장의 기록
             </h2>
@@ -12,18 +12,76 @@
               ✕
             </button>
           </div>
-          <div class="flex items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm mt-1">
+
+          <!-- Battle Status Bar -->
+          <div v-if="!battle.result" class="space-y-2">
+            <!-- Team Names -->
+            <div class="flex items-center justify-between text-xs sm:text-sm">
+              <span class="font-bold text-blue-300">{{ battle.attacker.kingdomName }}</span>
+              <span class="text-slate-400">VS</span>
+              <span class="font-bold text-red-300">{{ battle.defender.kingdomName }}</span>
+            </div>
+
+            <!-- Score Display -->
+            <div class="flex items-center justify-center gap-4 text-lg sm:text-xl font-bold">
+              <div class="flex items-center gap-2">
+                <span class="text-blue-400">{{ attackerScore }}</span>
+                <span class="text-xs text-slate-400">승점</span>
+              </div>
+              <span class="text-slate-500">-</span>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400">승점</span>
+                <span class="text-red-400">{{ defenderScore }}</span>
+              </div>
+            </div>
+
+            <!-- Battle Status Indicator -->
+            <div class="flex items-center justify-center gap-2 text-xs">
+              <div v-if="scoreDifference > 2" class="flex items-center gap-1 text-green-400">
+                <span>💪</span>
+                <span class="font-bold">크게 우세!</span>
+              </div>
+              <div v-else-if="scoreDifference > 0" class="flex items-center gap-1 text-blue-400">
+                <span>👍</span>
+                <span class="font-bold">약간 우세</span>
+              </div>
+              <div v-else-if="scoreDifference === 0" class="flex items-center gap-1 text-yellow-400">
+                <span>⚖️</span>
+                <span class="font-bold">팽팽한 접전</span>
+              </div>
+              <div v-else-if="scoreDifference > -3" class="flex items-center gap-1 text-orange-400">
+                <span>⚠️</span>
+                <span class="font-bold">약간 열세</span>
+              </div>
+              <div v-else class="flex items-center gap-1 text-red-400">
+                <span>🚨</span>
+                <span class="font-bold">크게 열세!</span>
+              </div>
+            </div>
+
+            <!-- Card Selection Timer -->
+            <div v-if="isPaused && cardSelectionTime > 0" class="mt-3 text-center">
+              <div class="bg-yellow-600/30 border-2 border-yellow-500 rounded-lg p-3 animate-pulse">
+                <div class="flex items-center justify-center gap-2 mb-2">
+                  <span class="text-xl">⏱️</span>
+                  <span class="text-lg font-bold text-yellow-300">카드 선택 시간</span>
+                </div>
+                <div class="text-3xl font-bold text-yellow-100">{{ cardSelectionTime }}초</div>
+                <div class="text-xs text-yellow-200 mt-1">카드를 선택하거나 시간이 지나면 전투가 재개됩니다</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Final Result Display -->
+          <div v-else class="flex items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm mt-1">
             <span class="font-bold text-blue-300">{{ battle.attacker.kingdomName }}</span>
             <span class="text-slate-400">VS</span>
             <span class="font-bold text-red-300">{{ battle.defender.kingdomName }}</span>
           </div>
         </div>
 
-        <!-- Phaser Battle Canvas (모바일에서 숨김) -->
-        <div id="phaser-battle-container" class="hidden sm:block w-full bg-slate-950" style="height: 200px;"></div>
-
         <!-- Battle Log -->
-        <div ref="battleLogContainer" class="flex-1 p-3 sm:p-6 overflow-y-auto bg-slate-900/50">
+        <div ref="battleLogContainer" class="flex-1 p-3 sm:p-6 overflow-y-auto bg-slate-900/50 scroll-smooth">
           <div :class="{ 'opacity-50': isScrolling }">
             <div class="prose prose-invert max-w-none">
               <p v-for="(log, index) in battle.log" :key="index"
@@ -37,6 +95,59 @@
                 <span v-else-if="log.narrativeType === 'action'">{{ log.story }}</span>
                 <span v-else-if="log.narrativeType === 'dialogue'">"{{ log.dialogue }}"</span>
               </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Battle Cards Section -->
+        <div v-if="battleActiveCards && battleActiveCards.length > 0 && !battle.result"
+             :class="[
+               'border-t-2 p-3 sm:p-4 flex-shrink-0 transition-all duration-300',
+               isPaused && cardSelectionTime > 0
+                 ? 'border-yellow-500 bg-yellow-900/30 shadow-lg shadow-yellow-500/20'
+                 : 'border-slate-700 bg-slate-900/80'
+             ]">
+          <h3 class="text-xs sm:text-sm font-bold mb-2 sm:mb-3 text-amber-400">✨ 액티브 카드</h3>
+          <div class="flex gap-2 justify-center flex-wrap max-w-full overflow-x-auto">
+            <div v-for="card in battleActiveCards" :key="card.id"
+                 :class="[
+                   'relative bg-gradient-to-br rounded-lg p-2 sm:p-3 border-2 w-32 sm:w-36 flex-shrink-0',
+                   isCardUsed(card.id)
+                     ? 'from-gray-700 to-gray-800 border-gray-600 opacity-50 cursor-not-allowed'
+                     : getCardGlowClass(card)
+                 ]">
+              <!-- Recommended Badge -->
+              <div v-if="!isCardUsed(card.id) && isCardRecommended(card)"
+                   class="absolute -top-2 -right-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-1 rounded-full animate-pulse z-10">
+                추천!
+              </div>
+
+              <div class="text-2xl sm:text-3xl mb-1 text-center">{{ card.icon }}</div>
+              <div class="text-xs font-bold mb-1 text-center truncate" :title="card.name">{{ card.name }}</div>
+              <div class="text-[10px] text-center text-slate-300 mb-1 line-clamp-2" :title="card.battleDescription">
+                {{ card.battleDescription }}
+              </div>
+
+              <!-- Usage Hint -->
+              <div v-if="!isCardUsed(card.id)" class="text-[9px] text-center text-amber-300 mb-2 italic">
+                {{ getCardHint(card) }}
+              </div>
+
+              <button
+                v-if="!isCardUsed(card.id)"
+                @click="useCard(card)"
+                :class="[
+                  'w-full px-2 py-1 rounded text-xs font-bold transition-colors',
+                  isCardRecommended(card)
+                    ? 'bg-yellow-600 hover:bg-yellow-500 active:bg-yellow-700 animate-pulse' :
+                  card.rarity === 'legendary' ? 'bg-amber-600 hover:bg-amber-500 active:bg-amber-700' :
+                  card.rarity === 'epic' ? 'bg-purple-600 hover:bg-purple-500 active:bg-purple-700' :
+                  card.rarity === 'rare' ? 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700' :
+                  'bg-gray-600 hover:bg-gray-500 active:bg-gray-700'
+                ]">
+                사용
+              </button>
+              <div v-else class="text-xs text-center text-gray-400">사용됨</div>
             </div>
           </div>
         </div>
@@ -63,164 +174,152 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch, ref } from 'vue'
-import type { Battle, BattleLog } from '~/types/game'
-import { usePhaserBattle } from '~/composables/usePhaserBattle'
+import { ref, computed } from 'vue'
+import type { Battle } from '~/types/game'
+import type { ActiveCard } from '~/types/active-cards'
 
 interface Props {
   battle: Battle | null
   isScrolling: boolean
+  battleActiveCards?: ActiveCard[]
+  usedActiveCards?: string[]
+  attackerScore?: number
+  defenderScore?: number
+  isPaused?: boolean
+  cardSelectionTime?: number
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  battleActiveCards: () => [],
+  usedActiveCards: () => [],
+  attackerScore: 0,
+  defenderScore: 0,
+  isPaused: false,
+  cardSelectionTime: 0
+})
 
 const emit = defineEmits<{
   close: []
+  useActiveCard: [card: ActiveCard]
 }>()
+
+// 점수 차이 계산
+const scoreDifference = computed(() => {
+  return props.attackerScore - props.defenderScore
+})
 
 const handleClose = () => {
   emit('close')
 }
 
-const battleLogContainer = ref<HTMLElement | null>(null)
-const { initGame, startBattle, playAttack, playSkill, playHeal, playVictory, destroyGame } = usePhaserBattle()
+const useCard = (card: ActiveCard) => {
+  emit('useActiveCard', card)
+}
 
-let isAnimating = false
-let processedLogCount = 0
+const isCardUsed = (cardId: string) => {
+  return props.usedActiveCards?.includes(cardId) || false
+}
 
-// Phaser 초기화
-onMounted(async () => {
-  if (process.client && props.battle) {
-    // 약간의 딜레이를 주어 DOM이 완전히 렌더링되도록 함
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    await initGame('phaser-battle-container')
-    console.log('Phaser game initialized')
-
-    // 장수 초기화
-    if (props.battle) {
-      startBattle(
-        props.battle.attacker.generals,
-        props.battle.defender.generals
-      )
-      console.log('Battle started with generals:', props.battle.attacker.generals, props.battle.defender.generals)
-    }
-  }
-})
-
-// 전투 로그 변화 감지 및 애니메이션 실행
-watch(
-  () => props.battle?.log,
-  async (newLogs) => {
-    if (!newLogs) return
-
-    // 이미 애니메이션 중이면 대기
-    if (isAnimating) {
-      console.log('Animation already in progress, waiting...')
-      return
-    }
-
-    // 새로 추가된 로그만 처리
-    const unprocessedLogs = newLogs.slice(processedLogCount)
-
-    if (unprocessedLogs.length === 0) return
-
-    console.log(`Processing ${unprocessedLogs.length} new logs, starting from ${processedLogCount}`)
-
-    isAnimating = true
-
-    for (const log of unprocessedLogs) {
-      await processLogAnimation(log)
-      processedLogCount++
-
-      // 각 로그 사이에 작은 딜레이
-      await new Promise(resolve => setTimeout(resolve, 300))
-    }
-
-    isAnimating = false
-
-    // 전투 결과에 따라 승리 효과
-    if (props.battle?.result) {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      playVictory(props.battle.result === 'victory')
-    }
-  },
-  { deep: true, immediate: true }
-)
-
-// 로그에 따른 애니메이션 처리
-const processLogAnimation = async (log: BattleLog) => {
-  if (!props.battle) return
-
-  // 나레이션이나 대사는 애니메이션 없이 스킵
-  if (log.narrativeType === 'narration' || log.narrativeType === 'dialogue') {
-    return
-  }
-
-  // 액션만 처리
-  if (log.narrativeType === 'action' && log.action) {
-    console.log('Processing action:', log.action, 'by', log.generalName)
-
-    // 공격자와 방어자 파싱
-    const attackerName = log.generalName
-
-    // 공격자가 아군인지 판단
-    const isPlayerAttacker = props.battle.attacker.generals.some(g => g.name === attackerName)
-
-    // 방어자 이름 추측 (적 장수 중 첫번째)
-    const defenderGenerals = isPlayerAttacker ? props.battle.defender.generals : props.battle.attacker.generals
-    const defenderName = defenderGenerals.length > 0 ? defenderGenerals[0].name : ''
-
-    console.log(`Attack animation: ${attackerName} -> ${defenderName}, isPlayer: ${isPlayerAttacker}`)
-
-    // 스킬 사용 시 스킬 애니메이션
-    if (log.action && log.action.trim() !== '') {
-      await playSkill(attackerName, defenderName, log.action, isPlayerAttacker)
-      await new Promise(resolve => setTimeout(resolve, 200))
-    }
-
-    // 데미지 파싱 (예: "500 데미지" 또는 "적진이 술렁이며" 등)
-    // 기본 데미지 값 설정
-    const damage = log.success ? 150 : 50
-
-    // 공격 애니메이션
-    await playAttack(attackerName, defenderName, damage, isPlayerAttacker)
-  }
-
-  // 치유 판정
-  if (log.story?.includes('회복') || log.story?.includes('치유')) {
-    const healMatch = log.story.match(/(\d+)/)
-    const healAmount = healMatch ? parseInt(healMatch[1]) : 100
-
-    const isPlayer = props.battle.attacker.generals.some(g => g.name === log.generalName)
-    await playHeal(log.generalName, healAmount, isPlayer)
+const getRarityColor = (rarity: string) => {
+  switch (rarity) {
+    case 'common':
+      return 'from-gray-700 to-gray-800 border-gray-500'
+    case 'rare':
+      return 'from-blue-700 to-blue-800 border-blue-500'
+    case 'epic':
+      return 'from-purple-700 to-purple-800 border-purple-500'
+    case 'legendary':
+      return 'from-amber-700 to-amber-800 border-amber-500'
+    default:
+      return 'from-gray-700 to-gray-800 border-gray-500'
   }
 }
 
-// 컴포넌트 정리
-onUnmounted(() => {
-  destroyGame()
-  processedLogCount = 0
-})
+// 카드 추천 시스템
+const isCardRecommended = (card: ActiveCard) => {
+  const diff = scoreDifference.value
+  const effectType = card.effectType
 
-// battle prop이 변경될 때 리셋
-watch(
-  () => props.battle,
-  async (newBattle) => {
-    processedLogCount = 0
-    isAnimating = false
-
-    if (newBattle && process.client) {
-      // 새 전투 시작 시 Phaser 재초기화
-      await new Promise(resolve => setTimeout(resolve, 100))
-      destroyGame()
-      await initGame('phaser-battle-container')
-      startBattle(
-        newBattle.attacker.generals,
-        newBattle.defender.generals
-      )
-      console.log('Battle restarted')
-    }
+  // 크게 열세 (차이 -3 이하)
+  if (diff <= -3) {
+    return ['heal', 'power_boost', 'defense_boost', 'enemy_weaken', 'morale_boost', 'reverse_momentum'].includes(effectType)
   }
-)
+
+  // 약간 열세 (차이 -2 ~ -1)
+  if (diff < 0) {
+    return ['heal', 'power_boost', 'defense_boost', 'enemy_weaken', 'morale_boost', 'turn_skip', 'reverse_momentum'].includes(effectType)
+  }
+
+  // 팽팽한 접전 (차이 0)
+  if (diff === 0) {
+    return ['instant_damage', 'power_boost', 'enemy_weaken', 'critical_strike', 'multi_strike'].includes(effectType)
+  }
+
+  // 약간 우세 (차이 1~2)
+  if (diff <= 2) {
+    return ['instant_damage', 'power_boost', 'critical_strike', 'multi_strike'].includes(effectType)
+  }
+
+  // 크게 우세 (차이 3 이상)
+  return ['instant_damage', 'critical_strike', 'multi_strike'].includes(effectType)
+}
+
+const getCardHint = (card: ActiveCard) => {
+  const effectType = card.effectType
+  const diff = scoreDifference.value
+
+  switch (effectType) {
+    case 'instant_damage':
+      if (diff >= 0) return '우세 시 추격용으로 적합'
+      return '공격으로 역전 노려보기'
+
+    case 'heal':
+      if (diff < -2) return '열세일 때 필수!'
+      if (diff < 0) return '열세 회복에 좋음'
+      return '방어적 운영에 적합'
+
+    case 'power_boost':
+    case 'morale_boost':
+      if (diff === 0) return '접전 시 승기 잡기'
+      if (diff > 0) return '우세 확대에 유용'
+      return '열세 회복에 도움'
+
+    case 'defense_boost':
+      if (diff < 0) return '열세 시 버티기'
+      return '안정적인 방어 운영'
+
+    case 'enemy_weaken':
+      if (diff < -2) return '열세일 때 필수!'
+      if (diff < 0) return '열세 만회의 기회'
+      return '적 약화로 안정적 승리'
+
+    case 'turn_skip':
+      if (diff < 0) return '열세 시 시간 벌기'
+      return '전략적 타이밍 조절'
+
+    case 'critical_strike':
+      if (diff >= 0) return '우세 시 결정타'
+      return '한 방 역전의 기회'
+
+    case 'multi_strike':
+      if (diff >= 0) return '연속 공격으로 마무리'
+      return '다수 공격으로 역전'
+
+    case 'reverse_momentum':
+      if (diff < -2) return '열세일 때 사용!'
+      return '전세 역전의 순간'
+
+    default:
+      return '상황에 맞게 사용'
+  }
+}
+
+const getCardGlowClass = (card: ActiveCard) => {
+  if (isCardRecommended(card)) {
+    return 'from-yellow-600 to-yellow-700 border-yellow-400 shadow-lg shadow-yellow-500/50 animate-pulse'
+  }
+  return getRarityColor(card.rarity)
+}
+
+const battleLogContainer = ref<HTMLElement | null>(null)
 </script>

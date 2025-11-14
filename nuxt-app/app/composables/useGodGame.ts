@@ -11,6 +11,10 @@ const nationState = ref<NationState | null>(null)
 export const useGodGame = () => {
   const setNationName = (name: string) => {
     nationName.value = name
+    // localStorage에도 왕국 이름 저장 (환생 시 동일한 이름 유지)
+    if (process.client) {
+      localStorage.setItem('kingdomName', name)
+    }
   }
 
   const setSelectedCommandments = (commandments: Commandment[]) => {
@@ -47,6 +51,11 @@ export const useGodGame = () => {
         year: 1
       },
       events: []
+    }
+
+    // localStorage에 godGameState 저장 (환생 시에도 유지)
+    if (process.client) {
+      localStorage.setItem('godGameState', JSON.stringify(nationState.value))
     }
   }
 

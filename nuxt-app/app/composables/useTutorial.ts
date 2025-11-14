@@ -65,7 +65,13 @@ export const useTutorial = () => {
   const initializeTutorial = () => {
     const savedState = loadState()
     if (savedState) {
-      tutorialState.value = savedState
+      // 기본값과 병합하여 누락된 필드 방지
+      tutorialState.value = {
+        ...tutorialState.value,
+        ...savedState,
+        unlockedFeatures: savedState.unlockedFeatures || [],
+        shownMessages: savedState.shownMessages || []
+      }
 
       // 기존 저장 상태에 storyCompleted, hasSelectedStartCards가 없으면 추가
       if (tutorialState.value.storyCompleted === undefined) {

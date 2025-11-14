@@ -13,6 +13,7 @@ export interface PassiveCard {
   rarity: 'common' | 'rare' | 'epic' | 'legendary'
   trigger: PassiveTrigger
   synergyTags?: SynergyTag[] // 시너지 태그
+  isBattleCard?: boolean // 전투 카드 여부 (전투 전 선택 가능)
   effect: {
     type: 'resource' | 'combat' | 'special'
     // 리소스 효과
@@ -24,6 +25,7 @@ export interface PassiveCard {
     // 전투 효과
     attackBonus?: number
     defenseBonus?: number
+    skillPowerBonus?: number // 스킬 위력 증가
     // 특수 효과
     description?: string
   }
@@ -353,6 +355,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 8 }
   },
@@ -364,6 +367,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', defenseBonus: 8 }
   },
@@ -375,6 +379,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', military: 80 }
   },
@@ -397,6 +402,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 7 }
   },
@@ -408,6 +414,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', defenseBonus: 7 }
   },
@@ -443,6 +450,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['magic'],
     effect: { type: 'combat', attackBonus: 9 }
   },
@@ -624,6 +632,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', military: 110 }
   },
   {
@@ -684,6 +693,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', military: 80 }
   },
   {
@@ -747,6 +757,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', attackBonus: -5 }
   },
   {
@@ -757,6 +768,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', military: -50 }
   },
   {
@@ -807,6 +819,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', defenseBonus: -6 }
   },
   {
@@ -817,6 +830,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', military: -40 }
   },
   {
@@ -973,6 +987,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 18 }
   },
@@ -984,6 +999,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', defenseBonus: 18 }
   },
@@ -995,6 +1011,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 12, defenseBonus: 12 }
   },
@@ -1006,6 +1023,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', military: 150, attackBonus: 8 }
   },
@@ -1017,6 +1035,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 15 }
   },
@@ -1030,6 +1049,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['magic'],
     effect: { type: 'combat', attackBonus: 15 }
   },
@@ -1063,6 +1083,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['magic'],
     effect: { type: 'combat', defenseBonus: 16 }
   },
@@ -1087,6 +1108,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['technology'],
     effect: { type: 'combat', attackBonus: 16 }
   },
@@ -1133,6 +1155,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['religion'],
     effect: { type: 'combat', attackBonus: 14 }
   },
@@ -1181,6 +1204,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', military: 220 }
   },
   {
@@ -1221,6 +1245,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', attackBonus: 16 }
   },
   {
@@ -1231,6 +1256,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', defenseBonus: 17 }
   },
   {
@@ -1361,6 +1387,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', military: 350 }
   },
@@ -1372,6 +1399,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 20, defenseBonus: 20 }
   },
@@ -1383,6 +1411,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 25 }
   },
@@ -1394,6 +1423,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', defenseBonus: 25 }
   },
@@ -1407,6 +1437,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['magic'],
     effect: { type: 'combat', attackBonus: 28 }
   },
@@ -1429,6 +1460,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['magic'],
     effect: { type: 'combat', defenseBonus: 23 }
   },
@@ -1453,6 +1485,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['technology'],
     effect: { type: 'combat', attackBonus: 24 }
   },
@@ -1539,6 +1572,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'legendary',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', military: 600, attackBonus: 35 }
   },
@@ -1550,6 +1584,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'legendary',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['magic'],
     effect: { type: 'combat', attackBonus: 40 }
   },
@@ -1601,6 +1636,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', attackBonus: 5 }
   },
   {
@@ -1611,6 +1647,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', attackBonus: 4 }
   },
   {
@@ -1621,6 +1658,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', defenseBonus: 5 }
   },
   {
@@ -1631,6 +1669,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', attackBonus: 5 }
   },
   {
@@ -1641,6 +1680,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', attackBonus: 5, defenseBonus: 3 }
   },
   {
@@ -1651,6 +1691,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', defenseBonus: 6 }
   },
   {
@@ -1661,6 +1702,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', attackBonus: 6 }
   },
   {
@@ -1681,6 +1723,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', attackBonus: 4, defenseBonus: 3 }
   },
   {
@@ -1691,6 +1734,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     effect: { type: 'combat', attackBonus: 4, defenseBonus: 4 }
   },
 
@@ -1703,6 +1747,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 10 }
   },
@@ -1714,6 +1759,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 9 }
   },
@@ -1725,6 +1771,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', defenseBonus: 11 }
   },
@@ -1736,6 +1783,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', defenseBonus: 10 }
   },
@@ -1747,6 +1795,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 8, defenseBonus: 7 }
   },
@@ -1758,6 +1807,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 11 }
   },
@@ -1769,6 +1819,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['magic', 'military'],
     effect: { type: 'combat', attackBonus: 9, defenseBonus: 6 }
   },
@@ -1780,6 +1831,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 8, defenseBonus: 8 }
   },
@@ -1793,6 +1845,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military', 'conquest'],
     effect: { type: 'combat', attackBonus: 17, defenseBonus: 10 }
   },
@@ -1804,6 +1857,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military', 'conquest'],
     effect: { type: 'combat', attackBonus: 20, defenseBonus: 8 }
   },
@@ -1815,6 +1869,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['magic', 'military'],
     effect: { type: 'combat', attackBonus: 18, defenseBonus: 10 }
   },
@@ -1826,6 +1881,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', defenseBonus: 22, attackBonus: 8 }
   },
@@ -1837,6 +1893,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military', 'conquest'],
     effect: { type: 'combat', attackBonus: 19, defenseBonus: 7 }
   },
@@ -1850,6 +1907,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'legendary',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military', 'conquest'],
     effect: { type: 'combat', attackBonus: 30, defenseBonus: 20 }
   },
@@ -1861,6 +1919,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'legendary',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military', 'religion'],
     effect: { type: 'combat', attackBonus: 25, defenseBonus: 25 }
   },
@@ -1875,6 +1934,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', defenseBonus: 6 }
   },
@@ -1886,6 +1946,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 5 }
   },
@@ -1897,6 +1958,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'common',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', attackBonus: 4, defenseBonus: 3 }
   },
@@ -1910,6 +1972,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military', 'magic'],
     effect: { type: 'combat', attackBonus: 12 }
   },
@@ -1921,6 +1984,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military'],
     effect: { type: 'combat', defenseBonus: 11 }
   },
@@ -1932,6 +1996,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'rare',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military', 'magic'],
     effect: { type: 'combat', attackBonus: 10, defenseBonus: 5 }
   },
@@ -1945,6 +2010,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military', 'conquest'],
     effect: { type: 'combat', attackBonus: 18 }
   },
@@ -1956,6 +2022,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military', 'religion'],
     effect: { type: 'combat', defenseBonus: 16 }
   },
@@ -1967,6 +2034,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'epic',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military', 'conquest'],
     effect: { type: 'combat', attackBonus: 15, defenseBonus: 10 }
   },
@@ -1980,6 +2048,7 @@ export const PASSIVE_CARDS: PassiveCard[] = [
     image: '/images/passive/solderAdd.png',
     rarity: 'legendary',
     trigger: 'battle_start',
+    isBattleCard: true,
     synergyTags: ['military', 'religion', 'magic'],
     effect: { type: 'combat', attackBonus: 28, defenseBonus: 22 }
   }

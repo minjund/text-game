@@ -7,14 +7,14 @@
     <div class="relative z-10 flex flex-col min-h-screen">
     <!-- Start Card Selection (After Story) -->
     <GameStartCardSelection
-      v-if="tutorialState.storyCompleted && !tutorialState.hasSelectedStartCards"
+      v-if="tutorialState?.storyCompleted && !tutorialState?.hasSelectedStartCards"
       :cards="startCardOptions"
       @confirm="handleStartCardsSelected"
     />
 
     <!-- Mobile Top Resources (Fixed) -->
     <GameMobileResources
-      v-if="!adventureState.active"
+      v-if="!adventureState?.active"
       :resources="kingdom.resources"
       :timer="remainingTime"
       :current-day="kingdom.day"
@@ -25,7 +25,7 @@
 
     <!-- Desktop Header -->
     <GameDesktopHeader
-      v-if="!adventureState.active"
+      v-if="!adventureState?.active"
       :kingdom-name="kingdom.name"
       :day="kingdom.day"
       :resources="kingdom.resources"
@@ -33,7 +33,7 @@
     />
 
     <!-- Desktop Main Content -->
-    <div v-if="!adventureState.active" class="hidden md:flex flex-1 max-w-7xl mx-auto w-full p-8 gap-8">
+    <div v-if="!adventureState?.active" class="hidden md:flex flex-1 max-w-7xl mx-auto w-full p-8 gap-8 justify-between">
       <!-- Left Sidebar - Stats -->
       <GameLeftSidebar
         :timer="remainingTime"
@@ -46,12 +46,12 @@
 <!--        <GameCharacter />-->
 <!--      </div>-->
 
-          <!-- Right Sidebar - Actions -->
+      <!-- Right Sidebar - Actions -->
       <GameActionPanel
-        :unlocked-features="tutorialState.unlockedFeatures"
+        :unlocked-features="tutorialState?.unlockedFeatures || []"
         @show-commandments="showCommandments = true"
         @show-passive-cards="showPassiveCardsCollection = true"
-        @show-card-guide="showSynergyGuide = true"
+        @show-card-guide="showCardCollection = true"
         @start-normal-battle="startAdventure"
         @next-day="handleNextDay"
         @recruit-soldiers="recruitSoldiers"
@@ -66,10 +66,10 @@
     <!-- Mobile Bottom Action Buttons (Fixed) -->
     <GameMobileActions
       v-if="!adventureState.active"
-      :unlocked-features="tutorialState.unlockedFeatures"
+      :unlocked-features="tutorialState?.unlockedFeatures || []"
       @show-commandments="showCommandments = true"
       @show-passive-cards="showPassiveCardsCollection = true"
-      @show-card-guide="showSynergyGuide = true"
+      @show-card-guide="showCardCollection = true"
       @start-normal-battle="startAdventure"
       @next-day="handleNextDay"
       @recruit-soldiers="recruitSoldiers"
@@ -95,7 +95,14 @@
     <GameBattleModal
       :battle="currentBattle"
       :is-scrolling="isScrolling"
+      :battle-active-cards="battleActiveCards"
+      :used-active-cards="usedActiveCards"
+      :attacker-score="attackerScore"
+      :defender-score="defenderScore"
+      :is-paused="isPaused"
+      :card-selection-time="cardSelectionTime"
       @close="closeBattle"
+      @use-active-card="useActiveCard"
     />
 
     <!-- Passive Card Selection Modal -->
@@ -103,6 +110,17 @@
       :show="showPassiveCardSelection"
       :cards="availablePassiveCards"
       @select-card="selectPassiveCard"
+    />
+
+    <!-- Active Cards Modal -->
+    <GameActiveCardsModal
+      :show="showActiveCardsModal"
+      :owned-active-cards="ownedActiveCards"
+      :battle-active-cards="battleActiveCards"
+      :max-battle-cards="maxBattleCards"
+      @close="showActiveCardsModal = false"
+      @add-to-deck="addToBattleDeck"
+      @remove-from-deck="removeFromBattleDeck"
     />
 
     <!-- Reincarnation Modal -->
@@ -121,6 +139,13 @@
       :show="showPassiveCardsCollection"
       :passive-cards="playerPassiveCards"
       @close="showPassiveCardsCollection = false"
+    />
+
+    <!-- Card Collection Modal -->
+    <GameCardCollection
+      :show="showCardCollection"
+      :player-cards="playerPassiveCards"
+      @close="showCardCollection = false"
     />
 
     <!-- Commandments Modal -->
@@ -186,10 +211,10 @@
 
     <!-- Adventure Map -->
     <GameAdventureMap
-      v-if="adventureState.active"
-      :nodes="adventureState.nodes"
-      :current-node-id="adventureState.currentNodeId"
-      :accumulated-rewards="adventureState.accumulatedRewards"
+      v-if="adventureState?.active"
+      :nodes="adventureState?.nodes || []"
+      :current-node-id="adventureState?.currentNodeId || null"
+      :accumulated-rewards="adventureState?.accumulatedRewards || {}"
       @node-click="handleAdventureNodeClick"
       @retreat="retreatAdventure"
     />
@@ -199,7 +224,7 @@
       :show="showAdventureShop"
       :current-gold="kingdom.resources.gold"
       :current-food="kingdom.resources.food"
-      @close="() => { showAdventureShop = false; if (currentNode) moveToNode(currentNode.id) }"
+      @close="handleAdventureShopClose"
       @buy="handleAdventureShopBuy"
     />
 
@@ -208,6 +233,17 @@
       :show="showAdventureRest"
       @close="showAdventureRest = false"
       @select="handleAdventureRestSelect"
+    />
+
+    <!-- Battle Card Selection Modal -->
+    <GameBattleCardSelection
+      :show="showBattleCardSelection"
+      :enemy-name="pendingBattle.enemyName"
+      :enemy-power="pendingBattle.enemyPower"
+      :player-power="kingdom.resources.soldiers"
+      :available-cards="ownedActiveCards"
+      @confirm="handleBattleCardsConfirm"
+      @cancel="showBattleCardSelection = false"
     />
 
     <!-- Notification -->
@@ -230,7 +266,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import type { PermanentEffect } from '../types/game'
 import type { PassiveCard } from '../types/passive-cards'
 import { drawRandomCards } from '../types/passive-cards'
@@ -249,8 +285,10 @@ import GameGeneralsModal from '~/components/game/GameGeneralsModal.vue'
 import GameEventModal from '~/components/game/GameEventModal.vue'
 import GameCrossroadModal from '~/components/game/GameCrossroadModal.vue'
 import GamePassiveCardModal from '~/components/game/GamePassiveCardModal.vue'
+import GameActiveCardsModal from '~/components/game/GameActiveCardsModal.vue'
 import GameReincarnationModal from '~/components/game/GameReincarnationModal.vue'
 import GamePassiveCardsModal from '~/components/game/GamePassiveCardsModal.vue'
+import GameCardCollection from '~/components/game/GameCardCollection.vue'
 import GameCommandmentsModal from '~/components/game/GameCommandmentsModal.vue'
 import GameAdvisorModal from '~/components/game/GameAdvisorModal.vue'
 import GameSynergyCardSelection from '~/components/game/GameSynergyCardSelection.vue'
@@ -261,6 +299,7 @@ import GameResourceHelp from '~/components/game/GameResourceHelp.vue'
 import GameAdventureMap from '~/components/game/GameAdventureMap.vue'
 import GameAdventureShop from '~/components/game/GameAdventureShop.vue'
 import GameAdventureRest from '~/components/game/GameAdventureRest.vue'
+import GameBattleCardSelection from '~/components/game/GameBattleCardSelection.vue'
 
 // Composables
 import { useNotification } from '~/composables/useNotification'
@@ -272,6 +311,7 @@ import { useBattleSystem } from '~/composables/useBattleSystem'
 import { useEventSystem } from '~/composables/useEventSystem'
 import { useSynergyCards } from '~/composables/useSynergyCards'
 import { useAdventureSystem } from '~/composables/useAdventureSystem'
+import { useActiveCards } from '~/composables/useActiveCards'
 
 // 신 게임 상태 가져오기
 const { nationState: godGameState, startCards: godStartCards } = useGodGame()
@@ -299,6 +339,9 @@ const {
 // 조언자 모달 상태
 const showAdvisorModal = ref(false)
 const currentAdvisorMessage = ref<any>(null)
+
+// 액티브 카드 모달 상태
+const showActiveCardsModal = ref(false)
 
 // 게임 타이머 (게임 일수 기반)
 const remainingTime = computed(() => {
@@ -345,6 +388,41 @@ const {
   availableCardsForReincarnation
 } = useGamePassiveCards()
 
+// 액티브 카드 시스템
+const {
+  ownedActiveCards,
+  battleActiveCards,
+  maxBattleCards,
+  loadActiveCards,
+  saveActiveCards,
+  addActiveCard,
+  addRandomActiveCard,
+  addToBattleDeck,
+  removeFromBattleDeck,
+  clearBattleDeck,
+  grantStarterCards
+} = useActiveCards({ showNotification })
+
+// 게임 시작 시 액티브 카드 로드
+if (process.client) {
+  loadActiveCards()
+
+  // 튜토리얼 완료 후 첫 시작이면 스타터 카드 지급
+  const hasGrantedStarter = localStorage.getItem('hasGrantedStarterActiveCards')
+  if (!hasGrantedStarter && ownedActiveCards.value.length === 0) {
+    grantStarterCards()
+    localStorage.setItem('hasGrantedStarterActiveCards', 'true')
+  }
+}
+
+// 액티브 카드 저장
+watch(ownedActiveCards, (newCards) => {
+  if (process.client) {
+    const cardIds = newCards.map(card => card.id)
+    localStorage.setItem('activeCards', JSON.stringify(cardIds))
+  }
+}, { deep: true })
+
 // 환생용 랜덤 카드 3장
 const reincarnationCardOptions = ref<PassiveCard[]>([])
 
@@ -380,6 +458,9 @@ const recruitSoldiers = () => {
 
 // 패시브 카드 컬렉션 모달
 const showPassiveCardsCollection = ref(false)
+
+// 카드 도감 모달
+const showCardCollection = ref(false)
 
 // 시너지 카드 컬렉션 모달
 const showSynergyCardsCollection = ref(false)
@@ -442,6 +523,15 @@ const {
 const showAdventureShop = ref(false)
 const showAdventureRest = ref(false)
 
+// 전투 카드 선택 모달
+const showBattleCardSelection = ref(false)
+const pendingBattle = ref({
+  enemyName: '',
+  enemyPower: 0,
+  battleType: 'normal' as 'normal' | 'empire'
+})
+const selectedBattleCards = ref<any[]>([]) // 전투에 사용할 액티브 카드
+
 // ==================== PVP 관련 State - 주석 처리됨 ====================
 // 멀티플레이 상태
 /*
@@ -493,7 +583,15 @@ const {
   getTextClass,
   closeBattle: closeBattleInternal,
   handleBattleEnd,
-  currentBattleMode
+  currentBattleMode,
+  useActiveCard,
+  usedActiveCards,
+  activeEffects,
+  attackerScore,
+  defenderScore,
+  currentTurn,
+  isPaused,
+  cardSelectionTime
 } = useBattleSystem({
   kingdom,
   enemyKingdoms,
@@ -502,7 +600,9 @@ const {
   showNotification,
   synergyBattleEffects,
   isWeeklyInvasion,
-  showReincarnationModal
+  showReincarnationModal,
+  selectedBattleCards,
+  battleActiveCards
 })
 
 // 전투 종료 처리 (제국 전투 패배 시에만 환생 모달 표시)
@@ -515,7 +615,7 @@ const closeBattle = () => {
   closeBattleInternal()
 
   // 모험 모드인 경우
-  if (adventureState.value.active) {
+  if (adventureState?.value?.active) {
     handleAdventureBattleEnd(battleResult as 'victory' | 'defeat')
     return
   }
@@ -529,6 +629,63 @@ const closeBattle = () => {
       showReincarnationModal.value = true
     }, 500)
   }
+}
+
+// 전투 중 카드 사용 처리
+const handleUseBattleCard = (card: any) => {
+  if (!currentBattle.value) return
+
+  // 전투 로그에 카드 사용 기록 추가
+  const cardUseLog = {
+    turn: currentBattle.value.log.length,
+    generalName: kingdom.value.ruler || '군주',
+    action: card.name,
+    success: true,
+    message: '',
+    story: `${kingdom.value.ruler || '군주'}이(가) ${card.icon} ${card.name} 카드를 사용했다! ${card.description}`,
+    narrativeType: 'action' as const
+  }
+
+  // 결과 로그 전에 카드 사용 로그 삽입
+  const resultLogIndex = currentBattle.value.log.findIndex(log => log.turn === 999)
+  if (resultLogIndex !== -1) {
+    currentBattle.value.log.splice(resultLogIndex, 0, cardUseLog)
+  } else {
+    currentBattle.value.log.push(cardUseLog)
+  }
+
+  // 카드 효과 즉시 적용 (전투 결과에 영향)
+  if (card.effect) {
+    // 공격력/방어력/스킬 보너스를 아군 장수에게 즉시 적용
+    if (currentBattle.value.attacker.generals.length > 0) {
+      currentBattle.value.attacker.generals.forEach(general => {
+        if (card.effect.attackBonus) {
+          general.stats.power += Math.floor(general.stats.power * card.effect.attackBonus / 100)
+        }
+        if (card.effect.defenseBonus) {
+          general.assignedSoldiers += Math.floor(general.assignedSoldiers * card.effect.defenseBonus / 100)
+        }
+        if (card.effect.skillPowerBonus) {
+          general.skills.forEach(skill => {
+            if (skill.successRate) {
+              skill.successRate = Math.min(95, skill.successRate + card.effect.skillPowerBonus)
+            }
+          })
+        }
+      })
+    }
+
+    // 알림 표시
+    showNotification(`${card.icon} ${card.name} 카드를 사용했습니다!`, 'success')
+  }
+
+  // 스크롤을 최신 로그로 이동
+  setTimeout(() => {
+    const container = document.querySelector('.story-battle-log')
+    if (container) {
+      container.scrollTop = container.scrollHeight
+    }
+  }, 100)
 }
 
 // 게임 시작시 전투 기록 불러오기
@@ -610,20 +767,38 @@ const handleAdventureNodeClick = (node: any) => {
 
   switch (node.type) {
     case 'start':
-      // 시작 노드는 자동으로 다음으로 이동
-      moveToNode(node.id)
+      // 시작 노드 클릭 시 완료 처리하고 다음 경로 선택 가능하게
+      node.status = 'completed'
+      node.completed = true
+
+      // 연결된 노드들을 available로 변경
+      node.connections.forEach(connId => {
+        const connNode = adventureState.value.nodes.find(n => n.id === connId)
+        if (connNode && connNode.status === 'locked') {
+          connNode.status = 'available'
+        }
+      })
+
+      // 현재 노드는 더 이상 current가 아님
+      adventureState.value.currentNodeId = null
+
+      showNotification('다음 경로를 선택하세요!', 'info')
       break
 
     case 'battle':
     case 'elite':
     case 'boss':
-      // 전투 시작 (전투 후 handleAdventureBattleEnd에서 노드 이동)
+      // 선택한 노드로 이동 (현재 노드로 설정)
+      moveToNode(node.id)
+
+      // 전투 카드 선택 모달 표시
       if (node.enemy) {
-        startStoryBattle(
-          node.enemy.name,
-          node.enemy.power,
-          node.type === 'boss' ? 'empire' : 'normal'
-        )
+        pendingBattle.value = {
+          enemyName: node.enemy.name,
+          enemyPower: node.enemy.power,
+          battleType: node.type === 'boss' ? 'empire' : 'normal'
+        }
+        showBattleCardSelection.value = true
       }
       break
 
@@ -637,17 +812,32 @@ const handleAdventureNodeClick = (node: any) => {
         // 일반 이벤트 발생
         drawEventCard()
       }
-      moveToNode(node.id)
+
+      // 노드 완료 처리 및 다음 경로 선택 가능하게
+      node.status = 'completed'
+      node.completed = true
+      node.connections.forEach(connId => {
+        const connNode = adventureState.value.nodes.find(n => n.id === connId)
+        if (connNode && connNode.status === 'locked') {
+          connNode.status = 'available'
+        }
+      })
+      adventureState.value.currentNodeId = null
+      showNotification('이벤트 완료! 다음 경로를 선택하세요!', 'info')
       break
 
     case 'shop':
-      // 상점 모달 열기
+      // 상점 모달 열기 (모달에서 노드 이동 처리)
       showAdventureShop.value = true
+      // 노드 선택은 상점 종료 시 처리
+      adventureState.value.currentNodeId = node.id
       break
 
     case 'rest':
-      // 휴식처 모달 열기
+      // 휴식처 모달 열기 (모달에서 노드 이동 처리)
       showAdventureRest.value = true
+      // 노드 선택은 휴식 종료 시 처리
+      adventureState.value.currentNodeId = node.id
       break
 
     case 'treasure':
@@ -662,8 +852,38 @@ const handleAdventureNodeClick = (node: any) => {
         `💎 보물 발견! 금 +${treasureReward.gold}, 식량 +${treasureReward.food}`,
         'success'
       )
-      moveToNode(node.id)
+
+      // 노드 완료 처리 및 다음 경로 선택 가능하게
+      node.status = 'completed'
+      node.completed = true
+      node.connections.forEach(connId => {
+        const connNode = adventureState.value.nodes.find(n => n.id === connId)
+        if (connNode && connNode.status === 'locked') {
+          connNode.status = 'available'
+        }
+      })
+      adventureState.value.currentNodeId = null
+      showNotification('다음 경로를 선택하세요!', 'info')
       break
+  }
+}
+
+// 상점 닫기 처리
+const handleAdventureShopClose = () => {
+  showAdventureShop.value = false
+
+  // 현재 노드 완료 처리 및 다음 경로 선택 가능하게
+  if (currentNode.value) {
+    currentNode.value.status = 'completed'
+    currentNode.value.completed = true
+    currentNode.value.connections.forEach(connId => {
+      const connNode = adventureState.value.nodes.find(n => n.id === connId)
+      if (connNode && connNode.status === 'locked') {
+        connNode.status = 'available'
+      }
+    })
+    adventureState.value.currentNodeId = null
+    showNotification('상점 방문 완료! 다음 경로를 선택하세요!', 'info')
   }
 }
 
@@ -730,9 +950,38 @@ const handleAdventureRestSelect = (option: 'heal' | 'remove-card' | 'meditate') 
   }
 
   showAdventureRest.value = false
+
+  // 현재 노드 완료 처리 및 다음 경로 선택 가능하게
   if (currentNode.value) {
-    moveToNode(currentNode.value.id)
+    currentNode.value.status = 'completed'
+    currentNode.value.completed = true
+    currentNode.value.connections.forEach(connId => {
+      const connNode = adventureState.value.nodes.find(n => n.id === connId)
+      if (connNode && connNode.status === 'locked') {
+        connNode.status = 'available'
+      }
+    })
+    adventureState.value.currentNodeId = null
+    showNotification('휴식 완료! 다음 경로를 선택하세요!', 'info')
   }
+}
+
+// 전투 카드 선택 완료 후 전투 시작
+const handleBattleCardsConfirm = (cards: PassiveCard[]) => {
+  selectedBattleCards.value = cards
+  showBattleCardSelection.value = false
+
+  // 선택된 카드 정보 로그
+  if (cards.length > 0) {
+    console.log(`전투 카드 ${cards.length}장 선택:`, cards.map(c => c.name))
+  }
+
+  // 전투 시작
+  startStoryBattle(
+    pendingBattle.value.enemyName,
+    pendingBattle.value.enemyPower,
+    pendingBattle.value.battleType
+  )
 }
 
 // 모험 전투 종료 후 처리
@@ -759,8 +1008,22 @@ const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
       return
     }
 
-    // 다음 노드로 이동 가능하게 만들기
-    moveToNode(currentNode.value.id)
+    // 현재 노드를 완료 상태로 변경하고, 연결된 노드들을 선택 가능하게 만들기
+    currentNode.value.status = 'completed'
+    currentNode.value.completed = true
+
+    // 연결된 노드들을 available로 변경 (사용자가 선택할 수 있도록)
+    currentNode.value.connections.forEach(connId => {
+      const connNode = adventureState.value.nodes.find(n => n.id === connId)
+      if (connNode && connNode.status === 'locked') {
+        connNode.status = 'available'
+      }
+    })
+
+    // 현재 노드는 더 이상 current가 아님
+    adventureState.value.currentNodeId = null
+
+    showNotification('다음 경로를 선택하세요!', 'info')
   } else {
     // 패배
     failAdventure()
@@ -915,5 +1178,40 @@ const handleStartCardsSelected = (cards: any[]) => {
   showNotification(`${cards.length}개의 카드를 획득했습니다!`, 'success')
 }
 // ==================== 튜토리얼 스토리 끝 ====================
+
+// ==================== BGM 관리 ====================
+const bgmAudio = ref<HTMLAudioElement | null>(null)
+
+onMounted(() => {
+  if (process.client) {
+    // BGM 로드 및 재생
+    bgmAudio.value = new Audio('/bgm/baseBgm.mp3')
+    bgmAudio.value.loop = true // 반복 재생
+    bgmAudio.value.volume = 0.3 // 볼륨 30% (0.0 ~ 1.0)
+
+    // 재생 시도
+    bgmAudio.value.play().catch(error => {
+      console.log('BGM 자동 재생 실패 (사용자 상호작용 필요):', error)
+      // 브라우저 자동재생 정책으로 인해 첫 클릭 시 재생하도록 이벤트 리스너 추가
+      const playBgmOnInteraction = () => {
+        if (bgmAudio.value) {
+          bgmAudio.value.play().catch(e => console.log('BGM 재생 오류:', e))
+        }
+        document.removeEventListener('click', playBgmOnInteraction)
+      }
+      document.addEventListener('click', playBgmOnInteraction, { once: true })
+    })
+  }
+})
+
+onUnmounted(() => {
+  // 컴포넌트 언마운트 시 BGM 정지 및 정리
+  if (bgmAudio.value) {
+    bgmAudio.value.pause()
+    bgmAudio.value.currentTime = 0
+    bgmAudio.value = null
+  }
+})
+// ==================== BGM 관리 끝 ====================
 
 </script>

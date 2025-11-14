@@ -281,6 +281,14 @@ type GameState = 'start' | 'story' | 'cards'
 const gameState = ref<GameState>('story')
 
 onMounted(() => {
+  // 환생 시 저장된 왕국 이름 자동 설정
+  if (reincarnationCount.value > 0 && savedKingdomName.value) {
+    localNationName.value = savedKingdomName.value
+    if (process.client) {
+      localStorage.setItem('kingdomName', savedKingdomName.value)
+    }
+  }
+
   setTimeout(() => {
     typeText()
   }, 100)
@@ -363,24 +371,27 @@ const showLocationChoices = computed(() => {
           chapterId === 'reborn_treasury_choice_3'
 })
 
-// 왕국 이름 입력 표시 여부 (chapter5 또는 nation_name, 단 환생 시 이미 이름이 있으면 건너뛰기)
+// 왕국 이름 입력 표시 여부 (chapter5에서만, 환생 시에는 저장된 이름 사용)
 const showNationNameInput = computed(() => {
   const chapterId = currentChapter.value?.id
-  const needsInput = chapterId === 'chapter5' || chapterId === 'nation_name'
 
-  // 환생 시 이미 왕국 이름이 있으면 입력 건너뛰기
-  if (needsInput && reincarnationCount.value > 0 && savedKingdomName.value) {
-    // 자동으로 저장된 이름 사용하고 다음 챕터로 진행
-    if (!localNationName.value) {
-      localNationName.value = savedKingdomName.value
-      setTimeout(() => {
-        confirmNationName()
-      }, 500)
-    }
-    return false
+  // 첫 게임만 왕국 이름 입력 (chapter5)
+  if (chapterId === 'chapter5' && reincarnationCount.value === 0) {
+    return true
   }
 
-  return needsInput
+  return false
+})
+
+// 환생 시 자동으로 왕국 이름 설정
+watch(currentChapterIndex, () => {
+  if (reincarnationCount.value > 0 && savedKingdomName.value && !localNationName.value) {
+    // 환생 시 저장된 왕국 이름을 자동으로 설정
+    localNationName.value = savedKingdomName.value
+    if (process.client) {
+      localStorage.setItem('kingdomName', savedKingdomName.value)
+    }
+  }
 })
 
 // 계명 선택 섹션 표시 여부 (commandments 챕터에 도달했을 때)

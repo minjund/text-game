@@ -44,8 +44,109 @@ export const skills: Record<string, Skill> = {
     description: '적군에게 무수한 화살을 쏟아붓는다',
     successRate: 70,
     effect: { type: 'damage', value: 200 }
+  },
+  flameBurst: {
+    id: 'flameBurst',
+    name: '화염폭발',
+    description: '불길이 적진을 휩쓴다',
+    successRate: 60,
+    effect: { type: 'damage', value: 280 }
+  },
+  iceLance: {
+    id: 'iceLance',
+    name: '빙창',
+    description: '얼음의 창으로 적을 관통한다',
+    successRate: 68,
+    effect: { type: 'damage', value: 260 }
+  },
+  windSlash: {
+    id: 'windSlash',
+    name: '풍신참',
+    description: '바람의 칼날로 적을 베어버린다',
+    successRate: 72,
+    effect: { type: 'damage', value: 240 }
+  },
+  earthquake: {
+    id: 'earthquake',
+    name: '대지진동',
+    description: '땅을 흔들어 적의 균형을 무너뜨린다',
+    successRate: 58,
+    effect: { type: 'damage', value: 290 }
+  },
+  shadowStrike: {
+    id: 'shadowStrike',
+    name: '암영습격',
+    description: '그림자에서 기습공격을 가한다',
+    successRate: 62,
+    effect: { type: 'damage', value: 270 }
+  },
+  holyLight: {
+    id: 'holyLight',
+    name: '성스러운 빛',
+    description: '신성한 빛으로 아군을 보호한다',
+    successRate: 78,
+    effect: { type: 'buff', value: 180 }
+  },
+  berserk: {
+    id: 'berserk',
+    name: '광전사의 분노',
+    description: '이성을 버리고 힘을 폭발시킨다',
+    successRate: 45,
+    effect: { type: 'damage', value: 450 }
+  },
+  poisonMist: {
+    id: 'poisonMist',
+    name: '독무',
+    description: '독안개로 적의 전력을 약화시킨다',
+    successRate: 65,
+    effect: { type: 'damage', value: 220 }
+  },
+  lightningChain: {
+    id: 'lightningChain',
+    name: '연쇄번개',
+    description: '번개가 여러 적을 관통한다',
+    successRate: 55,
+    effect: { type: 'damage', value: 310 }
+  },
+  ironWall: {
+    id: 'ironWall',
+    name: '철벽진',
+    description: '난공불락의 방어진을 구축한다',
+    successRate: 82,
+    effect: { type: 'defense', value: 250 }
+  },
+  swordDance: {
+    id: 'swordDance',
+    name: '검무',
+    description: '화려한 검술로 적을 압도한다',
+    successRate: 70,
+    effect: { type: 'damage', value: 230 }
+  },
+  dragonRoar: {
+    id: 'dragonRoar',
+    name: '용의 포효',
+    description: '용의 함성으로 적을 위압한다',
+    successRate: 52,
+    effect: { type: 'damage', value: 320 }
+  },
+  meteorStrike: {
+    id: 'meteorStrike',
+    name: '유성낙하',
+    description: '하늘에서 운석을 떨어뜨린다',
+    successRate: 48,
+    effect: { type: 'damage', value: 420 }
+  },
+  healingWave: {
+    id: 'healingWave',
+    name: '치유의 물결',
+    description: '치유의 파동으로 아군 전체를 회복시킨다',
+    successRate: 85,
+    effect: { type: 'buff', value: 200 }
   }
 }
+
+// 스킬 배열 (랜덤 선택용)
+export const skillsArray = Object.values(skills)
 
 // 장수 데이터
 export const mockGenerals: General[] = [
@@ -535,3 +636,85 @@ export const crossroadCards: CrossroadCard[] = [
     ]
   }
 ]
+
+// 랜덤 이름 생성용 데이터
+const firstNames = [
+  '강철의', '불꽃의', '얼음의', '그림자', '빛의', '어둠의', '번개', '폭풍의', '대지의', '천상의',
+  '지옥의', '영원한', '불멸의', '광기의', '지혜의', '용맹한', '잔혹한', '냉혹한', '고독한', '광란의',
+  '침묵의', '절망의', '희망의', '분노의', '복수의', '정의의', '악마의', '천사의', '신성한', '저주받은'
+]
+
+const lastNames = [
+  '카론', '엘리온', '리나', '아르테미스', '드라코', '발키리', '아르카누스', '모르간', '레온', '제우스',
+  '섀도우', '모르가나', '이그니스', '메를린', '공명', '무명', '타노스', '로빈', '아킬레스', '헥토르',
+  '오딘', '토르', '로키', '프레이야', '헤라', '아테나', '포세이돈', '하데스', '아레스', '아폴론'
+]
+
+const titles = [
+  '불패의 맹장', '지혜의 책사', '신궁', '백전노장', '용의 화신', '전장의 여신', '마법의 현자',
+  '어둠의 군주', '빛의 수호자', '천둥의 주인', '어둠의 검', '저주의 마녀', '용살자', '검의 달인',
+  '불패의 수호자', '백발백중', '전사의 왕', '암흑기사', '성검의 주인', '광전사', '무쌍의 영웅',
+  '철벽의 방패', '질풍의 칼날', '혈전의 귀신', '전략의 대가', '파괴자', '학살자', '구원자', '심판자'
+]
+
+// 랜덤 적 장수 생성
+export const generateRandomEnemy = (): General => {
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)]
+  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)]
+  const title = titles[Math.floor(Math.random() * titles.length)]
+
+  // 스킬 랜덤 선택 (2-3개)
+  const skillCount = 2 + Math.floor(Math.random() * 2)
+  const selectedSkills: Skill[] = []
+  const availableSkills = [...skillsArray]
+
+  for (let i = 0; i < skillCount && availableSkills.length > 0; i++) {
+    const randomIndex = Math.floor(Math.random() * availableSkills.length)
+    const skill = availableSkills[randomIndex]
+    if (skill) {
+      selectedSkills.push(skill)
+      availableSkills.splice(randomIndex, 1)
+    }
+  }
+
+  // 능력치 랜덤 생성 (60-95)
+  const power = 60 + Math.floor(Math.random() * 36)
+  const intelligence = 60 + Math.floor(Math.random() * 36)
+  const leadership = 60 + Math.floor(Math.random() * 36)
+
+  // 병력 수 랜덤 (1000-2500)
+  const soldiers = 1000 + Math.floor(Math.random() * 1501)
+
+  // 능력치 합계로 등급 결정
+  const totalStats = power + intelligence + leadership
+  let rarity: 'common' | 'rare' | 'epic'
+  if (totalStats >= 250) {
+    rarity = 'epic'
+  } else if (totalStats >= 220) {
+    rarity = 'rare'
+  } else {
+    rarity = 'common'
+  }
+
+  return {
+    id: `random-${Date.now()}-${Math.random()}`,
+    name: `${firstName} ${lastName}`,
+    title: title || '전사',
+    rarity,
+    stats: { power, intelligence, leadership },
+    skills: selectedSkills,
+    assignedSoldiers: soldiers
+  }
+}
+
+// 랜덤 적군 생성 (1-3명)
+export const generateRandomEnemies = (count?: number): General[] => {
+  const enemyCount = count || (1 + Math.floor(Math.random() * 3))
+  const enemies: General[] = []
+
+  for (let i = 0; i < enemyCount; i++) {
+    enemies.push(generateRandomEnemy())
+  }
+
+  return enemies
+}
