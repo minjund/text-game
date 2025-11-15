@@ -54,7 +54,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
   // 카드 선택 타이머 관련 상태
   const cardSelectionTime = ref(0) // 남은 시간 (초)
   const cardSelectionTimer = ref<any>(null)
-  const previousBattleState = ref<'even' | 'winning' | 'losing'>('even') // 이전 전투 상태
+  const previousBattleState = ref<string>('팽팽한 접전') // 이전 전투 상태 ("크게 우세", "약간 우세", "팽팽한 접전", "약간 열세", "크게 열세")
 
   // 컴포넌트 언마운트 시 전투 중지
   onUnmounted(() => {
@@ -96,26 +96,50 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     cardSelectionTime.value = 0
   }
 
+  // Battle Status 계산 함수
+  const getBattleStatus = (scoreDiff: number): string => {
+    if (scoreDiff > 2) return '크게 우세'
+    if (scoreDiff > 0) return '약간 우세'
+    if (scoreDiff === 0) return '팽팽한 접전'
+    if (scoreDiff > -3) return '약간 열세'
+    return '크게 열세'
+  }
+
+  // Battle Status에 따른 나레이션
+  const getStatusChangeNarration = (newStatus: string): string => {
+    switch (newStatus) {
+      case '크게 우세':
+        return '💪 압도적인 우세! 지금이 결정타를 날릴 때다! 카드를 선택하라! (15초)'
+      case '약간 우세':
+        return '👍 우리가 앞서고 있다! 이 기세를 몰아갈 카드를 선택하라! (15초)'
+      case '팽팽한 접전':
+        return '⚖️ 팽팽한 접전! 지금 카드 한 장이 승부를 가를 것이다! (15초)'
+      case '약간 열세':
+        return '⚠️ 조금씩 밀리고 있다! 전세를 역전시킬 카드를 선택하라! (15초)'
+      case '크게 열세':
+        return '🚨 위급한 상황! 지금이 마지막 기회다! 카드를 선택하라! (15초)'
+      default:
+        return '⚡ 전세가 바뀌었다! 카드를 선택하라! (15초)'
+    }
+  }
+
   // 점수 변화 감지 및 전투 일시정지
   watch([attackerScore, defenderScore], ([newAttacker, newDefender], [oldAttacker, oldDefender]) => {
     // 전투가 진행 중이고 일시정지 상태가 아닐 때만 체크
     if (!isBattleRunning.value || isPaused.value || !currentBattle.value) return
 
     const scoreDiff = newAttacker - newDefender
-    let currentState: 'even' | 'winning' | 'losing' = 'even'
+    const currentState = getBattleStatus(scoreDiff)
 
-    if (scoreDiff > 0) {
-      currentState = 'winning'
-    } else if (scoreDiff < 0) {
-      currentState = 'losing'
-    } else {
-      currentState = 'even'
-    }
+    // 첫 점수 변경 시 열세면 바로 일시정지
+    const isFirstScore = oldAttacker === 0 && oldDefender === 0
+    const isLosing = scoreDiff < 0
 
-    // 상태 전환 체크 (팽팽한 접전에서 우세/열세로 변경되는 시점)
-    const stateChanged = previousBattleState.value === 'even' && currentState !== 'even'
+    // 상태가 변경되었는지 체크 OR 첫 점수가 열세인 경우
+    const stateChanged = previousBattleState.value !== currentState
+    const shouldPause = stateChanged || (isFirstScore && isLosing)
 
-    if (stateChanged) {
+    if (shouldPause) {
       // 전투 일시정지
       pauseBattle()
 
@@ -126,9 +150,9 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
         action: '',
         success: true,
         message: '',
-        story: currentState === 'winning'
-          ? '⚡ 전세가 우리 편으로 기울고 있다! 지금이 카드를 사용할 절호의 기회다! (15초)'
-          : '🚨 위기의 순간! 전세가 불리하게 흘러가고 있다! 카드를 사용하여 전황을 뒤집어라! (15초)',
+        story: isFirstScore && isLosing
+          ? '🚨 불리한 출발! 적의 선제공격을 허용했다! 즉시 대응이 필요하다! (15초)'
+          : getStatusChangeNarration(currentState),
         narrativeType: 'narration'
       }
       currentBattle.value.log.push(transitionLog)
@@ -670,7 +694,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     currentTurn.value = 0
     usedActiveCards.value = []
     activeEffects.value = []
-    previousBattleState.value = 'even'
+    previousBattleState.value = '팽팽한 접전'
     stopCardSelectionTimer()
 
     const logs: BattleLog[] = []

@@ -1,91 +1,92 @@
 <template>
   <Transition name="modal">
     <div v-if="battle" class="fixed inset-0 bg-black/90 z-[10001]">
-      <div class="w-full h-full flex flex-col bg-gradient-to-br from-slate-800 to-slate-900 sm:border-2 sm:border-red-600 sm:rounded-lg sm:max-w-5xl sm:max-h-[90vh] sm:m-auto sm:mt-[5vh]">
+      <div class="w-full h-full flex flex-col bg-gradient-to-br from-slate-800 to-slate-900 md:border-2 md:border-red-600 md:rounded-lg md:max-w-5xl md:max-h-[90vh] md:m-auto md:mt-[5vh]">
         <!-- Header -->
-        <div class="bg-gradient-to-r from-red-900 to-red-800 border-b-2 border-red-600 p-3 sm:p-4 flex-shrink-0">
-          <div class="flex items-center justify-between mb-2">
-            <h2 class="text-base sm:text-xl font-bold flex items-center gap-2">
+        <div class="bg-gradient-to-r from-red-900 to-red-800 border-b-2 border-red-600 p-2 md:p-4 flex-shrink-0">
+          <div class="flex items-center justify-between mb-1 md:mb-2">
+            <h2 class="text-sm md:text-xl font-bold flex items-center gap-1 md:gap-2">
               <span>⚔️</span> 전장의 기록
             </h2>
-            <button @click.stop="handleClose" class="text-2xl hover:text-red-400 transition-colors px-3 py-2 -mr-2">
+            <button @click.stop="handleClose" class="text-xl md:text-2xl hover:text-red-400 transition-colors px-2 py-1">
               ✕
             </button>
           </div>
 
           <!-- Battle Status Bar -->
-          <div v-if="!battle.result" class="space-y-2">
+          <div v-if="!battle.result" class="space-y-1 md:space-y-2">
             <!-- Team Names -->
-            <div class="flex items-center justify-between text-xs sm:text-sm">
-              <span class="font-bold text-blue-300">{{ battle.attacker.kingdomName }}</span>
-              <span class="text-slate-400">VS</span>
-              <span class="font-bold text-red-300">{{ battle.defender.kingdomName }}</span>
+            <div class="flex items-center justify-between text-[10px] md:text-sm">
+              <span class="font-bold text-blue-300 truncate max-w-[40%]">{{ battle.attacker.kingdomName }}</span>
+              <span class="text-slate-400 text-[10px]">VS</span>
+              <span class="font-bold text-red-300 truncate max-w-[40%]">{{ battle.defender.kingdomName }}</span>
             </div>
 
             <!-- Score Display -->
-            <div class="flex items-center justify-center gap-4 text-lg sm:text-xl font-bold">
-              <div class="flex items-center gap-2">
+            <div class="flex items-center justify-center gap-2 md:gap-4 text-base md:text-xl font-bold">
+              <div class="flex items-center gap-1 md:gap-2">
                 <span class="text-blue-400">{{ attackerScore }}</span>
-                <span class="text-xs text-slate-400">승점</span>
+                <span class="text-[9px] md:text-xs text-slate-400">승점</span>
               </div>
-              <span class="text-slate-500">-</span>
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-400">승점</span>
+              <span class="text-slate-500 text-sm">-</span>
+              <div class="flex items-center gap-1 md:gap-2">
+                <span class="text-[9px] md:text-xs text-slate-400">승점</span>
                 <span class="text-red-400">{{ defenderScore }}</span>
               </div>
             </div>
 
             <!-- Battle Status Indicator -->
-            <div class="flex items-center justify-center gap-2 text-xs">
-              <div v-if="scoreDifference > 2" class="flex items-center gap-1 text-green-400">
-                <span>💪</span>
+            <div class="flex items-center justify-center gap-1 md:gap-2 text-[10px] md:text-xs">
+              <div v-if="scoreDifference > 2" class="flex items-center gap-0.5 md:gap-1 text-green-400">
+                <span class="text-xs md:text-base">💪</span>
                 <span class="font-bold">크게 우세!</span>
               </div>
-              <div v-else-if="scoreDifference > 0" class="flex items-center gap-1 text-blue-400">
-                <span>👍</span>
+              <div v-else-if="scoreDifference > 0" class="flex items-center gap-0.5 md:gap-1 text-blue-400">
+                <span class="text-xs md:text-base">👍</span>
                 <span class="font-bold">약간 우세</span>
               </div>
-              <div v-else-if="scoreDifference === 0" class="flex items-center gap-1 text-yellow-400">
-                <span>⚖️</span>
+              <div v-else-if="scoreDifference === 0" class="flex items-center gap-0.5 md:gap-1 text-yellow-400">
+                <span class="text-xs md:text-base">⚖️</span>
                 <span class="font-bold">팽팽한 접전</span>
               </div>
-              <div v-else-if="scoreDifference > -3" class="flex items-center gap-1 text-orange-400">
-                <span>⚠️</span>
+              <div v-else-if="scoreDifference > -3" class="flex items-center gap-0.5 md:gap-1 text-orange-400">
+                <span class="text-xs md:text-base">⚠️</span>
                 <span class="font-bold">약간 열세</span>
               </div>
-              <div v-else class="flex items-center gap-1 text-red-400">
-                <span>🚨</span>
+              <div v-else class="flex items-center gap-0.5 md:gap-1 text-red-400">
+                <span class="text-xs md:text-base">🚨</span>
                 <span class="font-bold">크게 열세!</span>
               </div>
             </div>
 
             <!-- Card Selection Timer -->
-            <div v-if="isPaused && cardSelectionTime > 0" class="mt-3 text-center">
-              <div class="bg-yellow-600/30 border-2 border-yellow-500 rounded-lg p-3 animate-pulse">
-                <div class="flex items-center justify-center gap-2 mb-2">
-                  <span class="text-xl">⏱️</span>
-                  <span class="text-lg font-bold text-yellow-300">카드 선택 시간</span>
+            <div v-if="isPaused && cardSelectionTime > 0" class="mt-1 md:mt-2">
+              <div class="flex items-center gap-2">
+                <div class="flex-1 bg-slate-700 rounded-full h-1.5 md:h-1 overflow-hidden">
+                  <div
+                    class="bg-yellow-400 h-full transition-all duration-1000 ease-linear"
+                    :style="{ width: `${(cardSelectionTime / 15) * 100}%` }"
+                  ></div>
                 </div>
-                <div class="text-3xl font-bold text-yellow-100">{{ cardSelectionTime }}초</div>
-                <div class="text-xs text-yellow-200 mt-1">카드를 선택하거나 시간이 지나면 전투가 재개됩니다</div>
+                <span class="text-xs md:text-[10px] text-yellow-400 min-w-[28px] md:min-w-[24px]">{{ cardSelectionTime }}s</span>
               </div>
             </div>
           </div>
 
           <!-- Final Result Display -->
-          <div v-else class="flex items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm mt-1">
-            <span class="font-bold text-blue-300">{{ battle.attacker.kingdomName }}</span>
+          <div v-else class="flex items-center justify-center gap-2 md:gap-4 text-[10px] md:text-sm mt-1">
+            <span class="font-bold text-blue-300 truncate max-w-[40%]">{{ battle.attacker.kingdomName }}</span>
             <span class="text-slate-400">VS</span>
-            <span class="font-bold text-red-300">{{ battle.defender.kingdomName }}</span>
+            <span class="font-bold text-red-300 truncate max-w-[40%]">{{ battle.defender.kingdomName }}</span>
           </div>
         </div>
 
         <!-- Battle Log -->
-        <div ref="battleLogContainer" class="flex-1 p-3 sm:p-6 overflow-y-auto bg-slate-900/50 scroll-smooth">
+        <div ref="battleLogContainer" class="flex-1 p-2 md:p-6 overflow-y-auto bg-slate-900/50 scroll-smooth">
           <div :class="{ 'opacity-50': isScrolling }">
             <div class="prose prose-invert max-w-none">
               <p v-for="(log, index) in battle.log" :key="index"
-                 class="mb-2 sm:mb-3 text-xs sm:text-sm leading-relaxed"
+                 class="mb-1.5 md:mb-3 text-[11px] md:text-sm leading-relaxed"
                  :class="{
                    'text-slate-300': log.narrativeType === 'narration',
                    'text-amber-200 font-semibold': log.narrativeType === 'action',
@@ -102,69 +103,72 @@
         <!-- Active Battle Cards Section -->
         <div v-if="battleActiveCards && battleActiveCards.length > 0 && !battle.result"
              :class="[
-               'border-t-2 p-3 sm:p-4 flex-shrink-0 transition-all duration-300',
+               'border-t-2 p-2 md:p-4 flex-shrink-0 transition-all duration-300',
                isPaused && cardSelectionTime > 0
                  ? 'border-yellow-500 bg-yellow-900/30 shadow-lg shadow-yellow-500/20'
                  : 'border-slate-700 bg-slate-900/80'
              ]">
-          <h3 class="text-xs sm:text-sm font-bold mb-2 sm:mb-3 text-amber-400">✨ 액티브 카드</h3>
-          <div class="flex gap-2 justify-center flex-wrap max-w-full overflow-x-auto">
+          <h3 class="text-[10px] md:text-sm font-bold mb-2 text-amber-400">✨ 액티브 카드</h3>
+          <div class="flex gap-1.5 md:gap-2 justify-start md:justify-center overflow-x-auto pb-1">
             <div v-for="card in battleActiveCards" :key="card.id"
                  :class="[
-                   'relative bg-gradient-to-br rounded-lg p-2 sm:p-3 border-2 w-32 sm:w-36 flex-shrink-0',
+                   'relative bg-gradient-to-br rounded-lg p-1.5 md:p-3 border-2 w-24 md:w-36 flex-shrink-0',
                    isCardUsed(card.id)
                      ? 'from-gray-700 to-gray-800 border-gray-600 opacity-50 cursor-not-allowed'
                      : getCardGlowClass(card)
                  ]">
               <!-- Recommended Badge -->
               <div v-if="!isCardUsed(card.id) && isCardRecommended(card)"
-                   class="absolute -top-2 -right-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-1 rounded-full animate-pulse z-10">
+                   class="absolute -top-1 -right-1 bg-yellow-500 text-black text-[8px] md:text-[10px] font-bold px-1 md:px-2 py-0.5 md:py-1 rounded-full animate-pulse z-10">
                 추천!
               </div>
 
-              <div class="text-2xl sm:text-3xl mb-1 text-center">{{ card.icon }}</div>
-              <div class="text-xs font-bold mb-1 text-center truncate" :title="card.name">{{ card.name }}</div>
-              <div class="text-[10px] text-center text-slate-300 mb-1 line-clamp-2" :title="card.battleDescription">
+              <div class="text-xl md:text-3xl mb-0.5 md:mb-1 text-center">{{ card.icon }}</div>
+              <div class="text-[10px] md:text-xs font-bold mb-0.5 md:mb-1 text-center truncate" :title="card.name">{{ card.name }}</div>
+              <div class="text-[8px] md:text-[10px] text-center text-slate-300 mb-0.5 md:mb-1 line-clamp-2" :title="card.battleDescription">
                 {{ card.battleDescription }}
               </div>
 
               <!-- Usage Hint -->
-              <div v-if="!isCardUsed(card.id)" class="text-[9px] text-center text-amber-300 mb-2 italic">
+              <div v-if="!isCardUsed(card.id)" class="text-[7px] md:text-[9px] text-center text-amber-300 mb-1 md:mb-2 italic line-clamp-1">
                 {{ getCardHint(card) }}
               </div>
 
               <button
                 v-if="!isCardUsed(card.id)"
                 @click="useCard(card)"
+                :disabled="!isPaused || cardSelectionTime === 0"
                 :class="[
-                  'w-full px-2 py-1 rounded text-xs font-bold transition-colors',
-                  isCardRecommended(card)
+                  'w-full px-1 md:px-2 py-0.5 md:py-1 rounded text-[10px] md:text-xs font-bold transition-colors',
+                  !isPaused || cardSelectionTime === 0
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
+                    : isCardRecommended(card)
                     ? 'bg-yellow-600 hover:bg-yellow-500 active:bg-yellow-700 animate-pulse' :
                   card.rarity === 'legendary' ? 'bg-amber-600 hover:bg-amber-500 active:bg-amber-700' :
                   card.rarity === 'epic' ? 'bg-purple-600 hover:bg-purple-500 active:bg-purple-700' :
                   card.rarity === 'rare' ? 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700' :
                   'bg-gray-600 hover:bg-gray-500 active:bg-gray-700'
                 ]">
-                사용
+                {{ isPaused && cardSelectionTime > 0 ? '사용' : '대기' }}
               </button>
-              <div v-else class="text-xs text-center text-gray-400">사용됨</div>
+              <div v-else class="text-[9px] md:text-xs text-center text-gray-400">사용됨</div>
             </div>
           </div>
         </div>
 
         <!-- Footer with Result -->
-        <div v-if="battle.result" class="border-t-2 border-slate-600 p-4 flex-shrink-0 bg-slate-900">
-          <div class="text-center mb-4">
-            <h3 class="text-xl sm:text-2xl font-bold mb-2"
+        <div v-if="battle.result" class="border-t-2 border-slate-600 p-3 md:p-4 flex-shrink-0 bg-slate-900">
+          <div class="text-center mb-3 md:mb-4">
+            <h3 class="text-lg md:text-2xl font-bold mb-1 md:mb-2"
                 :class="battle.result === 'victory' ? 'text-green-400' : 'text-red-400'">
               {{ battle.result === 'victory' ? '🎉 승리!' : '😢 패배...' }}
             </h3>
-            <p v-if="battle.result === 'victory'" class="text-sm text-slate-300">
+            <p v-if="battle.result === 'victory'" class="text-xs md:text-sm text-slate-300">
               전리품: 금 +500, 식량 +300
             </p>
           </div>
           <button @click.stop="handleClose"
-                  class="w-full bg-slate-700 hover:bg-slate-600 active:bg-slate-500 border-2 border-slate-500 rounded-lg py-4 font-bold transition-colors text-lg">
+                  class="w-full bg-slate-700 hover:bg-slate-600 active:bg-slate-500 border-2 border-slate-500 rounded-lg py-3 md:py-4 font-bold transition-colors text-sm md:text-lg">
             전장을 떠난다
           </button>
         </div>

@@ -95,7 +95,7 @@
     <GameBattleModal
       :battle="currentBattle"
       :is-scrolling="isScrolling"
-      :battle-active-cards="battleActiveCards"
+      :battle-active-cards="selectedBattleCards"
       :used-active-cards="usedActiveCards"
       :attacker-score="attackerScore"
       :defender-score="defenderScore"
