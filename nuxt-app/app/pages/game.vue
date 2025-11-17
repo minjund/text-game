@@ -790,21 +790,17 @@ const closeAdvisorModal = () => {
 const handleAdventureNodeClick = (node: any) => {
   console.log('Node clicked:', node.type, node)
 
+  // 모든 노드 타입에서 먼저 moveToNode 호출 (같은 층 다른 노드 비활성화)
+  moveToNode(node.id)
+
   switch (node.type) {
     case 'start':
-      // 시작 노드 클릭 시 완료 처리하고 다음 경로 선택 가능하게
-      node.status = 'completed'
-      node.completed = true
-
-      // 연결된 노드들을 available로 변경
-      node.connections.forEach(connId => {
-        const connNode = adventureState.value.nodes.find(n => n.id === connId)
-        if (connNode && connNode.status === 'locked') {
-          connNode.status = 'available'
-        }
-      })
-
-      // 현재 노드는 더 이상 current가 아님
+      // 시작 노드는 즉시 완료 처리
+      const startNode = adventureState.value.nodes.find(n => n.id === node.id)
+      if (startNode) {
+        startNode.status = 'completed'
+        startNode.completed = true
+      }
       adventureState.value.currentNodeId = null
 
       // 다음 날 로직 실행
@@ -814,9 +810,6 @@ const handleAdventureNodeClick = (node: any) => {
     case 'battle':
     case 'elite':
     case 'boss':
-      // 선택한 노드로 이동 (현재 노드로 설정)
-      moveToNode(node.id)
-
       // 전투 카드 선택 모달 표시
       if (node.enemy) {
         pendingBattle.value = {
@@ -829,15 +822,12 @@ const handleAdventureNodeClick = (node: any) => {
       break
 
     case 'event':
-      // 노드 완료 처리 및 다음 경로 선택 가능하게
-      node.status = 'completed'
-      node.completed = true
-      node.connections.forEach(connId => {
-        const connNode = adventureState.value.nodes.find(n => n.id === connId)
-        if (connNode && connNode.status === 'locked') {
-          connNode.status = 'available'
-        }
-      })
+      // 이벤트 노드는 즉시 완료 처리
+      const eventNode = adventureState.value.nodes.find(n => n.id === node.id)
+      if (eventNode) {
+        eventNode.status = 'completed'
+        eventNode.completed = true
+      }
       adventureState.value.currentNodeId = null
 
       // 다음 날 로직 실행 (이벤트 카드 뽑기 포함)
@@ -845,17 +835,13 @@ const handleAdventureNodeClick = (node: any) => {
       break
 
     case 'shop':
-      // 상점 모달 열기 (모달에서 노드 이동 처리)
+      // 상점 모달 열기
       showAdventureShop.value = true
-      // 노드 선택은 상점 종료 시 처리
-      adventureState.value.currentNodeId = node.id
       break
 
     case 'rest':
-      // 휴식처 모달 열기 (모달에서 노드 이동 처리)
+      // 휴식처 모달 열기
       showAdventureRest.value = true
-      // 노드 선택은 휴식 종료 시 처리
-      adventureState.value.currentNodeId = node.id
       break
 
     case 'treasure':
@@ -871,15 +857,12 @@ const handleAdventureNodeClick = (node: any) => {
         'success'
       )
 
-      // 노드 완료 처리 및 다음 경로 선택 가능하게
-      node.status = 'completed'
-      node.completed = true
-      node.connections.forEach(connId => {
-        const connNode = adventureState.value.nodes.find(n => n.id === connId)
-        if (connNode && connNode.status === 'locked') {
-          connNode.status = 'available'
-        }
-      })
+      // 보물 노드는 즉시 완료 처리
+      const treasureNode = adventureState.value.nodes.find(n => n.id === node.id)
+      if (treasureNode) {
+        treasureNode.status = 'completed'
+        treasureNode.completed = true
+      }
       adventureState.value.currentNodeId = null
 
       // 다음 날 로직 실행

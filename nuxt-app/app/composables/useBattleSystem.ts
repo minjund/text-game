@@ -128,6 +128,10 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     // 전투가 진행 중이고 일시정지 상태가 아닐 때만 체크
     if (!isBattleRunning.value || isPaused.value || !currentBattle.value) return
 
+    // 카드가 없으면 일시정지하지 않고 계속 진행
+    const hasCards = battleActiveCards?.value && battleActiveCards.value.length > 0
+    if (!hasCards) return
+
     const scoreDiff = newAttacker - newDefender
     const currentState = getBattleStatus(scoreDiff)
 

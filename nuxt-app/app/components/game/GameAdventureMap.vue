@@ -28,69 +28,52 @@
     </div>
 
     <!-- 메인: 맵 영역 -->
-    <div class="flex-1 overflow-auto p-4 bg-gradient-to-b from-slate-900 to-black">
-      <div class="w-full min-w-max mx-auto py-8 px-4">
-        <!-- 한 줄로 노드 배치 -->
-        <div class="relative flex items-center justify-center gap-4">
-          <!-- SVG로 연결선 그리기 -->
-          <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 0;">
-            <!-- 모든 노드 간 연결선 -->
-            <template v-for="(node, index) in sortedNodes" :key="`line-${node.id}`">
-              <line
-                v-if="index < sortedNodes.length - 1"
-                :x1="`${(index / (sortedNodes.length - 1)) * 100}%`"
-                y1="50%"
-                :x2="`${((index + 1) / (sortedNodes.length - 1)) * 100}%`"
-                y2="50%"
+    <div class="flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-4 bg-gradient-to-b from-slate-900 to-black">
+      <div class="w-full max-w-lg mx-auto py-4 sm:py-8">
+        <!-- 7개 층을 세로로 배치 -->
+        <div v-for="(layer, layerIndex) in layers" :key="`layer-${layerIndex}`" class="relative mb-4 sm:mb-6">
+          <!-- 각 층의 노드들 -->
+          <div class="relative min-h-[100px] sm:min-h-[120px] md:min-h-[140px]">
+            <!-- 노드 버튼들 -->
+            <div class="relative flex justify-center items-center gap-2 sm:gap-3 px-2" style="z-index: 10;">
+              <button
+                v-for="node in layer"
+                :key="node.id"
+                @click.stop="handleNodeClick(node)"
+                :disabled="node.status === 'locked' || node.status === 'completed'"
                 :class="[
-                  'transition-all duration-500',
-                  isLineActive(index) ? 'stroke-cyan-400' : 'stroke-slate-700'
+                  'relative flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border-3 sm:border-4 transition-all active:scale-95 touch-manipulation shadow-lg',
+                  'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 p-1 sm:p-2',
+                  'flex-shrink-0',
+                  getNodeClass(node)
                 ]"
-                :stroke-width="isLineActive(index) ? '4' : '2'"
-                :stroke-opacity="isLineActive(index) ? '1' : '0.3'"
-                stroke-linecap="round"
-              />
-            </template>
-          </svg>
+              >
+                <!-- 노드 아이콘 -->
+                <span class="text-xl sm:text-2xl md:text-3xl mb-0.5">{{ getNodeInfo(node.type).icon }}</span>
 
-          <!-- 노드들 -->
-          <button
-            v-for="node in sortedNodes"
-            :key="node.id"
-            @click.stop="handleNodeClick(node)"
-            :disabled="node.status === 'locked' || node.status === 'completed'"
-            :class="[
-              'relative flex flex-col items-center justify-center rounded-2xl border-4 transition-all active:scale-95 touch-manipulation shadow-lg',
-              'w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 p-2',
-              'flex-shrink-0',
-              getNodeClass(node)
-            ]"
-            style="z-index: 10;"
-          >
-            <!-- 노드 아이콘 -->
-            <span class="text-2xl sm:text-3xl md:text-4xl mb-0.5 sm:mb-1">{{ getNodeInfo(node.type).icon }}</span>
+                <!-- 노드 이름 -->
+                <span class="text-[7px] sm:text-[9px] md:text-[10px] font-bold text-center leading-tight">
+                  {{ getNodeInfo(node.type).name }}
+                </span>
 
-            <!-- 노드 이름 -->
-            <span class="text-[8px] sm:text-[10px] md:text-xs font-bold text-center leading-tight">
-              {{ getNodeInfo(node.type).name }}
-            </span>
+                <!-- 현재 위치 표시 -->
+                <div
+                  v-if="node.status === 'current'"
+                  class="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-yellow-500/50"
+                >
+                  <span class="text-xs sm:text-sm">📍</span>
+                </div>
 
-            <!-- 현재 위치 표시 -->
-            <div
-              v-if="node.status === 'current'"
-              class="absolute -top-2 sm:-top-3 -right-2 sm:-right-3 w-6 h-6 sm:w-8 sm:h-8 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-yellow-500/50"
-            >
-              <span class="text-sm sm:text-base">📍</span>
+                <!-- 완료 표시 -->
+                <div
+                  v-if="node.status === 'completed'"
+                  class="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 w-4 h-4 sm:w-5 sm:h-5 bg-green-500 rounded-full flex items-center justify-center shadow-lg"
+                >
+                  <span class="text-[10px] sm:text-xs font-bold">✓</span>
+                </div>
+              </button>
             </div>
-
-            <!-- 완료 표시 -->
-            <div
-              v-if="node.status === 'completed'"
-              class="absolute -top-1.5 sm:-top-2 -right-1.5 sm:-right-2 w-5 h-5 sm:w-7 sm:h-7 bg-green-500 rounded-full flex items-center justify-center shadow-lg"
-            >
-              <span class="text-xs sm:text-base font-bold">✓</span>
-            </div>
-          </button>
+          </div>
         </div>
       </div>
     </div>
@@ -98,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { AdventureNode, NodeType } from '~/types/adventure'
 import { NODE_INFO } from '~/types/adventure'
 
@@ -124,10 +107,35 @@ const handleRetreat = () => {
   emit('retreat')
 }
 
-// 노드들을 x 위치로 정렬 (한 줄 배치)
-const sortedNodes = computed(() => {
-  return [...props.nodes].sort((a, b) => a.position.x - b.position.x)
+// 노드들을 층별로 그룹화
+const layers = computed(() => {
+  const layerMap = new Map<number, AdventureNode[]>()
+
+  props.nodes.forEach(node => {
+    const layerIndex = Math.round(node.position.y * 6) // 7층이므로 0~6
+    if (!layerMap.has(layerIndex)) {
+      layerMap.set(layerIndex, [])
+    }
+    layerMap.get(layerIndex)!.push(node)
+  })
+
+  // 층별로 정렬하여 배열로 변환
+  const sortedLayers: AdventureNode[][] = []
+  for (let i = 0; i <= 6; i++) {
+    if (layerMap.has(i)) {
+      // 각 층 내에서 x 위치로 정렬
+      const layer = layerMap.get(i)!.sort((a, b) => a.position.x - b.position.x)
+      sortedLayers.push(layer)
+    }
+  }
+
+  return sortedLayers
 })
+
+// ID로 노드 찾기
+const getNodeById = (nodeId: string) => {
+  return props.nodes.find(n => n.id === nodeId)
+}
 
 // 노드 정보 가져오기
 const getNodeInfo = (type: NodeType) => {
@@ -164,15 +172,6 @@ const getNodeClass = (node: AdventureNode) => {
   }
 
   return `${baseClass} ${colorMap[info.color]} hover:scale-110 hover:shadow-xl cursor-pointer`
-}
-
-// 노드 간 연결선 활성화 여부 체크
-const isLineActive = (index: number) => {
-  const currentNode = sortedNodes.value[index]
-  if (!currentNode) return false
-
-  // 현재 노드가 completed 상태면 활성화
-  return currentNode.status === 'completed' || currentNode.status === 'current'
 }
 
 // 노드 클릭 처리

@@ -34,53 +34,133 @@ export const useAdventureSystem = (
     visitedNodes: []
   })
 
-  // 맵 생성 (한 줄로 7개 노드)
+  // 맵 생성 (7개 층, 각 층당 최대 4개 노드)
   const generateAdventureMap = (): AdventureNode[] => {
     const nodes: AdventureNode[] = []
-    const totalNodes = 7 // 총 7개 노드
 
-    // 노드 타입 순서 정의 (시작 -> 중간 노드들 -> 보스)
-    const nodeTypes: NodeType[] = [
-      'start',    // 0번: 시작
-      'battle',   // 1번: 일반 전투
-      'event',    // 2번: 이벤트
-      'shop',     // 3번: 상점
-      'battle',   // 4번: 일반 전투
-      'elite',    // 5번: 엘리트 전투
-      'boss'      // 6번: 보스
+    // 7개 층 구조: [1개] -> [4개] -> [4개] -> [4개] -> [4개] -> [3개] -> [1개]
+    const layers = [
+      // 층 0: 시작 (1개)
+      [
+        { type: 'start' as NodeType, x: 0.5 }
+      ],
+      // 층 1: 4개
+      [
+        { type: 'battle' as NodeType, x: 0.125 },
+        { type: 'event' as NodeType, x: 0.375 },
+        { type: 'shop' as NodeType, x: 0.625 },
+        { type: 'rest' as NodeType, x: 0.875 }
+      ],
+      // 층 2: 4개
+      [
+        { type: 'battle' as NodeType, x: 0.125 },
+        { type: 'elite' as NodeType, x: 0.375 },
+        { type: 'treasure' as NodeType, x: 0.625 },
+        { type: 'event' as NodeType, x: 0.875 }
+      ],
+      // 층 3: 4개
+      [
+        { type: 'battle' as NodeType, x: 0.125 },
+        { type: 'shop' as NodeType, x: 0.375 },
+        { type: 'battle' as NodeType, x: 0.625 },
+        { type: 'rest' as NodeType, x: 0.875 }
+      ],
+      // 층 4: 4개
+      [
+        { type: 'event' as NodeType, x: 0.125 },
+        { type: 'battle' as NodeType, x: 0.375 },
+        { type: 'treasure' as NodeType, x: 0.625 },
+        { type: 'elite' as NodeType, x: 0.875 }
+      ],
+      // 층 5: 3개
+      [
+        { type: 'battle' as NodeType, x: 0.25 },
+        { type: 'elite' as NodeType, x: 0.5 },
+        { type: 'shop' as NodeType, x: 0.75 }
+      ],
+      // 층 6: 보스 (1개)
+      [
+        { type: 'boss' as NodeType, x: 0.5 }
+      ]
     ]
 
-    // 7개 노드 생성 (한 줄로 배치)
-    for (let i = 0; i < totalNodes; i++) {
-      const nodeId = `node_${i}`
-      const type = nodeTypes[i]
+    let nodeIdCounter = 0
+    const layerStartIndices: number[] = []
 
-      // 위치 계산 (x축으로 균등 분산, y는 중앙에 고정)
-      const x = i / (totalNodes - 1) // 0.0 ~ 1.0
-      const y = 0.5 // 중앙에 고정
+    // 각 층별로 노드 생성
+    layers.forEach((layer, layerIndex) => {
+      layerStartIndices.push(nodeIdCounter)
+      const y = layerIndex / (layers.length - 1) // 0 ~ 1
 
-      const node: AdventureNode = {
-        id: nodeId,
-        type,
-        status: i === 0 ? 'current' : 'locked',
-        position: { x, y },
-        connections: [],
-        completed: false
-      }
+      layer.forEach((nodeConfig) => {
+        const node: AdventureNode = {
+          id: `node_${nodeIdCounter}`,
+          type: nodeConfig.type,
+          status: nodeIdCounter === 0 ? 'available' : 'locked', // 첫 노드도 available로 시작
+          position: { x: nodeConfig.x, y },
+          connections: [],
+          completed: false
+        }
 
-      // 다음 노드와 연결 (마지막 노드 제외)
-      if (i < totalNodes - 1) {
-        node.connections.push(`node_${i + 1}`)
-      }
+        // 전투 노드면 적 정보 추가
+        if (nodeConfig.type === 'battle' || nodeConfig.type === 'elite' || nodeConfig.type === 'boss') {
+          const enemy = generateEnemy(nodeConfig.type, layerIndex)
+          node.enemy = enemy
+        }
 
-      // 전투 노드면 적 정보 추가
-      if (type === 'battle' || type === 'elite' || type === 'boss') {
-        const enemy = generateEnemy(type, i)
-        node.enemy = enemy
-      }
+        nodes.push(node)
+        nodeIdCounter++
+      })
+    })
 
-      nodes.push(node)
-    }
+    // 연결 설정: 각 노드를 다음 층의 같은 위치 + 좌우 1칸씩 연결
+    layers.forEach((layer, layerIndex) => {
+      if (layerIndex >= layers.length - 1) return // 마지막 층은 연결 안함
+
+      const currentLayerStart = layerStartIndices[layerIndex]
+      const nextLayerStart = layerStartIndices[layerIndex + 1]
+      const nextLayer = layers[layerIndex + 1]
+
+      layer.forEach((_, nodeIndexInLayer) => {
+        const currentNodeIndex = currentLayerStart + nodeIndexInLayer
+        const currentNode = nodes[currentNodeIndex]
+
+        // 다음 층 노드들을 x 위치 기준으로 정렬하여 인덱스 목록 생성
+        const sortedNextLayerIndices = nextLayer
+          .map((node, idx) => ({ idx, x: node.x }))
+          .sort((a, b) => a.x - b.x)
+
+        // 현재 노드의 x 위치에 가장 가까운 노드 찾기
+        const closestIndex = sortedNextLayerIndices.reduce((closest, current, idx) => {
+          const distCurrent = Math.abs(current.x - currentNode.position.x)
+          const distClosest = Math.abs(sortedNextLayerIndices[closest].x - currentNode.position.x)
+          return distCurrent < distClosest ? idx : closest
+        }, 0)
+
+        // 가장 가까운 노드와 좌우 1칸씩 (최대 3개) 연결
+        const connectIndices: number[] = []
+
+        // 왼쪽 노드
+        if (closestIndex > 0) {
+          connectIndices.push(closestIndex - 1)
+        }
+
+        // 가운데 노드 (가장 가까운 노드)
+        connectIndices.push(closestIndex)
+
+        // 오른쪽 노드
+        if (closestIndex < sortedNextLayerIndices.length - 1) {
+          connectIndices.push(closestIndex + 1)
+        }
+
+        // 연결 추가
+        connectIndices.forEach(sortedIdx => {
+          const actualNodeIdx = sortedNextLayerIndices[sortedIdx].idx
+          const targetIndex = nextLayerStart + actualNodeIdx
+          currentNode.connections.push(nodes[targetIndex].id)
+        })
+      })
+    })
 
     return nodes
   }
@@ -128,7 +208,7 @@ export const useAdventureSystem = (
     adventureState.value.nodes = nodes
     adventureState.value.active = true
     adventureState.value.depth = 0
-    adventureState.value.currentNodeId = nodes[0].id
+    adventureState.value.currentNodeId = null // 시작 시 null로 설정
     adventureState.value.visitedNodes = []
     adventureState.value.accumulatedRewards = {
       gold: 0,
@@ -137,13 +217,21 @@ export const useAdventureSystem = (
       cards: []
     }
 
-    showNotification('모험을 시작합니다!', 'info')
+    showNotification('모험을 시작합니다! 시작 지점을 선택하세요.', 'info')
   }
 
   // 노드 이동
   const moveToNode = (nodeId: string) => {
     const node = adventureState.value.nodes.find(n => n.id === nodeId)
     if (!node) return
+
+    // 선택한 노드(새로운 노드)와 같은 층의 다른 available 노드들을 locked로 변경
+    const newNodeLayerY = node.position.y
+    adventureState.value.nodes.forEach(n => {
+      if (n.position.y === newNodeLayerY && n.status === 'available' && n.id !== nodeId) {
+        n.status = 'locked'
+      }
+    })
 
     // 현재 노드 완료 처리
     const currentNode = adventureState.value.nodes.find(n => n.id === adventureState.value.currentNodeId)
