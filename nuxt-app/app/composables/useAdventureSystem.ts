@@ -34,89 +34,52 @@ export const useAdventureSystem = (
     visitedNodes: []
   })
 
-  // 맵 생성
+  // 맵 생성 (한 줄로 7개 노드)
   const generateAdventureMap = (): AdventureNode[] => {
     const nodes: AdventureNode[] = []
-    const layers = 5 // 5층
-    const nodesPerLayer = [1, 4, 4, 3, 1] // 각 층별 노드 수
+    const totalNodes = 7 // 총 7개 노드
 
-    let nodeIdCounter = 0
+    // 노드 타입 순서 정의 (시작 -> 중간 노드들 -> 보스)
+    const nodeTypes: NodeType[] = [
+      'start',    // 0번: 시작
+      'battle',   // 1번: 일반 전투
+      'event',    // 2번: 이벤트
+      'shop',     // 3번: 상점
+      'battle',   // 4번: 일반 전투
+      'elite',    // 5번: 엘리트 전투
+      'boss'      // 6번: 보스
+    ]
 
-    // 층별로 노드 생성
-    for (let layer = 0; layer < layers; layer++) {
-      const layerNodes: AdventureNode[] = []
-      const nodeCount = nodesPerLayer[layer]
+    // 7개 노드 생성 (한 줄로 배치)
+    for (let i = 0; i < totalNodes; i++) {
+      const nodeId = `node_${i}`
+      const type = nodeTypes[i]
 
-      for (let i = 0; i < nodeCount; i++) {
-        const nodeId = `node_${nodeIdCounter++}`
+      // 위치 계산 (x축으로 균등 분산, y는 중앙에 고정)
+      const x = i / (totalNodes - 1) // 0.0 ~ 1.0
+      const y = 0.5 // 중앙에 고정
 
-        // 노드 타입 결정
-        let type: NodeType = 'battle'
-        if (layer === 0) {
-          type = 'start'
-        } else if (layer === layers - 1) {
-          type = 'boss'
-        } else {
-          // 중간층: 랜덤 타입
-          const types: NodeType[] = ['battle', 'battle', 'elite', 'event', 'shop', 'rest', 'treasure']
-          type = types[Math.floor(Math.random() * types.length)]
-        }
-
-        // 위치 계산 (x: 가로 분산, y: 층)
-        const x = (i + 0.5) / nodeCount
-        const y = layer / (layers - 1)
-
-        const node: AdventureNode = {
-          id: nodeId,
-          type,
-          status: layer === 0 ? 'current' : 'locked',
-          position: { x, y },
-          connections: [],
-          completed: false
-        }
-
-        // 전투 노드면 적 정보 추가
-        if (type === 'battle' || type === 'elite' || type === 'boss') {
-          const enemy = generateEnemy(type, layer)
-          node.enemy = enemy
-        }
-
-        layerNodes.push(node)
+      const node: AdventureNode = {
+        id: nodeId,
+        type,
+        status: i === 0 ? 'current' : 'locked',
+        position: { x, y },
+        connections: [],
+        completed: false
       }
 
-      nodes.push(...layerNodes)
-    }
-
-    // 연결 설정: 각 층의 노드를 다음 층 노드들과 연결
-    let currentLayerStart = 0
-    for (let layer = 0; layer < layers - 1; layer++) {
-      const currentLayerCount = nodesPerLayer[layer]
-      const nextLayerCount = nodesPerLayer[layer + 1]
-      const nextLayerStart = currentLayerStart + currentLayerCount
-
-      for (let i = 0; i < currentLayerCount; i++) {
-        const currentNode = nodes[currentLayerStart + i]
-
-        // 다음 층의 1-3개 노드와 연결
-        const connectionsCount = Math.min(nextLayerCount, Math.floor(Math.random() * 2) + 1)
-        const possibleConnections = Array.from({ length: nextLayerCount }, (_, idx) => nextLayerStart + idx)
-
-        // 랜덤하게 연결
-        for (let j = 0; j < connectionsCount; j++) {
-          if (possibleConnections.length > 0) {
-            const randomIndex = Math.floor(Math.random() * possibleConnections.length)
-            const targetNodeIndex = possibleConnections.splice(randomIndex, 1)[0]
-            currentNode.connections.push(nodes[targetNodeIndex].id)
-          }
-        }
-
-        // 최소 1개는 연결되도록 보장
-        if (currentNode.connections.length === 0 && nextLayerCount > 0) {
-          currentNode.connections.push(nodes[nextLayerStart].id)
-        }
+      // 다음 노드와 연결 (마지막 노드 제외)
+      if (i < totalNodes - 1) {
+        node.connections.push(`node_${i + 1}`)
       }
 
-      currentLayerStart += currentLayerCount
+      // 전투 노드면 적 정보 추가
+      if (type === 'battle' || type === 'elite' || type === 'boss') {
+        const enemy = generateEnemy(type, i)
+        node.enemy = enemy
+      }
+
+      nodes.push(node)
     }
 
     return nodes

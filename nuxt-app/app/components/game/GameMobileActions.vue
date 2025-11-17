@@ -37,15 +37,6 @@
         <h3 class="text-[8px] font-bold">전투</h3>
       </button>
 
-      <!-- Next Day Button -->
-      <button
-        @click="$emit('next-day')"
-        class="flex flex-col items-center justify-center bg-blue-700/80 border border-blue-600 rounded-lg p-1.5 active:bg-blue-600 transition-all"
-      >
-        <div class="text-xl mb-0.5">📅</div>
-        <h3 class="text-[9px] font-bold">다음날</h3>
-      </button>
-
       <!-- Recruit Button -->
       <button
         @click="$emit('recruit-soldiers')"
@@ -65,7 +56,6 @@ defineEmits<{
   'show-passive-cards': []
   'show-card-guide': []
   'start-normal-battle': []
-  'next-day': []
   'recruit-soldiers': []
 }>()
 </script>

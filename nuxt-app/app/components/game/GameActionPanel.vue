@@ -33,14 +33,6 @@
     />
 
     <ActionButton
-      icon="🎴"
-      title="다음 날"
-      description="하루를 보내고 랜덤 이벤트 발생"
-      variant="primary"
-      @click="$emit('next-day')"
-    />
-
-    <ActionButton
       icon="🛡️"
       title="병력 모집"
       description="금 200으로 병력 100 모집"
@@ -59,7 +51,6 @@ defineEmits<{
   'show-passive-cards': []
   'show-card-guide': []
   'start-normal-battle': []
-  'next-day': []
   'recruit-soldiers': []
 }>()
 </script>

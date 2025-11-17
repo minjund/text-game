@@ -176,6 +176,31 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     previousBattleState.value = currentState
   })
 
+  // 카드를 모두 사용했는지 감지
+  watch(usedActiveCards, (usedCards) => {
+    // 전투가 일시정지 상태이고, 모든 카드를 사용했으면 자동으로 재개
+    if (isPaused.value && battleActiveCards?.value && usedCards.length >= battleActiveCards.value.length && battleActiveCards.value.length > 0) {
+      showNotification('모든 카드를 사용했습니다! 전투를 재개합니다.', 'info')
+      stopCardSelectionTimer()
+      if (currentBattle.value) {
+        resumeBattle(currentBattle.value)
+      }
+    }
+  }, { deep: true })
+
+  // 전투가 끝났을 때 결과 처리 (스토리가 모두 표시된 후)
+  watch(isBattleRunning, (isRunning, wasRunning) => {
+    // 전투가 진행 중이었다가 끝났을 때
+    if (wasRunning && !isRunning && currentBattle.value && !currentBattle.value.result) {
+      // 최종 점수로 결과 계산
+      const finalResult = attackerScore.value > defenderScore.value ? 'victory' : 'defeat'
+      // 결과를 설정 (UI에 표시됨)
+      currentBattle.value.result = finalResult
+      // 결과 처리
+      handleBattleEnd(finalResult)
+    }
+  })
+
   // 전투 기록 불러오기
   const loadBattleRecords = () => {
     if (process.client) {
@@ -694,7 +719,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     currentTurn.value = 0
     usedActiveCards.value = []
     activeEffects.value = []
-    previousBattleState.value = '팽팽한 접전'
+    previousBattleState.value = '' // 빈 문자열로 초기화하여 전투 시작 시 카드 선택 가능하게 함
     stopCardSelectionTimer()
 
     const logs: BattleLog[] = []
@@ -1055,20 +1080,8 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     }
 
     // 실시간 전투 시작 (0.7초마다 로그 하나씩 추가)
+    // 결과는 watch(isBattleRunning)에서 자동으로 처리됨
     startRealtimeBattle(currentBattle.value, logs)
-
-    // 전투가 끝나면 결과 처리 (전체 로그 수 * 0.7초 후)
-    const totalDuration = logs.length * 700 + 500
-    setTimeout(() => {
-      if (currentBattle.value) {
-        // 최종 점수로 결과 재계산 (플레이어가 카드를 사용했을 수 있음)
-        const finalResult = attackerScore.value > defenderScore.value ? 'victory' : 'defeat'
-        // 결과를 설정 (UI에 표시됨)
-        currentBattle.value.result = finalResult
-        // 결과 처리
-        handleBattleEnd(finalResult)
-      }
-    }, totalDuration)
   }
 
   // 스토리 기반 전투 시작

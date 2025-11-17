@@ -12,6 +12,14 @@
       @confirm="handleStartCardsSelected"
     />
 
+    <!-- Tutorial Modal (Day 0) -->
+    <GameTutorialModal
+      :is-open="showTutorial"
+      @close="closeTutorial"
+      @complete="completeTutorial"
+      @skip="skipTutorial"
+    />
+
     <!-- Mobile Top Resources (Fixed) -->
     <GameMobileResources
       v-if="!adventureState?.active"
@@ -53,7 +61,6 @@
         @show-passive-cards="showPassiveCardsCollection = true"
         @show-card-guide="showCardCollection = true"
         @start-normal-battle="startAdventure"
-        @next-day="handleNextDay"
         @recruit-soldiers="recruitSoldiers"
       />
     </div>
@@ -71,7 +78,6 @@
       @show-passive-cards="showPassiveCardsCollection = true"
       @show-card-guide="showCardCollection = true"
       @start-normal-battle="startAdventure"
-      @next-day="handleNextDay"
       @recruit-soldiers="recruitSoldiers"
     />
 
@@ -95,7 +101,7 @@
     <GameBattleModal
       :battle="currentBattle"
       :is-scrolling="isScrolling"
-      :battle-active-cards="ownedActiveCards.slice(0, 5)"
+      :battle-active-cards="battleActiveCards"
       :used-active-cards="usedActiveCards"
       :attacker-score="attackerScore"
       :defender-score="defenderScore"
@@ -273,33 +279,36 @@ import { drawRandomCards } from '../types/passive-cards'
 import { enemyKingdoms } from '../data/mockData'
 import { useGodGame } from '~/composables/useGodGame'
 
-// 새로 만든 컴포넌트 import
-import GameStartCardSelection from '~/components/game/GameStartCardSelection.vue'
+// 항상 표시되는 컴포넌트 (즉시 로드)
 import GameMobileResources from '~/components/game/GameMobileResources.vue'
 import GameMobileActions from '~/components/game/GameMobileActions.vue'
 import GameDesktopHeader from '~/components/game/GameDesktopHeader.vue'
 import GameLeftSidebar from '~/components/game/GameLeftSidebar.vue'
 import GameActionPanel from '~/components/game/GameActionPanel.vue'
-import GameBattleModal from '~/components/game/GameBattleModal.vue'
-import GameGeneralsModal from '~/components/game/GameGeneralsModal.vue'
-import GameEventModal from '~/components/game/GameEventModal.vue'
-import GameCrossroadModal from '~/components/game/GameCrossroadModal.vue'
-import GamePassiveCardModal from '~/components/game/GamePassiveCardModal.vue'
-import GameActiveCardsModal from '~/components/game/GameActiveCardsModal.vue'
-import GameReincarnationModal from '~/components/game/GameReincarnationModal.vue'
-import GamePassiveCardsModal from '~/components/game/GamePassiveCardsModal.vue'
-import GameCardCollection from '~/components/game/GameCardCollection.vue'
-import GameCommandmentsModal from '~/components/game/GameCommandmentsModal.vue'
-import GameAdvisorModal from '~/components/game/GameAdvisorModal.vue'
-import GameSynergyCardSelection from '~/components/game/GameSynergyCardSelection.vue'
-import GameSynergyCollection from '~/components/game/GameSynergyCollection.vue'
-import GameSynergyGuide from '~/components/game/GameSynergyGuide.vue'
-import GameDailyCardExchange from '~/components/game/GameDailyCardExchange.vue'
-import GameResourceHelp from '~/components/game/GameResourceHelp.vue'
-import GameAdventureMap from '~/components/game/GameAdventureMap.vue'
-import GameAdventureShop from '~/components/game/GameAdventureShop.vue'
-import GameAdventureRest from '~/components/game/GameAdventureRest.vue'
-import GameBattleCardSelection from '~/components/game/GameBattleCardSelection.vue'
+
+// 모달 컴포넌트들 (Lazy Loading으로 초기 번들 크기 최적화)
+const GameStartCardSelection = defineAsyncComponent(() => import('~/components/game/GameStartCardSelection.vue'))
+const GameBattleModal = defineAsyncComponent(() => import('~/components/game/GameBattleModal.vue'))
+const GameGeneralsModal = defineAsyncComponent(() => import('~/components/game/GameGeneralsModal.vue'))
+const GameEventModal = defineAsyncComponent(() => import('~/components/game/GameEventModal.vue'))
+const GameCrossroadModal = defineAsyncComponent(() => import('~/components/game/GameCrossroadModal.vue'))
+const GamePassiveCardModal = defineAsyncComponent(() => import('~/components/game/GamePassiveCardModal.vue'))
+const GameActiveCardsModal = defineAsyncComponent(() => import('~/components/game/GameActiveCardsModal.vue'))
+const GameReincarnationModal = defineAsyncComponent(() => import('~/components/game/GameReincarnationModal.vue'))
+const GamePassiveCardsModal = defineAsyncComponent(() => import('~/components/game/GamePassiveCardsModal.vue'))
+const GameCardCollection = defineAsyncComponent(() => import('~/components/game/GameCardCollection.vue'))
+const GameCommandmentsModal = defineAsyncComponent(() => import('~/components/game/GameCommandmentsModal.vue'))
+const GameAdvisorModal = defineAsyncComponent(() => import('~/components/game/GameAdvisorModal.vue'))
+const GameSynergyCardSelection = defineAsyncComponent(() => import('~/components/game/GameSynergyCardSelection.vue'))
+const GameSynergyCollection = defineAsyncComponent(() => import('~/components/game/GameSynergyCollection.vue'))
+const GameSynergyGuide = defineAsyncComponent(() => import('~/components/game/GameSynergyGuide.vue'))
+const GameDailyCardExchange = defineAsyncComponent(() => import('~/components/game/GameDailyCardExchange.vue'))
+const GameResourceHelp = defineAsyncComponent(() => import('~/components/game/GameResourceHelp.vue'))
+const GameAdventureMap = defineAsyncComponent(() => import('~/components/game/GameAdventureMap.vue'))
+const GameAdventureShop = defineAsyncComponent(() => import('~/components/game/GameAdventureShop.vue'))
+const GameAdventureRest = defineAsyncComponent(() => import('~/components/game/GameAdventureRest.vue'))
+const GameBattleCardSelection = defineAsyncComponent(() => import('~/components/game/GameBattleCardSelection.vue'))
+const GameTutorialModal = defineAsyncComponent(() => import('~/components/game/GameTutorialModal.vue'))
 
 // Composables
 import { useNotification } from '~/composables/useNotification'
@@ -475,6 +484,9 @@ const availableDailyCards = ref<PassiveCard[]>([])
 // 신의 계명 모달
 const showCommandments = ref(false)
 
+// 튜토리얼 모달 (0일차)
+const showTutorial = ref(false)
+
 // 자원 도움말 모달
 const showResourceHelp = ref(false)
 const selectedResourceType = ref<'food' | 'gold' | 'morale' | 'soldiers' | null>(null)
@@ -483,6 +495,19 @@ const selectedResourceType = ref<'food' | 'gold' | 'morale' | 'soldiers' | null>
 const handleShowResourceHelp = (type: 'food' | 'gold' | 'morale' | 'soldiers') => {
   selectedResourceType.value = type
   showResourceHelp.value = true
+}
+
+// 튜토리얼 핸들러
+const closeTutorial = () => {
+  showTutorial.value = false
+}
+
+const completeTutorial = () => {
+  if (process.client) {
+    localStorage.setItem('tutorialCompleted', 'true')
+  }
+  showTutorial.value = false
+  showNotification('튜토리얼을 완료했습니다! 게임을 시작하세요!', 'success')
 }
 
 // 환생 시스템
@@ -782,7 +807,8 @@ const handleAdventureNodeClick = (node: any) => {
       // 현재 노드는 더 이상 current가 아님
       adventureState.value.currentNodeId = null
 
-      showNotification('다음 경로를 선택하세요!', 'info')
+      // 다음 날 로직 실행
+      processNextDay()
       break
 
     case 'battle':
@@ -803,16 +829,6 @@ const handleAdventureNodeClick = (node: any) => {
       break
 
     case 'event':
-      // 랜덤 이벤트 발생 (다음날 기능과 동일)
-      const cardEventChance = Math.random()
-      if (cardEventChance < 0.1) { // 10% 확률로 카드 교환 이벤트
-        availableDailyCards.value = drawRandomCards(3)
-        showDailyCardExchange.value = true
-      } else {
-        // 일반 이벤트 발생
-        drawEventCard()
-      }
-
       // 노드 완료 처리 및 다음 경로 선택 가능하게
       node.status = 'completed'
       node.completed = true
@@ -823,7 +839,9 @@ const handleAdventureNodeClick = (node: any) => {
         }
       })
       adventureState.value.currentNodeId = null
-      showNotification('이벤트 완료! 다음 경로를 선택하세요!', 'info')
+
+      // 다음 날 로직 실행 (이벤트 카드 뽑기 포함)
+      processNextDay()
       break
 
     case 'shop':
@@ -863,7 +881,9 @@ const handleAdventureNodeClick = (node: any) => {
         }
       })
       adventureState.value.currentNodeId = null
-      showNotification('다음 경로를 선택하세요!', 'info')
+
+      // 다음 날 로직 실행
+      processNextDay()
       break
   }
 }
@@ -883,7 +903,9 @@ const handleAdventureShopClose = () => {
       }
     })
     adventureState.value.currentNodeId = null
-    showNotification('상점 방문 완료! 다음 경로를 선택하세요!', 'info')
+
+    // 다음 날 로직 실행
+    processNextDay()
   }
 }
 
@@ -962,18 +984,27 @@ const handleAdventureRestSelect = (option: 'heal' | 'remove-card' | 'meditate') 
       }
     })
     adventureState.value.currentNodeId = null
-    showNotification('휴식 완료! 다음 경로를 선택하세요!', 'info')
+
+    // 다음 날 로직 실행
+    processNextDay()
   }
 }
 
 // 전투 카드 선택 완료 후 전투 시작
-const handleBattleCardsConfirm = (cards: PassiveCard[]) => {
+const handleBattleCardsConfirm = (cards: any[]) => {
   selectedBattleCards.value = cards
   showBattleCardSelection.value = false
+
+  // 선택된 카드를 battleActiveCards에 추가
+  clearBattleDeck() // 먼저 배틀 덱 초기화
+  cards.forEach(card => {
+    addToBattleDeck(card) // 선택한 카드들을 배틀 덱에 추가
+  })
 
   // 선택된 카드 정보 로그
   if (cards.length > 0) {
     console.log(`전투 카드 ${cards.length}장 선택:`, cards.map(c => c.name))
+    console.log('battleActiveCards:', battleActiveCards.value)
   }
 
   // 전투 시작
@@ -1023,7 +1054,8 @@ const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
     // 현재 노드는 더 이상 current가 아님
     adventureState.value.currentNodeId = null
 
-    showNotification('다음 경로를 선택하세요!', 'info')
+    // 다음 날 로직 실행
+    processNextDay()
   } else {
     // 패배
     failAdventure()
@@ -1050,22 +1082,21 @@ const resetToZero = () => {
   }
 }
 
-// 다음 날 진행 핸들러
-const handleNextDay = () => {
+// 다음 날 진행 로직 (노드 완료 시 자동 실행)
+const processNextDay = () => {
+  // 하루 증가
+  kingdom.value.day++
+
   // 튜토리얼 이벤트 체크
-  const tutorialEvent = advanceDay(kingdom.value.day + 1)
+  const tutorialEvent = advanceDay(kingdom.value.day)
   if (tutorialEvent) {
     // 조언자 모달 표시
     showAdvisorMessage(tutorialEvent)
     return
   }
 
-  // 제국 침략 체크 (다음 날짜가 7일마다: 7, 14, 21, 28, 35일)
-  const nextDay = kingdom.value.day + 1
-  if (nextDay % 7 === 0 && nextDay > 0 && nextDay < 42) {
-    // 먼저 day를 증가시킴
-    kingdom.value.day++
-
+  // 제국 침략 체크 (7일마다: 7, 14, 21, 28, 35일)
+  if (kingdom.value.day % 7 === 0 && kingdom.value.day > 0 && kingdom.value.day < 42) {
     const weekNumber = kingdom.value.day / 7
     showNotification(`⚔️ ${weekNumber}주차! 제국군이 전면 침략해옵니다!`, 'error')
 
@@ -1095,23 +1126,14 @@ const handleNextDay = () => {
 
   // 25일마다 시너지 카드 선택 (100일 제외)
   if (kingdom.value.day % 25 === 0 && kingdom.value.day > 0 && kingdom.value.day !== 100) {
-    // 먼저 하루를 진행
-    drawEventCard()
     // 시너지 카드 선택 모달 표시
     drawSynergyCards()
     showNotification('🎴 25일이 지났습니다! 시너지 카드를 선택하세요!', 'info')
     return
   }
 
-  // 일반 날짜: 랜덤으로 카드 교환 이벤트 또는 일반 이벤트
-  const cardEventChance = Math.random()
-  if (cardEventChance < 0.1) { // 10% 확률로 카드 교환 이벤트 발생
-    availableDailyCards.value = drawRandomCards(3)
-    showDailyCardExchange.value = true
-  } else {
-    // 일반 이벤트 카드 뽑기
-    drawEventCard()
-  }
+  // 일반 날짜: 이벤트 없음, 로드맵 진행만 계속
+  showNotification(`${kingdom.value.day}일차가 시작되었습니다.`, 'info')
 }
 
 // 일일 카드 교환 건너뛰기
@@ -1184,6 +1206,18 @@ const bgmAudio = ref<HTMLAudioElement | null>(null)
 
 onMounted(() => {
   if (process.client) {
+    // 튜토리얼 체크 (0일차이고 튜토리얼을 본 적이 없으면 표시)
+    const tutorialCompleted = localStorage.getItem('tutorialCompleted')
+    const hasSelectedStartCards = tutorialState.value?.hasSelectedStartCards
+
+    // 스타트 카드 선택 완료 후 & 튜토리얼 미완료 & 0일차일 때 튜토리얼 표시
+    if (hasSelectedStartCards && !tutorialCompleted && kingdom.value.day === 0) {
+      // 약간의 지연 후 튜토리얼 표시 (UI 로딩 완료 후)
+      setTimeout(() => {
+        showTutorial.value = true
+      }, 500)
+    }
+
     // BGM 로드 및 재생
     bgmAudio.value = new Audio('/bgm/baseBgm.mp3')
     bgmAudio.value.loop = true // 반복 재생

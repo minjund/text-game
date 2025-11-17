@@ -3,16 +3,56 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
-  modules: ['@tresjs/nuxt', '@nuxtjs/tailwindcss'],
+  modules: ['@nuxtjs/tailwindcss'],
 
-  // Phaser와 Three.js를 클라이언트 사이드에서만 로드
+  // SSR 비활성화 (게임이므로 클라이언트 전용)
+  ssr: false,
+
+  // 빌드 최적화
   vite: {
-    optimizeDeps: {
-      include: ['phaser']
+    build: {
+      // 청크 크기 경고 제한 (KB)
+      chunkSizeWarningLimit: 1000,
+
+      // Rollup 옵션으로 코드 스플리팅 개선
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Vue 관련 라이브러리를 별도 청크로 분리
+            'vue-vendor': ['vue', 'vue-router'],
+
+            // 게임 composable을 그룹화
+            'game-composables': [
+              './app/composables/useGameKingdom',
+              './app/composables/useGamePassiveCards',
+              './app/composables/useBattleSystem',
+              './app/composables/useEventSystem',
+              './app/composables/useSynergyCards',
+              './app/composables/useAdventureSystem',
+              './app/composables/useActiveCards',
+              './app/composables/useGameReincarnation',
+              './app/composables/useTutorial',
+            ],
+          },
+          // 더 작은 청크로 분할
+          experimentalMinChunkSize: 10000,
+        },
+      },
+
+      // CSS 코드 스플리팅
+      cssCodeSplit: true,
+
+      // 압축 최적화
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true, // production에서 console.log 제거
+          drop_debugger: true,
+        },
+      },
     },
-    ssr: {
-      noExternal: ['phaser']
-    },
+
+    // 개발 서버 설정
     server: {
       hmr: {
         clientPort: process.env.HMR_PORT ? parseInt(process.env.HMR_PORT) : undefined,
@@ -24,9 +64,25 @@ export default defineNuxtConfig({
         'localhost',
         '127.0.0.1'
       ]
-    }
+    },
+
+    // 최적화 옵션
+    optimizeDeps: {
+      include: [
+        'vue',
+        'vue-router'
+      ],
+    },
   },
 
-  // SSR 비활성화 (게임이므로 클라이언트 전용)
-  ssr: false
+  // Nitro 압축 활성화
+  nitro: {
+    compressPublicAssets: true,
+  },
+
+  // 라우트 규칙 - 정적 페이지 사전 렌더링
+  routeRules: {
+    '/': { prerender: true },
+    '/story': { prerender: true },
+  },
 })
