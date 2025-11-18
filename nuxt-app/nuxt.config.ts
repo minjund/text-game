@@ -8,6 +8,11 @@ export default defineNuxtConfig({
   // SSR 비활성화 (게임이므로 클라이언트 전용)
   ssr: false,
 
+  // GitHub Pages 배포 설정
+  app: {
+    baseURL: '/text-game/', // GitHub repository 이름
+  },
+
   // 빌드 최적화
   vite: {
     build: {
