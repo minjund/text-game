@@ -12,10 +12,9 @@
       @confirm="handleStartCardsSelected"
     />
 
-    <!-- Tutorial Modal (Day 0) -->
-    <GameTutorialModal
-      :is-open="showTutorial"
-      @close="closeTutorial"
+    <!-- Interactive Tutorial (Day 0) -->
+    <GameInteractiveTutorial
+      :show="showTutorial"
       @complete="completeTutorial"
       @skip="skipTutorial"
     />
@@ -59,6 +58,7 @@
         :unlocked-features="tutorialState?.unlockedFeatures || []"
         @show-commandments="showCommandments = true"
         @show-passive-cards="showPassiveCardsCollection = true"
+        @show-card-deck="showCardDeckModal = true"
         @show-card-guide="showCardCollection = true"
         @start-normal-battle="startAdventure"
         @recruit-soldiers="recruitSoldiers"
@@ -76,6 +76,7 @@
       :unlocked-features="tutorialState?.unlockedFeatures || []"
       @show-commandments="showCommandments = true"
       @show-passive-cards="showPassiveCardsCollection = true"
+      @show-card-deck="showCardDeckModal = true"
       @show-card-guide="showCardCollection = true"
       @start-normal-battle="startAdventure"
       @recruit-soldiers="recruitSoldiers"
@@ -107,8 +108,11 @@
       :defender-score="defenderScore"
       :is-paused="isPaused"
       :card-selection-time="cardSelectionTime"
+      :current-day="kingdom.day"
       @close="closeBattle"
       @use-active-card="useActiveCard"
+      @complete-tutorial="handleBattleTutorialComplete"
+      @pause-tutorial="handleBattleTutorialPause"
     />
 
     <!-- Passive Card Selection Modal -->
@@ -136,6 +140,7 @@
       :reincarnation-count="reincarnationData.count"
       :highest-day="Math.max(reincarnationData.highestDay, kingdom.day)"
       :total-days-played="reincarnationData.totalDaysPlayed + kingdom.day"
+      :inherited-cards-count="reincarnationData.inheritedCards?.length || 0"
       @select-card="selectInheritedCard"
       @reincarnate-without-card="reincarnateWithoutCard"
     />
@@ -152,6 +157,17 @@
       :show="showCardCollection"
       :player-cards="playerPassiveCards"
       @close="showCardCollection = false"
+    />
+
+    <!-- Card Deck Modal -->
+    <GameCardDeckModal
+      v-model="showCardDeckModal"
+      :card-deck="cardDeck"
+      :available-domestic-cards="availableDomesticCards"
+      :available-battle-cards="availableBattleCards"
+      :equipped-cards="equippedCards"
+      @equip-card="(card, type, index) => equipCard(card, type, index)"
+      @unequip-card="(type, index) => unequipCard(type, index)"
     />
 
     <!-- Commandments Modal -->
@@ -275,7 +291,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import type { PermanentEffect } from '../types/game'
 import type { PassiveCard } from '../types/passive-cards'
-import { drawRandomCards } from '../types/passive-cards'
+import { drawRandomCards, MAX_PASSIVE_CARDS, MAX_INHERITED_CARDS } from '../types/passive-cards'
 import { enemyKingdoms } from '../data/mockData'
 import { useGodGame } from '~/composables/useGodGame'
 
@@ -308,7 +324,8 @@ const GameAdventureMap = defineAsyncComponent(() => import('~/components/game/Ga
 const GameAdventureShop = defineAsyncComponent(() => import('~/components/game/GameAdventureShop.vue'))
 const GameAdventureRest = defineAsyncComponent(() => import('~/components/game/GameAdventureRest.vue'))
 const GameBattleCardSelection = defineAsyncComponent(() => import('~/components/game/GameBattleCardSelection.vue'))
-const GameTutorialModal = defineAsyncComponent(() => import('~/components/game/GameTutorialModal.vue'))
+const GameInteractiveTutorial = defineAsyncComponent(() => import('~/components/game/GameInteractiveTutorial.vue'))
+const GameCardDeckModal = defineAsyncComponent(() => import('~/components/game/GameCardDeckModal.vue'))
 
 // Composables
 import { useNotification } from '~/composables/useNotification'
@@ -321,6 +338,7 @@ import { useEventSystem } from '~/composables/useEventSystem'
 import { useSynergyCards } from '~/composables/useSynergyCards'
 import { useAdventureSystem } from '~/composables/useAdventureSystem'
 import { useActiveCards } from '~/composables/useActiveCards'
+import { useCardDeck } from '~/composables/useCardDeck'
 
 // 신 게임 상태 가져오기
 const { nationState: godGameState, startCards: godStartCards } = useGodGame()
@@ -396,6 +414,21 @@ const {
   availablePassiveCards,
   availableCardsForReincarnation
 } = useGamePassiveCards()
+
+// 카드 덱 시스템
+const {
+  cardDeck,
+  equippedCards,
+  availableDomesticCards,
+  availableBattleCards,
+  equipCard,
+  unequipCard,
+  loadDeck,
+  getActiveCardsForTrigger
+} = useCardDeck(playerPassiveCards)
+
+// 덱 모달 상태
+const showCardDeckModal = ref(false)
 
 // 액티브 카드 시스템
 const {
@@ -503,10 +536,13 @@ const closeTutorial = () => {
 }
 
 const completeTutorial = () => {
-  if (process.client) {
-    localStorage.setItem('tutorialCompleted', 'true')
-  }
   showTutorial.value = false
+  // tutorialState의 tutorialCompleted를 true로 설정 (useTutorial에서 자동 저장)
+  tutorialState.value.tutorialCompleted = true
+  tutorialState.value.isActive = false
+  if (process.client) {
+    localStorage.setItem('tutorialState', JSON.stringify(tutorialState.value))
+  }
   showNotification('튜토리얼을 완료했습니다! 게임을 시작하세요!', 'success')
 }
 
@@ -616,7 +652,8 @@ const {
   defenderScore,
   currentTurn,
   isPaused,
-  cardSelectionTime
+  cardSelectionTime,
+  stopCardSelectionTimer
 } = useBattleSystem({
   kingdom,
   enemyKingdoms,
@@ -1135,11 +1172,31 @@ const handleCardExchange = (oldCard: PassiveCard, newCard: PassiveCard) => {
   }
 }
 
+// 패시브 카드 추가 (15장 제한) - useEventSystem의 selectPassiveCard와 별도
+const addPassiveCardWithLimit = (card: PassiveCard): boolean => {
+  // 이미 보유 중인지 확인
+  const alreadyOwned = playerPassiveCards.value.some(c => c.id === card.id)
+  if (alreadyOwned) {
+    showNotification('이미 보유한 카드입니다!', 'error')
+    return false
+  }
+
+  // 최대 보유 수 확인
+  if (playerPassiveCards.value.length >= MAX_PASSIVE_CARDS) {
+    showNotification(`최대 ${MAX_PASSIVE_CARDS}장까지만 보유할 수 있습니다!`, 'error')
+    return false
+  }
+
+  playerPassiveCards.value.push(card)
+  return true
+}
+
 // 일일 카드 추가 (보유 카드가 없을 때)
 const handleAddDailyCard = (card: PassiveCard) => {
-  playerPassiveCards.value.push(card)
-  showNotification(`${card.name} 카드를 획득했습니다!`, 'success')
-  showDailyCardExchange.value = false
+  if (addPassiveCardWithLimit(card)) {
+    showNotification(`${card.name} 카드를 획득했습니다!`, 'success')
+    showDailyCardExchange.value = false
+  }
 }
 
 // ==================== PVP 함수 - 주석 처리됨 ====================
@@ -1175,12 +1232,35 @@ const startCardOptions = computed(() => {
 // 시작 카드 선택 완료 핸들러
 const handleStartCardsSelected = (cards: any[]) => {
   // 선택한 카드를 패시브 카드에 추가
+  let addedCount = 0
   cards.forEach(card => {
-    selectPassiveCard(card)
+    if (addPassiveCardWithLimit(card)) {
+      addedCount++
+    }
   })
 
   completeStartCardSelection()
-  showNotification(`${cards.length}개의 카드를 획득했습니다!`, 'success')
+  showNotification(`${addedCount}개의 카드를 획득했습니다!`, 'success')
+}
+
+// 전장의 기록 튜토리얼 완료 핸들러 (0일차 -> 1일차)
+const handleBattleTutorialComplete = () => {
+  // 0일차일 때만 1일차로 진행
+  if (kingdom.value.day === 0) {
+    kingdom.value.day = 1
+    showNotification('⚔️ 전투 준비 완료! 1일차가 시작됩니다!', 'success')
+  } else {
+    showNotification('⚔️ 전투 가이드를 완료했습니다!', 'success')
+  }
+}
+
+// 전장의 기록 튜토리얼 일시정지 핸들러
+const handleBattleTutorialPause = (isPaused: boolean) => {
+  if (isPaused) {
+    // 튜토리얼 시작 시 타이머 정지
+    stopCardSelectionTimer()
+  }
+  // 튜토리얼 종료 시에는 자동으로 타이머가 재개됨 (전투 재개 시)
 }
 // ==================== 튜토리얼 스토리 끝 ====================
 
@@ -1189,17 +1269,24 @@ const bgmAudio = ref<HTMLAudioElement | null>(null)
 
 onMounted(() => {
   if (process.client) {
-    // 튜토리얼 체크 (0일차이고 튜토리얼을 본 적이 없으면 표시)
-    const tutorialCompleted = localStorage.getItem('tutorialCompleted')
-    const hasSelectedStartCards = tutorialState.value?.hasSelectedStartCards
+    // 카드 덱 로드
+    loadDeck()
 
-    // 스타트 카드 선택 완료 후 & 튜토리얼 미완료 & 0일차일 때 튜토리얼 표시
-    if (hasSelectedStartCards && !tutorialCompleted && kingdom.value.day === 0) {
-      // 약간의 지연 후 튜토리얼 표시 (UI 로딩 완료 후)
-      setTimeout(() => {
-        showTutorial.value = true
-      }, 500)
-    }
+    // 디버깅: tutorialState 확인
+    console.log('📘 Tutorial State:', {
+      currentDay: kingdom.value.day,
+      hasSelectedStartCards: tutorialState.value?.hasSelectedStartCards,
+      tutorialCompleted: tutorialState.value?.tutorialCompleted,
+      showTutorial: showTutorial.value,
+      fullState: tutorialState.value
+    })
+
+    // 메인 튜토리얼 표시 - 테스트용: 무조건 표시
+    console.log('✅ Tutorial will show in 500ms')
+    setTimeout(() => {
+      showTutorial.value = true
+      console.log('🎯 showTutorial set to:', showTutorial.value)
+    }, 500)
 
     // BGM 로드 및 재생
     bgmAudio.value = new Audio('/bgm/baseBgm.mp3')

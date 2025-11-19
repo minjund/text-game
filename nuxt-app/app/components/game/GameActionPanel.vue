@@ -17,6 +17,14 @@
     />
 
     <ActionButton
+      icon="🃏"
+      title="카드 덱 설정"
+      description="내정 3장, 전투 3장을 장착합니다"
+      variant="warning"
+      @click="$emit('show-card-deck')"
+    />
+
+    <ActionButton
       icon="📚"
       title="카드 도감"
       description="모든 카드와 시너지 효과를 확인합니다"
@@ -49,6 +57,7 @@ defineEmits<{
   'show-generals': []
   'show-commandments': []
   'show-passive-cards': []
+  'show-card-deck': []
   'show-card-guide': []
   'start-normal-battle': []
   'recruit-soldiers': []

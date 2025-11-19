@@ -51,6 +51,12 @@
               <span class="text-sm sm:text-base md:text-lg font-bold text-cyan-400">{{ reincarnationCount + 1 }}회</span>
             </div>
             <div class="flex flex-col min-w-[80px]">
+              <span class="text-[10px] sm:text-xs text-slate-400">상속 카드</span>
+              <span class="text-sm sm:text-base md:text-lg font-bold" :class="(inheritedCardsCount || 0) >= 6 ? 'text-orange-400' : 'text-cyan-400'">
+                {{ inheritedCardsCount || 0 }}/6장
+              </span>
+            </div>
+            <div class="flex flex-col min-w-[80px]">
               <span class="text-[10px] sm:text-xs text-slate-400">최고 기록</span>
               <span class="text-sm sm:text-base md:text-lg font-bold text-cyan-400">{{ highestDay }}일</span>
             </div>
@@ -127,6 +133,7 @@ interface Props {
   reincarnationCount: number
   highestDay: number
   totalDaysPlayed: number
+  inheritedCardsCount?: number
 }
 
 const props = defineProps<Props>()

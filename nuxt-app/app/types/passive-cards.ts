@@ -4,6 +4,25 @@ export type PassiveTrigger = 'daily' | 'battle_start' | 'battle_win' | 'battle_l
 // 시너지 태그 (같은 태그를 가진 카드들끼리 시너지 발동)
 export type SynergyTag = 'trade' | 'military' | 'agriculture' | 'culture' | 'magic' | 'religion' | 'technology' | 'conquest'
 
+// 카드 보유 제한
+export const MAX_PASSIVE_CARDS = 15 // 환생 전 최대 보유 카드 수
+export const MAX_INHERITED_CARDS = 6 // 환생 시 최대 상속 카드 수
+
+// 카드 덱 슬롯 타입
+export type DeckSlotType = 'domestic' | 'battle' // 내정 or 전투
+
+// 카드 덱 슬롯 인터페이스
+export interface DeckSlot {
+  type: DeckSlotType
+  card: PassiveCard | null
+}
+
+// 카드 덱 인터페이스
+export interface CardDeck {
+  domestic: (PassiveCard | null)[] // 내정 카드 3장
+  battle: (PassiveCard | null)[] // 전투 카드 3장
+}
+
 export interface PassiveCard {
   id: string
   name: string

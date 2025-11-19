@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue'
 import type { Kingdom, PermanentEffect } from '~/types/game'
 import type { PassiveCard } from '~/types/passive-cards'
+import { MAX_INHERITED_CARDS } from '~/types/passive-cards'
 import type { ReincarnationData } from '~/types/reincarnation'
 import { calculateReincarnationBonuses, getTotalBonuses } from '~/types/reincarnation'
 
@@ -102,9 +103,13 @@ export const useGameReincarnation = (
   const selectInheritedCard = (card: PassiveCard) => {
     reincarnationData.value.inheritedCard = card
 
-    // 선택한 카드를 누적 목록에 추가 (중복 방지)
+    // 선택한 카드를 누적 목록에 추가 (중복 방지 & 최대 6장 제한)
     const hasCard = reincarnationData.value.inheritedCards.some(c => c.id === card.id)
     if (!hasCard) {
+      if (reincarnationData.value.inheritedCards.length >= MAX_INHERITED_CARDS) {
+        // 최대 개수에 도달하면 가장 오래된 카드를 제거
+        reincarnationData.value.inheritedCards.shift()
+      }
       reincarnationData.value.inheritedCards.push(card)
     }
 

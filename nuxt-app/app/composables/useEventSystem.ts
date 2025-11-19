@@ -2,7 +2,7 @@ import { ref, type Ref } from 'vue'
 import type { EventCard, EventChoice, CrossroadCard, CrossroadChoice, Kingdom, PermanentEffect } from '../types/game'
 import { eventCards } from '../data/mockData'
 import type { PassiveCard } from '../types/passive-cards'
-import { drawRandomCards } from '../types/passive-cards'
+import { drawRandomCards, MAX_PASSIVE_CARDS } from '../types/passive-cards'
 import type { ReincarnationData } from '../types/reincarnation'
 import type { NationState } from '../types/god-game'
 
@@ -200,6 +200,19 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
 
   // 패시브 카드 선택
   const selectPassiveCard = (card: PassiveCard) => {
+    // 이미 보유 중인지 확인
+    const alreadyOwned = playerPassiveCards.value.some(c => c.id === card.id)
+    if (alreadyOwned) {
+      showNotification('이미 보유한 카드입니다!', 'error')
+      return
+    }
+
+    // 최대 보유 수 확인
+    if (playerPassiveCards.value.length >= MAX_PASSIVE_CARDS) {
+      showNotification(`최대 ${MAX_PASSIVE_CARDS}장까지만 보유할 수 있습니다!`, 'error')
+      return
+    }
+
     playerPassiveCards.value.push(card)
     showNotification(`${card.name} 카드를 획득했습니다!`, 'success')
     showPassiveCardSelection.value = false

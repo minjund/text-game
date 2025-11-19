@@ -1,6 +1,13 @@
 <template>
   <Transition name="modal">
     <div v-if="battle" class="fixed inset-0 bg-black/90 z-[10001]">
+      <!-- 전장의 기록 튜토리얼 오버레이 -->
+      <GameBattleTutorialOverlay
+        :show="showBattleTutorial"
+        @complete="completeTutorial"
+        @skip="skipTutorial"
+      />
+
       <div class="w-full h-full flex flex-col bg-gradient-to-br from-slate-800 to-slate-900 md:border-2 md:border-red-600 md:rounded-lg md:max-w-5xl md:max-h-[90vh] md:m-auto md:mt-[5vh]">
         <!-- Header -->
         <div class="bg-gradient-to-r from-red-900 to-red-800 border-b-2 border-red-600 p-2 md:p-4 flex-shrink-0">
@@ -84,18 +91,25 @@
         <!-- Battle Log -->
         <div ref="battleLogContainer" class="flex-1 p-2 md:p-6 overflow-y-auto bg-slate-900/50 scroll-smooth">
           <div :class="{ 'opacity-50': isScrolling }">
-            <div class="prose prose-invert max-w-none">
-              <p v-for="(log, index) in battle.log" :key="index"
-                 class="mb-1.5 md:mb-3 text-[11px] md:text-sm leading-relaxed"
-                 :class="{
-                   'text-slate-300': log.narrativeType === 'narration',
-                   'text-amber-200 font-semibold': log.narrativeType === 'action',
-                   'text-cyan-300 italic': log.narrativeType === 'dialogue'
-                 }">
-                <span v-if="log.narrativeType === 'narration'">{{ log.story }}</span>
-                <span v-else-if="log.narrativeType === 'action'">{{ log.story }}</span>
-                <span v-else-if="log.narrativeType === 'dialogue'">"{{ log.dialogue }}"</span>
-              </p>
+            <div class="prose prose-invert max-w-none space-y-2 md:space-y-3">
+              <div v-for="(log, index) in battle.log" :key="index"
+                 class="battle-log-entry opacity-0 translate-y-2"
+                 :style="{ animationDelay: `${index * 0.05}s` }">
+                <p class="mb-0 text-sm md:text-base leading-relaxed transition-all duration-300 hover:scale-[1.02] hover:translate-x-1"
+                   :class="{
+                     'text-slate-200': log.narrativeType === 'narration',
+                     'text-amber-300 font-bold': log.narrativeType === 'action',
+                     'text-cyan-300 italic font-medium': log.narrativeType === 'dialogue',
+                     'text-base md:text-lg': log.story?.includes('📊') || log.story?.includes('🎉') || log.story?.includes('😔'),
+                     'text-red-400 font-bold animate-pulse': log.story?.includes('💔') || log.story?.includes('전사'),
+                     'text-green-400 font-bold': log.story?.includes('승리') || log.story?.includes('🎉'),
+                     'shadow-glow': log.story?.includes('💥') || log.story?.includes('⚡')
+                   }">
+                  <span v-if="log.narrativeType === 'narration'" class="block">{{ log.story }}</span>
+                  <span v-else-if="log.narrativeType === 'action'" class="block">{{ log.story }}</span>
+                  <span v-else-if="log.narrativeType === 'dialogue'" class="block">"{{ log.dialogue }}"</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -108,7 +122,16 @@
                  ? 'border-yellow-500 bg-yellow-900/30 shadow-lg shadow-yellow-500/20'
                  : 'border-slate-700 bg-slate-900/80'
              ]">
-          <h3 class="text-[10px] md:text-sm font-bold mb-2 text-amber-400">✨ 액티브 카드</h3>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-[10px] md:text-sm font-bold text-amber-400">✨ 액티브 카드</h3>
+            <button
+              v-if="isPaused && cardSelectionTime > 0"
+              @click="skipCardSelection"
+              class="px-2 md:px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white text-[10px] md:text-xs rounded font-bold transition-colors"
+            >
+              건너뛰기 →
+            </button>
+          </div>
           <div class="flex gap-1.5 md:gap-2 justify-start md:justify-center overflow-x-auto pb-1">
             <div v-for="card in battleActiveCards" :key="card.id"
                  :class="[
@@ -178,9 +201,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import type { Battle } from '~/types/game'
 import type { ActiveCard } from '~/types/active-cards'
+import { useTutorial } from '~/composables/useTutorial'
+
+// 튜토리얼 시스템
+const { tutorialState, completeBattleTutorial } = useTutorial()
+const showBattleTutorial = ref(false)
 
 interface Props {
   battle: Battle | null
@@ -191,6 +219,7 @@ interface Props {
   defenderScore?: number
   isPaused?: boolean
   cardSelectionTime?: number
+  currentDay?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -199,12 +228,16 @@ const props = withDefaults(defineProps<Props>(), {
   attackerScore: 0,
   defenderScore: 0,
   isPaused: false,
-  cardSelectionTime: 0
+  cardSelectionTime: 0,
+  currentDay: 0
 })
 
 const emit = defineEmits<{
   close: []
   useActiveCard: [card: ActiveCard]
+  completeTutorial: []
+  pauseTutorial: [paused: boolean]
+  skipCardSelection: []
 }>()
 
 // 점수 차이 계산
@@ -222,6 +255,10 @@ const useCard = (card: ActiveCard) => {
 
 const isCardUsed = (cardId: string) => {
   return props.usedActiveCards?.includes(cardId) || false
+}
+
+const skipCardSelection = () => {
+  emit('skipCardSelection')
 }
 
 const getRarityColor = (rarity: string) => {
@@ -326,4 +363,80 @@ const getCardGlowClass = (card: ActiveCard) => {
 }
 
 const battleLogContainer = ref<HTMLElement | null>(null)
+
+// 전투 모달이 열릴 때 튜토리얼 체크
+watch(() => props.battle, (newBattle) => {
+  if (newBattle && process.client) {
+    // 튜토리얼을 한 번도 본 적이 없으면 표시 (처음 전투 진입 시 한 번만)
+    if (!tutorialState.value?.hasSeenBattleTutorial) {
+      // 약간의 지연 후 튜토리얼 표시 (전투 모달이 완전히 로드된 후)
+      setTimeout(() => {
+        showBattleTutorial.value = true
+      }, 500)
+    }
+  }
+})
+
+// 튜토리얼 상태 변경 감지 (타이머 제어)
+watch(showBattleTutorial, (isShowing) => {
+  emit('pauseTutorial', isShowing)
+})
+
+// 튜토리얼 완료
+const completeTutorial = () => {
+  showBattleTutorial.value = false
+  completeBattleTutorial()
+  // 부모 컴포넌트에 튜토리얼 완료를 알림 (1일차로 진행)
+  emit('completeTutorial')
+}
+
+// 튜토리얼 건너뛰기
+const skipTutorial = () => {
+  showBattleTutorial.value = false
+  completeBattleTutorial()
+  // 부모 컴포넌트에 튜토리얼 완료를 알림 (1일차로 진행)
+  emit('completeTutorial')
+}
 </script>
+
+<style scoped>
+.battle-log-entry {
+  animation: slideInFade 0.5s ease-out forwards;
+}
+
+@keyframes slideInFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateX(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
+.shadow-glow {
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5),
+               0 0 20px rgba(251, 191, 36, 0.3);
+  animation: glow-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.5),
+                 0 0 20px rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 15px rgba(251, 191, 36, 0.7),
+                 0 0 30px rgba(251, 191, 36, 0.5),
+                 0 0 40px rgba(251, 191, 36, 0.3);
+  }
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .battle-log-entry {
+    animation-duration: 0.4s;
+  }
+}
+</style>

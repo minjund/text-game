@@ -8,7 +8,9 @@
             <span class="text-2xl sm:text-3xl">🎴</span>
             <div>
               <h2 class="text-base sm:text-lg md:text-xl font-bold text-purple-200">패시브 카드 컬렉션</h2>
-              <p class="text-[10px] sm:text-xs text-slate-400">보유 중인 패시브 카드 목록</p>
+              <p class="text-[10px] sm:text-xs" :class="passiveCards.length >= 15 ? 'text-orange-400' : 'text-slate-400'">
+                보유: {{ passiveCards.length }}/15장
+              </p>
             </div>
           </div>
           <button

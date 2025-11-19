@@ -47,8 +47,10 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
   // 액티브 카드 관련 상태
   const usedActiveCards = ref<string[]>([]) // 사용된 카드 ID 목록
   const activeEffects = ref<BattleEffect[]>([]) // 현재 활성화된 버프/디버프
-  const attackerScore = ref(0) // 아군 공격 성공 횟수
-  const defenderScore = ref(0) // 적군 공격 성공 횟수
+  const attackerScore = ref(0) // 아군 공격 성공 횟수 (UI 표시용)
+  const defenderScore = ref(0) // 적군 공격 성공 횟수 (UI 표시용)
+  const attackerTroops = ref(0) // 아군 실제 병력
+  const defenderTroops = ref(0) // 적군 실제 병력
   const currentTurn = ref(0) // 현재 턴
 
   // 카드 선택 타이머 관련 상태
@@ -132,6 +134,10 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     const hasCards = battleActiveCards?.value && battleActiveCards.value.length > 0
     if (!hasCards) return
 
+    // 모든 카드를 이미 사용했으면 일시정지하지 않음
+    const allCardsUsed = usedActiveCards.value.length >= battleActiveCards.value.length
+    if (allCardsUsed) return
+
     const scoreDiff = newAttacker - newDefender
     const currentState = getBattleStatus(scoreDiff)
 
@@ -196,8 +202,8 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
   watch(isBattleRunning, (isRunning, wasRunning) => {
     // 전투가 진행 중이었다가 끝났을 때
     if (wasRunning && !isRunning && currentBattle.value && !currentBattle.value.result) {
-      // 최종 점수로 결과 계산
-      const finalResult = attackerScore.value > defenderScore.value ? 'victory' : 'defeat'
+      // 최종 병력으로 결과 계산
+      const finalResult = attackerTroops.value > defenderTroops.value ? 'victory' : 'defeat'
       // 결과를 설정 (UI에 표시됨)
       currentBattle.value.result = finalResult
       // 결과 처리
@@ -388,10 +394,16 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
       showNotification(`${card.name} 발동 실패...`, 'error')
     }
 
-    // 카드 사용 후 타이머 중지하고 전투 재개
-    stopCardSelectionTimer()
-    if (isPaused.value && currentBattle.value) {
-      resumeBattle(currentBattle.value)
+    // 모든 카드를 사용했는지 체크
+    const allCardsUsed = battleActiveCards?.value && usedActiveCards.value.length >= battleActiveCards.value.length
+
+    if (allCardsUsed) {
+      // 모든 카드를 사용했으면 즉시 타이머 중지하고 전투 재개
+      showNotification('모든 카드를 사용했습니다! 전투를 재개합니다.', 'info')
+      stopCardSelectionTimer()
+      if (isPaused.value && currentBattle.value) {
+        resumeBattle(currentBattle.value)
+      }
     }
   }
 
@@ -513,8 +525,10 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     // 효과 타입별 처리
     switch (card.effectType) {
       case 'instant_damage':
-        const damage = Math.floor(card.power / 20)
-        defenderScore.value = Math.max(0, defenderScore.value - damage)
+        const damage = Math.floor(card.power * 5) // 카드 파워에 비례한 병력 손실
+        const actualEnemyDamage = Math.min(damage, defenderTroops.value)
+        defenderTroops.value -= actualEnemyDamage
+        defenderScore.value = Math.max(0, defenderScore.value - 1)
         logs.push({
           turn: currentTurn.value,
           generalName: '',
@@ -530,13 +544,15 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
           action: '',
           success: true,
           message: '',
-          story: `⚔️ 적군 병사들이 비명을 지르며 쓰러진다! 전세가 ${damage}만큼 역전되었다!`,
+          story: `⚔️ 적군 ${actualEnemyDamage.toLocaleString()}명이 비명을 지르며 쓰러진다! (잔여 병력: ${defenderTroops.value.toLocaleString()}명)`,
           narrativeType: 'narration'
         })
         break
 
       case 'heal':
-        attackerScore.value += Math.floor(card.power / 15)
+        const healAmount = Math.floor(card.power * 3) // 카드 파워에 비례한 병력 회복
+        attackerTroops.value += healAmount
+        attackerScore.value += 1
         logs.push({
           turn: currentTurn.value,
           generalName: '',
@@ -552,7 +568,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
           action: '',
           success: true,
           message: '',
-          story: `💚 아군의 사기가 크게 상승했다! 전투력이 회복되어 반격할 준비가 되었다!`,
+          story: `💚 아군 ${healAmount.toLocaleString()}명이 전투에 복귀했다! (현재 병력: ${attackerTroops.value.toLocaleString()}명)`,
           narrativeType: 'narration'
         })
         break
@@ -633,9 +649,12 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
         break
 
       case 'reverse_momentum':
-        const reverseAmount = Math.floor(card.power / 10)
-        attackerScore.value += reverseAmount
-        defenderScore.value = Math.max(0, defenderScore.value - reverseAmount)
+        const reverseAmount = Math.floor(card.power * 3) // 병력 역전량
+        const enemyLoss = Math.min(reverseAmount, defenderTroops.value)
+        defenderTroops.value -= enemyLoss
+        attackerTroops.value += Math.floor(reverseAmount / 2) // 아군도 일부 회복
+        attackerScore.value += 1
+        defenderScore.value = Math.max(0, defenderScore.value - 1)
         logs.push({
           turn: currentTurn.value,
           generalName: '',
@@ -651,21 +670,35 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
           action: '',
           success: true,
           message: '',
-          story: `🔄 승리가 눈앞에 보인다! 아군의 함성이 하늘을 찌른다!`,
+          story: `🔄 적군 ${enemyLoss.toLocaleString()}명이 혼란에 빠졌고, 아군 ${Math.floor(reverseAmount / 2).toLocaleString()}명이 재기했다!`,
+          narrativeType: 'narration'
+        })
+        logs.push({
+          turn: currentTurn.value,
+          generalName: '',
+          action: '',
+          success: true,
+          message: '',
+          story: `📊 아군: ${attackerTroops.value.toLocaleString()}명 vs 적군: ${defenderTroops.value.toLocaleString()}명`,
           narrativeType: 'narration'
         })
         break
 
       case 'multi_strike':
+        let totalMultiDamage = 0
         for (let i = 0; i < card.power; i++) {
           attackerScore.value += 1
+          const strikeDamage = Math.floor(card.power * 10)
+          const actualStrikeDamage = Math.min(strikeDamage, defenderTroops.value)
+          defenderTroops.value -= actualStrikeDamage
+          totalMultiDamage += actualStrikeDamage
           logs.push({
             turn: currentTurn.value,
             generalName: kingdom.value.ruler || '지휘관',
             action: `연속 공격 ${i + 1}`,
             success: true,
             message: '',
-            story: `⚡ ${kingdom.value.ruler || '지휘관'}의 ${i + 1}번째 연속 공격! 적이 속수무책으로 당한다!`,
+            story: `⚡ ${kingdom.value.ruler || '지휘관'}의 ${i + 1}번째 연속 공격! 적군 ${actualStrikeDamage.toLocaleString()}명이 쓰러진다!`,
             narrativeType: 'action'
           })
         }
@@ -675,7 +708,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
           action: '',
           success: true,
           message: '',
-          story: `💫 완벽한 연속 공격이었다! 적진이 초토화되었다!`,
+          story: `💫 완벽한 연속 공격이었다! 총 ${totalMultiDamage.toLocaleString()}명의 적이 무너졌다! (잔여 병력: ${defenderTroops.value.toLocaleString()}명)`,
           narrativeType: 'narration'
         })
         break
@@ -726,6 +759,10 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     previousBattleState.value = '' // 빈 문자열로 초기화하여 전투 시작 시 카드 선택 가능하게 함
     stopCardSelectionTimer()
 
+    // 병력 초기화 (각 장수의 배치 병력 합산)
+    attackerTroops.value = currentBattle.value.attacker.generals.reduce((sum, g) => sum + (g.assignedSoldiers || 0), 0)
+    defenderTroops.value = currentBattle.value.defender.generals.reduce((sum, g) => sum + (g.assignedSoldiers || 0), 0)
+
     const logs: BattleLog[] = []
 
     // 오프닝 나레이션
@@ -746,6 +783,16 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
       success: true,
       message: '',
       story: `🏰 양군이 대치하며 살기가 가득한 시선을 교환한다. 전쟁의 서막이 오른다...`,
+      narrativeType: 'narration'
+    })
+
+    logs.push({
+      turn: 0,
+      generalName: '',
+      action: '',
+      success: true,
+      message: '',
+      story: `📊 아군 병력: ${attackerTroops.value.toLocaleString()}명 vs 적군 병력: ${defenderTroops.value.toLocaleString()}명`,
       narrativeType: 'narration'
     })
 
@@ -813,27 +860,35 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
         }
       }
 
-      // 중간 나레이션 추가 (5턴, 10턴, 15턴)
+      // 중간 나레이션 추가 (5턴, 10턴, 15턴) - 병력 기반
       if (turn === 5) {
-        const currentScore = attackerScore.value - defenderScore.value
-        const narratives = [
-          `⚡ 전투가 점점 치열해진다! 양측 모두 한 치의 양보도 없이 맞서고 있다!`,
-          `💥 피아 구분이 어려울 정도로 격렬한 난전이 벌어진다!`,
-          `🔊 함성과 비명이 뒤섞여 전장이 아수라장이 되었다!`,
-          `⚔️ 어느 쪽도 물러서지 않는다! 승부는 아직 알 수 없다!`
-        ]
+        const troopDiff = attackerTroops.value - defenderTroops.value
+        const troopRatio = attackerTroops.value / (defenderTroops.value || 1)
+
         logs.push({
           turn,
           generalName: '',
           action: '',
           success: true,
           message: '',
-          story: narratives[Math.floor(Math.random() * narratives.length)],
+          story: `⚡ 전투가 점점 치열해진다! 양측 모두 한 치의 양보도 없이 맞서고 있다!`,
+          narrativeType: 'narration'
+        })
+
+        logs.push({
+          turn,
+          generalName: '',
+          action: '',
+          success: true,
+          message: '',
+          story: `📊 현재 병력: 아군 ${attackerTroops.value.toLocaleString()}명 vs 적군 ${defenderTroops.value.toLocaleString()}명`,
           narrativeType: 'narration'
         })
       } else if (turn === 10) {
-        const currentScore = attackerScore.value - defenderScore.value
-        if (currentScore > 0) {
+        const troopDiff = attackerTroops.value - defenderTroops.value
+        const troopRatio = attackerTroops.value / (defenderTroops.value || 1)
+
+        if (troopRatio > 1.3) {
           const winningNarratives = [
             `🔥 우리 군이 우세하다! 적군의 사기가 떨어지기 시작했다!`,
             `💪 아군의 기세가 하늘을 찌른다! 적들이 두려움에 떨고 있다!`,
@@ -849,7 +904,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
             story: winningNarratives[Math.floor(Math.random() * winningNarratives.length)],
             narrativeType: 'narration'
           })
-        } else if (currentScore < 0) {
+        } else if (troopRatio < 0.7) {
           const losingNarratives = [
             `⚠️ 전세가 불리하다! 반격의 기회를 노려야 한다!`,
             `😰 아군이 밀리고 있다! 사기가 떨어지고 있다!`,
@@ -882,6 +937,16 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
             narrativeType: 'narration'
           })
         }
+
+        logs.push({
+          turn,
+          generalName: '',
+          action: '',
+          success: true,
+          message: '',
+          story: `📊 현재 병력: 아군 ${attackerTroops.value.toLocaleString()}명 vs 적군 ${defenderTroops.value.toLocaleString()}명`,
+          narrativeType: 'narration'
+        })
       } else if (turn === 15) {
         logs.push({
           turn,
@@ -890,6 +955,16 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
           success: true,
           message: '',
           story: `💀 전투가 막바지에 이르렀다! 이제 곧 승부가 결정된다!`,
+          narrativeType: 'narration'
+        })
+
+        logs.push({
+          turn,
+          generalName: '',
+          action: '',
+          success: true,
+          message: '',
+          story: `📊 현재 병력: 아군 ${attackerTroops.value.toLocaleString()}명 vs 적군 ${defenderTroops.value.toLocaleString()}명`,
           narrativeType: 'narration'
         })
       }
@@ -964,14 +1039,39 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
           narrativeType: 'action'
         })
 
-        // 성공 시 점수 증가
-        if (success) {
-          // 치명타 효과 확인
-          const hasCritical = activeEffects.value.some(e => e.type === 'critical_strike')
-          const scoreGain = hasCritical ? 2 : 1
+        // 성공/실패에 따른 병력 손실 계산
+        // 기본 데미지 = 장수 power * (배치병력 / 1000) * 스킬 효과값
+        const basePower = general.stats.power || 50
+        const troopMultiplier = (general.assignedSoldiers || 100) / 1000
+        const skillPower = (skill.effect?.value || 100) / 100
 
-          if (isAttackerTurn) {
-            attackerScore.value += scoreGain
+        // 치명타 효과 확인
+        const hasCritical = activeEffects.value.some(e => e.type === 'critical_strike')
+        const criticalMultiplier = hasCritical ? 2.0 : 1.0
+
+        // 성공률에 따른 데미지 (성공 시 100%, 실패 시 30%)
+        const successMultiplier = success ? 1.0 : 0.3
+
+        const totalDamage = Math.floor(basePower * troopMultiplier * skillPower * criticalMultiplier * successMultiplier * (1 + battleBonus / 100))
+
+        if (isAttackerTurn) {
+          // 아군 턴 - 적군 병력 감소
+          const actualDamage = Math.min(totalDamage, defenderTroops.value)
+          defenderTroops.value -= actualDamage
+
+          if (success) {
+            attackerScore.value += 1
+
+            logs.push({
+              turn,
+              generalName: '',
+              action: '',
+              success: true,
+              message: '',
+              story: `⚔️ 적군 ${actualDamage.toLocaleString()}명이 쓰러졌다! (잔여 병력: ${defenderTroops.value.toLocaleString()}명)`,
+              narrativeType: 'narration'
+            })
+
             if (hasCritical) {
               logs.push({
                 turn,
@@ -985,9 +1085,50 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
               // 치명타 효과 제거
               activeEffects.value = activeEffects.value.filter(e => e.type !== 'critical_strike')
             }
-          } else {
-            defenderScore.value += scoreGain
+          } else if (actualDamage > 0) {
+            logs.push({
+              turn,
+              generalName: '',
+              action: '',
+              success: true,
+              message: '',
+              story: `🩸 공격이 빗나갔지만 적군 ${actualDamage.toLocaleString()}명이 희생되었다. (잔여 병력: ${defenderTroops.value.toLocaleString()}명)`,
+              narrativeType: 'narration'
+            })
           }
+        } else {
+          // 적군 턴 - 아군 병력 감소
+          const actualDamage = Math.min(totalDamage, attackerTroops.value)
+          attackerTroops.value -= actualDamage
+
+          if (success) {
+            defenderScore.value += 1
+
+            logs.push({
+              turn,
+              generalName: '',
+              action: '',
+              success: true,
+              message: '',
+              story: `💔 아군 ${actualDamage.toLocaleString()}명이 전사했다! (잔여 병력: ${attackerTroops.value.toLocaleString()}명)`,
+              narrativeType: 'narration'
+            })
+          } else if (actualDamage > 0) {
+            logs.push({
+              turn,
+              generalName: '',
+              action: '',
+              success: true,
+              message: '',
+              story: `🛡️ 방어에 성공했지만 아군 ${actualDamage.toLocaleString()}명이 부상당했다. (잔여 병력: ${attackerTroops.value.toLocaleString()}명)`,
+              narrativeType: 'narration'
+            })
+          }
+        }
+
+        // 병력이 0이 되면 전투 조기 종료
+        if (attackerTroops.value <= 0 || defenderTroops.value <= 0) {
+          break
         }
 
         // 대사 추가 (40% 확률)
@@ -1010,8 +1151,14 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
       updateActiveEffects()
     }
 
-    // 결과 계산 (임시 변수에 저장, 나중에 설정)
-    const battleResult = attackerScore.value > defenderScore.value ? 'victory' : 'defeat'
+    // 결과 계산 (병력 기반)
+    const battleResult = attackerTroops.value > defenderTroops.value ? 'victory' : 'defeat'
+
+    // 최종 병력 손실률 계산
+    const initialAttackerTroops = currentBattle.value.attacker.generals.reduce((sum, g) => sum + (g.assignedSoldiers || 0), 0)
+    const initialDefenderTroops = currentBattle.value.defender.generals.reduce((sum, g) => sum + (g.assignedSoldiers || 0), 0)
+    const attackerLossRate = Math.floor((1 - attackerTroops.value / initialAttackerTroops) * 100)
+    const defenderLossRate = Math.floor((1 - defenderTroops.value / initialDefenderTroops) * 100)
 
     // 클라이막스 나레이션
     if (battleResult === 'victory') {
@@ -1056,8 +1203,8 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
 
     // 엔딩 나레이션
     const endingStory = battleResult === 'victory'
-      ? `🎉 치열한 전투 끝에 ${currentBattle.value.attacker.kingdomName}이(가) 승리를 거머쥐었다! (아군: ${attackerScore.value}, 적군: ${defenderScore.value})`
-      : `😔 ${currentBattle.value.defender.kingdomName}의 방어선을 뚫지 못했다. (아군: ${attackerScore.value}, 적군: ${defenderScore.value})`
+      ? `🎉 치열한 전투 끝에 ${currentBattle.value.attacker.kingdomName}이(가) 승리를 거머쥐었다!\n📊 아군 잔여병력: ${attackerTroops.value.toLocaleString()}명 (손실률 ${attackerLossRate}%) | 적군: ${defenderTroops.value.toLocaleString()}명 (손실률 ${defenderLossRate}%)`
+      : `😔 ${currentBattle.value.defender.kingdomName}의 방어선을 뚫지 못했다.\n📊 아군 잔여병력: ${attackerTroops.value.toLocaleString()}명 (손실률 ${attackerLossRate}%) | 적군: ${defenderTroops.value.toLocaleString()}명 (손실률 ${defenderLossRate}%)`
 
     logs.push({
       turn: 999,
@@ -1277,9 +1424,14 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
       saveBattleRecord(currentBattle.value)
     }
 
-    // 전투 병력 손실 (전체 병력의 30%)
-    const casualty = Math.floor(kingdom.value.resources.soldiers * 0.3)
-    kingdom.value.resources.soldiers = Math.max(0, kingdom.value.resources.soldiers - casualty)
+    // 전투 병력 손실 (실제 전투에서 잃은 병력만큼 차감)
+    const initialTroops = currentBattle.value?.attacker.generals.reduce((sum, g) => sum + (g.assignedSoldiers || 0), 0) || kingdom.value.resources.soldiers
+    const troopsLost = initialTroops - attackerTroops.value
+    kingdom.value.resources.soldiers = Math.max(0, kingdom.value.resources.soldiers - troopsLost)
+
+    if (troopsLost > 0) {
+      showNotification(`전투에서 ${troopsLost.toLocaleString()}명의 병력을 잃었습니다.`, 'error')
+    }
 
     currentBattle.value = null
   }
@@ -1333,6 +1485,8 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     activeEffects,
     attackerScore,
     defenderScore,
+    attackerTroops,
+    defenderTroops,
     currentTurn,
     isBattleRunning,
     isPaused,
@@ -1354,6 +1508,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     calculateActiveEffectBonus,
     calculateEnemyDebuff,
     updateActiveEffects,
-    stopBattle
+    stopBattle,
+    stopCardSelectionTimer
   }
 }
