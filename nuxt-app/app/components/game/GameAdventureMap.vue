@@ -77,13 +77,21 @@
         </div>
       </div>
     </div>
+
+    <!-- 로드맵 튜토리얼 오버레이 -->
+    <GameAdventureMapTutorialOverlay
+      :show="showTutorial"
+      @complete="completeTutorial"
+      @skip="skipTutorial"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import type { AdventureNode, NodeType } from '~/types/adventure'
 import { NODE_INFO } from '~/types/adventure'
+import GameAdventureMapTutorialOverlay from './GameAdventureMapTutorialOverlay.vue'
 
 interface Props {
   nodes: AdventureNode[]
@@ -101,6 +109,35 @@ const emit = defineEmits<{
   'node-click': [node: AdventureNode]
   'retreat': []
 }>()
+
+// 튜토리얼 상태
+const showTutorial = ref(false)
+
+// 컴포넌트 마운트 시 튜토리얼 확인
+onMounted(() => {
+  if (process.client) {
+    const hasSeenAdventureMapTutorial = localStorage.getItem('hasSeenAdventureMapTutorial')
+    if (!hasSeenAdventureMapTutorial) {
+      showTutorial.value = true
+    }
+  }
+})
+
+// 튜토리얼 완료
+const completeTutorial = () => {
+  if (process.client) {
+    localStorage.setItem('hasSeenAdventureMapTutorial', 'true')
+  }
+  showTutorial.value = false
+}
+
+// 튜토리얼 건너뛰기
+const skipTutorial = () => {
+  if (process.client) {
+    localStorage.setItem('hasSeenAdventureMapTutorial', 'true')
+  }
+  showTutorial.value = false
+}
 
 // 포기 버튼 핸들러
 const handleRetreat = () => {

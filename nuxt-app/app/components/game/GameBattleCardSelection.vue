@@ -129,13 +129,22 @@
           </div>
         </div>
       </div>
+
+      <!-- 카드 선택 튜토리얼 오버레이 -->
+      <GameBattleCardSelectionTutorialOverlay
+        :show="showTutorial"
+        @complete="completeTutorial"
+        @skip="skipTutorial"
+      />
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { PassiveCard } from '~/types/passive-cards'
+import GameBattleCardSelectionTutorialOverlay from './GameBattleCardSelectionTutorialOverlay.vue'
+import { useTutorial } from '~/composables/useTutorial'
 
 interface Props {
   show: boolean
@@ -153,6 +162,35 @@ const emit = defineEmits<{
 }>()
 
 const selectedCards = ref<any[]>([])
+
+// 튜토리얼 상태
+const { tutorialState, completeCardSelectionTutorial } = useTutorial()
+const showTutorial = ref(false)
+
+// 모달이 열릴 때 튜토리얼 확인
+watch(() => props.show, (newVal) => {
+  if (newVal && process.client) {
+    // tutorialState를 통해 확인
+    if (!tutorialState.value?.hasSeenCardSelectionTutorial) {
+      // 모달이 완전히 렌더링된 후 튜토리얼 표시
+      setTimeout(() => {
+        showTutorial.value = true
+      }, 300)
+    }
+  }
+})
+
+// 튜토리얼 완료
+const completeTutorial = () => {
+  showTutorial.value = false
+  completeCardSelectionTutorial()
+}
+
+// 튜토리얼 건너뛰기
+const skipTutorial = () => {
+  showTutorial.value = false
+  completeCardSelectionTutorial()
+}
 
 // 모든 액티브 카드 표시
 const battleCards = computed(() => {

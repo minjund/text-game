@@ -17,7 +17,7 @@ export const useRealtimeBattle = () => {
     allBattleLogs.value = allLogs
     battle.log = [] // 로그 초기화
 
-    // 0.6초마다 로그 하나씩 추가 (읽기 편하게)
+    // 0.8초마다 로그 하나씩 추가 (중간 속도)
     battleInterval.value = setInterval(() => {
       if (currentTurnIndex.value >= allBattleLogs.value.length) {
         stopBattle()
@@ -39,7 +39,7 @@ export const useRealtimeBattle = () => {
           })
         }
       }, 50)
-    }, 600) // 0.6초 - 읽기 편한 속도
+    }, 800) // 0.8초 - 중간 속도
   }
 
   // 전투 중지
@@ -67,7 +67,7 @@ export const useRealtimeBattle = () => {
 
     isPaused.value = false
 
-    // 0.6초마다 로그 하나씩 추가 (재개)
+    // 0.8초마다 로그 하나씩 추가 (재개)
     battleInterval.value = setInterval(() => {
       if (currentTurnIndex.value >= allBattleLogs.value.length) {
         stopBattle()
@@ -89,7 +89,7 @@ export const useRealtimeBattle = () => {
           })
         }
       }, 50)
-    }, 600) // 0.6초 - 읽기 편한 속도
+    }, 800) // 0.8초 - 중간 속도
   }
 
   // 즉시 모든 로그 표시 (스킵 기능)

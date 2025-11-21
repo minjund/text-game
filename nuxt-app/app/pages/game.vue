@@ -72,7 +72,7 @@
 
     <!-- Mobile Bottom Action Buttons (Fixed) -->
     <GameMobileActions
-      v-if="!adventureState.active"
+      v-if="!adventureState?.active"
       :unlocked-features="tutorialState?.unlockedFeatures || []"
       @show-commandments="showCommandments = true"
       @show-passive-cards="showPassiveCardsCollection = true"
@@ -113,6 +113,8 @@
       @use-active-card="useActiveCard"
       @complete-tutorial="handleBattleTutorialComplete"
       @pause-tutorial="handleBattleTutorialPause"
+      @manual-pause="manualPauseBattle"
+      @manual-resume="manualResumeBattle"
     />
 
     <!-- Passive Card Selection Modal -->
@@ -653,7 +655,9 @@ const {
   currentTurn,
   isPaused,
   cardSelectionTime,
-  stopCardSelectionTimer
+  stopCardSelectionTimer,
+  manualPauseBattle,
+  manualResumeBattle
 } = useBattleSystem({
   kingdom,
   enemyKingdoms,
@@ -1126,29 +1130,13 @@ const processNextDay = () => {
     return
   }
 
-  // 42일 도달 시 최종 체크 (게임 일수 기반)
+  // 42일 도달 시 완전 리셋 (게임 일수 기반)
   if (kingdom.value.day >= 42) {
-    if (empire.value?.defeated) {
-      showNotification('🎉 축하합니다! 아카샤 대제국을 무너뜨렸습니다!', 'success')
-      // 환생 모달 표시
-      setTimeout(() => {
-        showReincarnationModal.value = true
-      }, 2000)
-    } else {
-      showNotification('😢 시간 초과! 제국을 무너뜨리지 못했습니다...', 'error')
-      // 환생 모달 표시
-      setTimeout(() => {
-        showReincarnationModal.value = true
-      }, 2000)
-    }
-    return
-  }
-
-  // 25일마다 시너지 카드 선택 (100일 제외)
-  if (kingdom.value.day % 25 === 0 && kingdom.value.day > 0 && kingdom.value.day !== 100) {
-    // 시너지 카드 선택 모달 표시
-    drawSynergyCards()
-    showNotification('🎴 25일이 지났습니다! 시너지 카드를 선택하세요!', 'info')
+    showNotification('🔄 42일이 지났습니다. 게임을 처음부터 다시 시작합니다...', 'info')
+    // 완전 리셋 (환생이 아님)
+    setTimeout(() => {
+      resetToZero()
+    }, 2000)
     return
   }
 

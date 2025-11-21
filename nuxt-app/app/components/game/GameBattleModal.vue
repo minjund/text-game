@@ -15,9 +15,22 @@
             <h2 class="text-sm md:text-xl font-bold flex items-center gap-1 md:gap-2">
               <span>⚔️</span> 전장의 기록
             </h2>
-            <button @click.stop="handleClose" class="text-xl md:text-2xl hover:text-red-400 transition-colors px-2 py-1">
-              ✕
-            </button>
+            <div class="flex items-center gap-2">
+              <!-- 일시정지/재개 버튼 -->
+              <button
+                v-if="!battle.result"
+                @click.stop="togglePause"
+                class="px-2 md:px-3 py-1 text-xs md:text-sm font-bold rounded transition-colors"
+                :class="isPaused
+                  ? 'bg-green-600 hover:bg-green-500 active:bg-green-700'
+                  : 'bg-yellow-600 hover:bg-yellow-500 active:bg-yellow-700'"
+              >
+                {{ isPaused ? '▶ 재개' : '⏸ 일시정지' }}
+              </button>
+              <button @click.stop="handleClose" class="text-xl md:text-2xl hover:text-red-400 transition-colors px-2 py-1">
+                ✕
+              </button>
+            </div>
           </div>
 
           <!-- Battle Status Bar -->
@@ -65,19 +78,6 @@
                 <span class="font-bold">크게 열세!</span>
               </div>
             </div>
-
-            <!-- Card Selection Timer -->
-            <div v-if="isPaused && cardSelectionTime > 0" class="mt-1 md:mt-2">
-              <div class="flex items-center gap-2">
-                <div class="flex-1 bg-slate-700 rounded-full h-1.5 md:h-1 overflow-hidden">
-                  <div
-                    class="bg-yellow-400 h-full transition-all duration-1000 ease-linear"
-                    :style="{ width: `${(cardSelectionTime / 15) * 100}%` }"
-                  ></div>
-                </div>
-                <span class="text-xs md:text-[10px] text-yellow-400 min-w-[28px] md:min-w-[24px]">{{ cardSelectionTime }}s</span>
-              </div>
-            </div>
           </div>
 
           <!-- Final Result Display -->
@@ -118,19 +118,14 @@
         <div v-if="battleActiveCards && battleActiveCards.length > 0 && !battle.result"
              :class="[
                'border-t-2 p-2 md:p-4 flex-shrink-0 transition-all duration-300',
-               isPaused && cardSelectionTime > 0
+               isPaused
                  ? 'border-yellow-500 bg-yellow-900/30 shadow-lg shadow-yellow-500/20'
                  : 'border-slate-700 bg-slate-900/80'
              ]">
           <div class="flex items-center justify-between mb-2">
-            <h3 class="text-[10px] md:text-sm font-bold text-amber-400">✨ 액티브 카드</h3>
-            <button
-              v-if="isPaused && cardSelectionTime > 0"
-              @click="skipCardSelection"
-              class="px-2 md:px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white text-[10px] md:text-xs rounded font-bold transition-colors"
-            >
-              건너뛰기 →
-            </button>
+            <h3 class="text-[10px] md:text-sm font-bold text-amber-400">
+              ✨ 액티브 카드 {{ isPaused ? '(일시정지 중 - 카드 사용 가능)' : '(일시정지하여 사용)' }}
+            </h3>
           </div>
           <div class="flex gap-1.5 md:gap-2 justify-start md:justify-center overflow-x-auto pb-1">
             <div v-for="card in battleActiveCards" :key="card.id"
@@ -160,10 +155,10 @@
               <button
                 v-if="!isCardUsed(card.id)"
                 @click="useCard(card)"
-                :disabled="!isPaused || cardSelectionTime === 0"
+                :disabled="!isPaused"
                 :class="[
                   'w-full px-1 md:px-2 py-0.5 md:py-1 rounded text-[10px] md:text-xs font-bold transition-colors',
-                  !isPaused || cardSelectionTime === 0
+                  !isPaused
                     ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
                     : isCardRecommended(card)
                     ? 'bg-yellow-600 hover:bg-yellow-500 active:bg-yellow-700 animate-pulse' :
@@ -172,7 +167,7 @@
                   card.rarity === 'rare' ? 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700' :
                   'bg-gray-600 hover:bg-gray-500 active:bg-gray-700'
                 ]">
-                {{ isPaused && cardSelectionTime > 0 ? '사용' : '대기' }}
+                {{ isPaused ? '사용' : '일시정지 필요' }}
               </button>
               <div v-else class="text-[9px] md:text-xs text-center text-gray-400">사용됨</div>
             </div>
@@ -238,6 +233,8 @@ const emit = defineEmits<{
   completeTutorial: []
   pauseTutorial: [paused: boolean]
   skipCardSelection: []
+  manualPause: []
+  manualResume: []
 }>()
 
 // 점수 차이 계산
@@ -396,6 +393,15 @@ const skipTutorial = () => {
   completeBattleTutorial()
   // 부모 컴포넌트에 튜토리얼 완료를 알림 (1일차로 진행)
   emit('completeTutorial')
+}
+
+// 일시정지/재개 토글
+const togglePause = () => {
+  if (props.isPaused) {
+    emit('manualResume')
+  } else {
+    emit('manualPause')
+  }
 }
 </script>
 

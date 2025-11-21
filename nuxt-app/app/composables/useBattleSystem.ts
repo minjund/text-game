@@ -40,6 +40,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
   const currentBattle = ref<Battle | null>(null)
   const battleType = ref<'pve' | 'pvp'>('pve')
   const currentBattleMode = ref<'empire' | 'normal'>('normal') // 제국 전투 vs 일반 전투
+  const currentBattleDifficulty = ref<'easy' | 'normal' | 'hard' | 'veryhard'>('normal') // 전투 난이도
   const battleRecords = ref<BattleRecord[]>([])
   const battleLogContainer = ref<HTMLElement | null>(null)
   const isScrolling = ref(false)
@@ -125,66 +126,66 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     }
   }
 
-  // 점수 변화 감지 및 전투 일시정지
-  watch([attackerScore, defenderScore], ([newAttacker, newDefender], [oldAttacker, oldDefender]) => {
-    // 전투가 진행 중이고 일시정지 상태가 아닐 때만 체크
-    if (!isBattleRunning.value || isPaused.value || !currentBattle.value) return
-
-    // 카드가 없으면 일시정지하지 않고 계속 진행
-    const hasCards = battleActiveCards?.value && battleActiveCards.value.length > 0
-    if (!hasCards) return
-
-    // 모든 카드를 이미 사용했으면 일시정지하지 않음
-    const allCardsUsed = usedActiveCards.value.length >= battleActiveCards.value.length
-    if (allCardsUsed) return
-
-    const scoreDiff = newAttacker - newDefender
-    const currentState = getBattleStatus(scoreDiff)
-
-    // 첫 점수 변경 시 열세면 바로 일시정지
-    const isFirstScore = oldAttacker === 0 && oldDefender === 0
-    const isLosing = scoreDiff < 0
-
-    // 상태가 변경되었는지 체크 OR 첫 점수가 열세인 경우
-    const stateChanged = previousBattleState.value !== currentState
-    const shouldPause = stateChanged || (isFirstScore && isLosing)
-
-    if (shouldPause) {
-      // 전투 일시정지
-      pauseBattle()
-
-      // 상태 전환 로그 추가
-      const transitionLog: BattleLog = {
-        turn: currentTurn.value,
-        generalName: '',
-        action: '',
-        success: true,
-        message: '',
-        story: isFirstScore && isLosing
-          ? '🚨 불리한 출발! 적의 선제공격을 허용했다! 즉시 대응이 필요하다! (15초)'
-          : getStatusChangeNarration(currentState),
-        narrativeType: 'narration'
-      }
-      currentBattle.value.log.push(transitionLog)
-
-      // 스크롤 아래로
-      setTimeout(() => {
-        const container = document.querySelector('.overflow-y-auto')
-        if (container) {
-          container.scrollTo({
-            top: container.scrollHeight,
-            behavior: 'smooth'
-          })
-        }
-      }, 100)
-
-      // 15초 타이머 시작
-      startCardSelectionTimer()
-    }
-
-    // 현재 상태 저장
-    previousBattleState.value = currentState
-  })
+  // 자동 일시정지 로직 제거 (사용자가 수동으로 일시정지 버튼을 누름)
+  // watch([attackerScore, defenderScore], ([newAttacker, newDefender], [oldAttacker, oldDefender]) => {
+  //   // 전투가 진행 중이고 일시정지 상태가 아닐 때만 체크
+  //   if (!isBattleRunning.value || isPaused.value || !currentBattle.value) return
+  //
+  //   // 카드가 없으면 일시정지하지 않고 계속 진행
+  //   const hasCards = battleActiveCards?.value && battleActiveCards.value.length > 0
+  //   if (!hasCards) return
+  //
+  //   // 모든 카드를 이미 사용했으면 일시정지하지 않음
+  //   const allCardsUsed = usedActiveCards.value.length >= battleActiveCards.value.length
+  //   if (allCardsUsed) return
+  //
+  //   const scoreDiff = newAttacker - newDefender
+  //   const currentState = getBattleStatus(scoreDiff)
+  //
+  //   // 첫 점수 변경 시 열세면 바로 일시정지
+  //   const isFirstScore = oldAttacker === 0 && oldDefender === 0
+  //   const isLosing = scoreDiff < 0
+  //
+  //   // 상태가 변경되었는지 체크 OR 첫 점수가 열세인 경우
+  //   const stateChanged = previousBattleState.value !== currentState
+  //   const shouldPause = stateChanged || (isFirstScore && isLosing)
+  //
+  //   if (shouldPause) {
+  //     // 전투 일시정지
+  //     pauseBattle()
+  //
+  //     // 상태 전환 로그 추가
+  //     const transitionLog: BattleLog = {
+  //       turn: currentTurn.value,
+  //       generalName: '',
+  //       action: '',
+  //       success: true,
+  //       message: '',
+  //       story: isFirstScore && isLosing
+  //         ? '🚨 불리한 출발! 적의 선제공격을 허용했다! 즉시 대응이 필요하다! (15초)'
+  //         : getStatusChangeNarration(currentState),
+  //       narrativeType: 'narration'
+  //     }
+  //     currentBattle.value.log.push(transitionLog)
+  //
+  //     // 스크롤 아래로
+  //     setTimeout(() => {
+  //       const container = document.querySelector('.overflow-y-auto')
+  //       if (container) {
+  //         container.scrollTo({
+  //           top: container.scrollHeight,
+  //           behavior: 'smooth'
+  //         })
+  //       }
+  //     }, 100)
+  //
+  //     // 15초 타이머 시작
+  //     startCardSelectionTimer()
+  //   }
+  //
+  //   // 현재 상태 저장
+  //   previousBattleState.value = currentState
+  // })
 
   // 카드를 모두 사용했는지 감지
   watch(usedActiveCards, (usedCards) => {
@@ -1236,7 +1237,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
   }
 
   // 스토리 기반 전투 시작
-  const startStoryBattle = async (enemyName?: string, enemyPower?: number, mode: 'empire' | 'normal' = 'normal') => {
+  const startStoryBattle = async (difficulty: 'easy' | 'normal' | 'hard' | 'veryhard' | string = 'normal', enemyPower?: number, mode: 'empire' | 'normal' = 'normal') => {
     // 병력이 없으면 전투 불가
     if (kingdom.value.resources.soldiers <= 0) {
       showNotification('병력이 부족합니다!', 'error')
@@ -1245,6 +1246,32 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
 
     // 전투 모드 설정
     currentBattleMode.value = mode
+
+    // 난이도 저장
+    if (difficulty === 'easy' || difficulty === 'normal' || difficulty === 'hard' || difficulty === 'veryhard') {
+      currentBattleDifficulty.value = difficulty
+    } else {
+      currentBattleDifficulty.value = 'normal'
+    }
+
+    // 난이도에 따른 적 병력 배율 설정
+    let enemyPowerMultiplier = 1.0
+    switch (difficulty) {
+      case 'easy':
+        enemyPowerMultiplier = 0.7 // 쉬움: 70%
+        break
+      case 'normal':
+        enemyPowerMultiplier = 1.0 // 보통: 100%
+        break
+      case 'hard':
+        enemyPowerMultiplier = 1.4 // 어려움: 140%
+        break
+      case 'veryhard':
+        enemyPowerMultiplier = 1.8 // 매우 어려움: 180%
+        break
+      default:
+        enemyPowerMultiplier = 1.0
+    }
 
     // 전투 카드 효과 계산
     let cardAttackBonus = 0
@@ -1316,7 +1343,13 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
       } else {
         // 랜덤 적 생성 (1-3명)
         const randomEnemyCount = 1 + Math.floor(Math.random() * 3)
-        enemyGenerals = generateRandomEnemies(randomEnemyCount)
+        const baseEnemyGenerals = generateRandomEnemies(randomEnemyCount)
+
+        // 난이도에 따라 적 병력 조정
+        enemyGenerals = baseEnemyGenerals.map(general => ({
+          ...general,
+          assignedSoldiers: Math.floor(general.assignedSoldiers * enemyPowerMultiplier)
+        }))
 
         // 랜덤 적 왕국 이름
         const enemyKingdomNames = [
@@ -1352,7 +1385,13 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
       } else {
         // 랜덤 적 생성 (1-3명)
         const randomEnemyCount = 1 + Math.floor(Math.random() * 3)
-        enemyGenerals = generateRandomEnemies(randomEnemyCount)
+        const baseEnemyGenerals = generateRandomEnemies(randomEnemyCount)
+
+        // 난이도에 따라 적 병력 조정
+        enemyGenerals = baseEnemyGenerals.map(general => ({
+          ...general,
+          assignedSoldiers: Math.floor(general.assignedSoldiers * enemyPowerMultiplier)
+        }))
 
         // 랜덤 적 왕국 이름
         const enemyKingdomNames = [
@@ -1393,8 +1432,8 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
       return
     }
 
-    // PVE 전투 시작
-    startStoryBattle(mode)
+    // PVE 전투 시작 (제국 전투는 normal 난이도 고정)
+    startStoryBattle('normal', undefined, mode)
   }
 
   // 텍스트 클래스 판별 (아군/적군/나레이션)
@@ -1439,8 +1478,31 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
   // 전투 종료 처리 (PVE 전용)
   const handleBattleEnd = (result: 'victory' | 'defeat') => {
     if (result === 'victory') {
-      kingdom.value.resources.gold += 500
-      kingdom.value.resources.food += 300
+      // 난이도에 따른 보상 계산
+      let goldReward = 300
+      let foodReward = 200
+
+      switch (currentBattleDifficulty.value) {
+        case 'easy':
+          goldReward = 300
+          foodReward = 200
+          break
+        case 'normal':
+          goldReward = 500
+          foodReward = 300
+          break
+        case 'hard':
+          goldReward = 800
+          foodReward = 500
+          break
+        case 'veryhard':
+          goldReward = 1200
+          foodReward = 700
+          break
+      }
+
+      kingdom.value.resources.gold += goldReward
+      kingdom.value.resources.food += foodReward
 
       // 제국 전투 승리
       if (currentBattleMode.value === 'empire') {
@@ -1455,7 +1517,7 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
         }
       } else {
         // 일반 전투 승리
-        showNotification('전투에서 승리했습니다!', 'success')
+        showNotification(`전투에서 승리했습니다! (보상: 금 +${goldReward}, 식량 +${foodReward})`, 'success')
       }
     } else {
       // 패배 처리
@@ -1471,6 +1533,20 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
         }, 1000)
       }
     }
+  }
+
+  // 수동 일시정지 함수 (카드 사용을 위해)
+  const manualPauseBattle = () => {
+    if (!isBattleRunning.value || isPaused.value) return
+    pauseBattle()
+    // 일시정지 시 15초 타이머는 시작하지 않음 (수동 재개를 기다림)
+  }
+
+  // 수동 재개 함수
+  const manualResumeBattle = () => {
+    if (!isPaused.value || !currentBattle.value) return
+    stopCardSelectionTimer() // 타이머가 있다면 중지
+    resumeBattle(currentBattle.value)
   }
 
   return {
@@ -1509,6 +1585,8 @@ export const useBattleSystem = (options: UseBattleSystemOptions) => {
     calculateEnemyDebuff,
     updateActiveEffects,
     stopBattle,
-    stopCardSelectionTimer
+    stopCardSelectionTimer,
+    manualPauseBattle,
+    manualResumeBattle
   }
 }

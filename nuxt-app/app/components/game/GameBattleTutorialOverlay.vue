@@ -3,69 +3,67 @@
     <div v-if="show" class="fixed inset-0 z-[10002] flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 md:p-4">
       <!-- 튜토리얼 포인터 및 설명 -->
       <div class="absolute inset-0 pointer-events-none">
-        <!-- Step 1: 전투 스코어 강조 -->
-        <div v-if="currentStep === 1" class="absolute top-2 md:top-4 lg:top-8 left-1/2 -translate-x-1/2 w-full max-w-md px-2 md:px-4">
+        <!-- Step 1: 중요! 일시정지 필수 -->
+        <div v-if="currentStep === 1" class="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-full max-w-xl px-2 md:px-4">
+          <div class="bg-gradient-to-br from-red-600 to-red-800 border-4 border-red-400 rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-2xl pointer-events-auto animate-pulse-strong">
+            <div class="text-center">
+              <div class="text-5xl md:text-7xl mb-3 md:mb-4">⚠️</div>
+              <h3 class="text-xl md:text-3xl font-black text-white mb-2 md:mb-4 uppercase tracking-wide">중요!</h3>
+              <div class="bg-yellow-500 text-black font-black text-base md:text-2xl py-2 md:py-4 px-3 md:px-6 rounded-xl mb-3 md:mb-4 shadow-lg">
+                전투 중에는 카드를 쓸 수 없습니다!
+              </div>
+              <p class="text-sm md:text-lg text-red-100 mb-3 md:mb-4 font-bold">
+                반드시 ⏸ 일시정지를 먼저 눌러야<br/>
+                액티브 카드를 사용할 수 있습니다!
+              </p>
+              <div class="bg-black/30 rounded-xl p-3 md:p-4 text-xs md:text-base text-red-50">
+                <div class="font-bold mb-2">✅ 올바른 순서:</div>
+                <div class="space-y-1">
+                  <div>1️⃣ 우측 상단 "⏸ 일시정지" 클릭</div>
+                  <div>2️⃣ 하단 카드 중 원하는 카드 선택</div>
+                  <div>3️⃣ "▶ 재개" 버튼으로 전투 계속</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: 일시정지 버튼 위치 -->
+        <div v-if="currentStep === 2" class="absolute top-2 md:top-4 right-2 md:right-4 w-full max-w-xs px-2 md:px-4">
           <div class="bg-gradient-to-br from-yellow-600 to-amber-700 border-2 border-yellow-400 rounded-xl md:rounded-2xl p-3 md:p-6 shadow-2xl pointer-events-auto animate-bounce-slow">
             <div class="flex items-start gap-2 md:gap-4">
-              <div class="text-3xl md:text-5xl">🎯</div>
+              <div class="text-3xl md:text-5xl">⏸️</div>
               <div class="flex-1">
-                <h3 class="text-base md:text-xl font-bold text-white mb-1 md:mb-2">전투 승점 시스템</h3>
+                <h3 class="text-base md:text-xl font-bold text-white mb-1 md:mb-2">일시정지 버튼 위치</h3>
                 <p class="text-xs md:text-sm text-yellow-100 mb-2 md:mb-3">
-                  전투는 실시간으로 진행되며, 상단의 승점으로 전투 상황을 파악할 수 있습니다.
+                  우측 상단에 있는 "⏸ 일시정지" 버튼을 찾아보세요!
                 </p>
                 <div class="text-[10px] md:text-xs text-yellow-50 space-y-0.5 md:space-y-1 bg-black/20 rounded-lg p-2 md:p-3">
-                  <div>• 💪 크게 우세: 승리 확률 높음</div>
-                  <div>• ⚖️ 팽팽한 접전: 카드 사용이 중요!</div>
-                  <div>• 🚨 크게 열세: 액티브 카드로 역전!</div>
+                  <div>• 전투가 시작되면 즉시 사용 가능</div>
+                  <div>• 클릭하면 "▶ 재개"로 바뀜</div>
+                  <div>• 일시정지 상태에서만 카드 선택</div>
+                  <div>• 카드 사용 후 재개 버튼 클릭</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Step 2: 전투 로그 강조 -->
-        <div v-if="currentStep === 2" class="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-full max-w-lg px-2 md:px-4">
-          <div class="bg-gradient-to-br from-cyan-600 to-blue-700 border-2 border-cyan-400 rounded-xl md:rounded-2xl p-3 md:p-6 shadow-2xl pointer-events-auto">
-            <div class="flex items-start gap-2 md:gap-4">
-              <div class="text-3xl md:text-5xl">📖</div>
-              <div class="flex-1">
-                <h3 class="text-base md:text-xl font-bold text-white mb-1 md:mb-2">전투 로그 읽기</h3>
-                <p class="text-xs md:text-sm text-cyan-100 mb-2 md:mb-3">
-                  중앙의 전투 로그에서 실시간 전투 상황을 확인하세요.
-                </p>
-                <div class="text-[10px] md:text-xs text-cyan-50 space-y-1 md:space-y-2 bg-black/20 rounded-lg p-2 md:p-3">
-                  <div class="flex items-center gap-1 md:gap-2">
-                    <span class="w-12 md:w-16 text-slate-300 font-bold">흰색</span>
-                    <span>상황 묘사</span>
-                  </div>
-                  <div class="flex items-center gap-1 md:gap-2">
-                    <span class="w-12 md:w-16 text-amber-200 font-bold">노란색</span>
-                    <span>액션</span>
-                  </div>
-                  <div class="flex items-center gap-1 md:gap-2">
-                    <span class="w-12 md:w-16 text-cyan-300 font-bold">청록색</span>
-                    <span>대사</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 3: 액티브 카드 강조 -->
+        <!-- Step 3: 액티브 카드 위치 -->
         <div v-if="currentStep === 3" class="absolute bottom-2 md:bottom-4 lg:bottom-8 left-1/2 -translate-x-1/2 w-full max-w-md px-2 md:px-4">
           <div class="bg-gradient-to-br from-purple-600 to-pink-700 border-2 border-purple-400 rounded-xl md:rounded-2xl p-3 md:p-6 shadow-2xl pointer-events-auto animate-pulse">
             <div class="flex items-start gap-2 md:gap-4">
-              <div class="text-3xl md:text-5xl">✨</div>
+              <div class="text-3xl md:text-5xl">🎴</div>
               <div class="flex-1">
-                <h3 class="text-base md:text-xl font-bold text-white mb-1 md:mb-2">액티브 카드 사용</h3>
+                <h3 class="text-base md:text-xl font-bold text-white mb-1 md:mb-2">액티브 카드 위치</h3>
                 <p class="text-xs md:text-sm text-purple-100 mb-2 md:mb-3">
-                  전투 중 노란색 타이머가 나타나면 15초 동안 카드를 사용할 수 있습니다!
+                  하단에 있는 액티브 카드들을 확인하세요!
                 </p>
                 <div class="text-[10px] md:text-xs text-purple-50 space-y-0.5 md:space-y-1 bg-black/20 rounded-lg p-2 md:p-3">
-                  <div>• "추천!" 배지 = 현재 상황에 유리한 카드</div>
-                  <div>• 각 카드는 전투당 1회만 사용 가능</div>
-                  <div>• 타이머 내에 사용하지 않으면 기회 소멸</div>
+                  <div>⚠️ 전투 중에는 "일시정지 필요" 표시</div>
+                  <div>✅ 일시정지 후 "사용" 버튼 활성화</div>
+                  <div>💡 "추천!" 배지: 현재 상황에 효과적</div>
+                  <div>🎯 각 카드는 전투당 1회만 사용 가능</div>
                 </div>
               </div>
             </div>
@@ -111,14 +109,14 @@
             v-for="i in 4"
             :key="i"
             class="h-1.5 md:h-2 rounded-full transition-all duration-300"
-            :class="i === currentStep ? 'w-6 md:w-8 bg-amber-500' : 'w-1.5 md:w-2 bg-slate-600'"
+            :class="i === currentStep ? 'w-6 md:w-8 bg-red-500' : 'w-1.5 md:w-2 bg-slate-600'"
           ></div>
         </div>
 
         <!-- 다음 버튼 -->
         <button
           @click="nextStep"
-          class="px-3 py-2 md:px-6 md:py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-semibold transition-all flex items-center gap-1 md:gap-2 shadow-lg shadow-amber-500/30 text-xs md:text-base"
+          class="px-3 py-2 md:px-6 md:py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold transition-all flex items-center gap-1 md:gap-2 shadow-lg shadow-red-500/30 text-xs md:text-base"
         >
           <span>다음</span>
           <span>→</span>
@@ -200,5 +198,20 @@ watch(() => props.show, (newVal) => {
 
 .animate-bounce-slow {
   animation: bounce-slow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-strong {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.95;
+  }
+}
+
+.animate-pulse-strong {
+  animation: pulse-strong 1.5s ease-in-out infinite;
 }
 </style>

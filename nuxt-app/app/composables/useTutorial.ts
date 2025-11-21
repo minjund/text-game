@@ -10,6 +10,7 @@ export interface TutorialState {
   hasAssignedGenerals: boolean
   hasCompletedFirstBattle: boolean
   hasSeenBattleTutorial: boolean // 전장의 기록 튜토리얼 확인 여부
+  hasSeenCardSelectionTutorial: boolean // 전투 카드 선택 튜토리얼 확인 여부
   unlockedFeatures: string[]
   shownMessages: string[]
 }
@@ -28,6 +29,7 @@ export const useTutorial = () => {
     hasAssignedGenerals: false,
     hasCompletedFirstBattle: false,
     hasSeenBattleTutorial: false,
+    hasSeenCardSelectionTutorial: false,
     unlockedFeatures: [],
     shownMessages: []
   })
@@ -85,6 +87,11 @@ export const useTutorial = () => {
       // 기존 저장 상태에 hasSeenBattleTutorial이 없으면 false로 초기화
       if (tutorialState.value.hasSeenBattleTutorial === undefined) {
         tutorialState.value.hasSeenBattleTutorial = false
+        saveState()
+      }
+      // 기존 저장 상태에 hasSeenCardSelectionTutorial이 없으면 false로 초기화
+      if (tutorialState.value.hasSeenCardSelectionTutorial === undefined) {
+        tutorialState.value.hasSeenCardSelectionTutorial = false
         saveState()
       }
       // 기존 저장 상태에 synergyCards가 없으면 추가
@@ -297,6 +304,12 @@ export const useTutorial = () => {
     saveState()
   }
 
+  // 전투 카드 선택 튜토리얼 완료 처리
+  const completeCardSelectionTutorial = () => {
+    tutorialState.value.hasSeenCardSelectionTutorial = true
+    saveState()
+  }
+
   // 스토리 완료 처리
   const completeStory = () => {
     tutorialState.value.storyCompleted = true
@@ -332,6 +345,7 @@ export const useTutorial = () => {
         hasAssignedGenerals: false,
         hasCompletedFirstBattle: false,
         hasSeenBattleTutorial: false,
+        hasSeenCardSelectionTutorial: false,
         unlockedFeatures: [],
         shownMessages: []
       }
@@ -372,6 +386,7 @@ export const useTutorial = () => {
     onAssignGenerals,
     onCompleteFirstBattle,
     completeBattleTutorial,
+    completeCardSelectionTutorial,
     completeStory,
     completeStartCardSelection,
     resetTutorial,
