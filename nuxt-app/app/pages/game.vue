@@ -1,5 +1,8 @@
 <template>
-  <div class="min-h-screen text-white flex flex-col overflow-hidden relative bg-cover bg-center bg-no-repeat" style="background-image: url('/images/background/base_back_groud.png');">
+  <div
+      class="min-h-screen text-white flex flex-col overflow-hidden relative bg-cover bg-center bg-no-repeat"
+      :style="{ backgroundImage: `url(${useRuntimeConfig().app.baseURL}images/background/base_back_groud.png)` }"
+  >
     <!-- Background Overlay -->
     <div class="absolute inset-0 bg-black/40 z-0"></div>
 
@@ -1277,7 +1280,8 @@ onMounted(() => {
     }, 500)
 
     // BGM 로드 및 재생
-    bgmAudio.value = new Audio('/bgm/baseBgm.mp3')
+    const config = useRuntimeConfig();
+    bgmAudio.value = new Audio(config.app.baseURL + '/bgm/baseBgm.mp3');
     bgmAudio.value.loop = true // 반복 재생
     bgmAudio.value.volume = 0.3 // 볼륨 30% (0.0 ~ 1.0)
 

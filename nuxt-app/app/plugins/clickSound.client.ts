@@ -3,7 +3,11 @@ export default defineNuxtPlugin(() => {
   if (process.client) {
     // 클릭 사운드 재생 함수
     const playClickSound = () => {
-      const audio = new Audio('/bgm/uiMouseClick.mp3')
+
+      const config = useRuntimeConfig();
+
+
+      const audio =  new Audio(config.app.baseURL + '/bgm/uiMouseClick.mp3');
       audio.volume = 0.3 // 볼륨 30%
       audio.play().catch(error => {
         // 에러 무시 (브라우저 자동재생 정책 등)

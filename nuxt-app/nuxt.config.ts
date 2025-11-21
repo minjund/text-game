@@ -11,6 +11,7 @@ export default defineNuxtConfig({
   // GitHub Pages 배포 설정
   app: {
     baseURL: '/text-game/', // GitHub repository 이름
+    buildAssetsDir: 'assets',
   },
 
   // 빌드 최적화
