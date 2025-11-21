@@ -1,0 +1,78 @@
+<svg width="300" height="400" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="elion-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f2027;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#203a43;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c5364;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="elion-robe" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#5e60ce;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#4ea8de;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#48bfe3;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="elion-magic">
+      <stop offset="0%" style="stop-color:#64dfdf;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#64dfdf;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="300" height="400" fill="url(#elion-bg)"/>
+
+  <!-- Magic Circles -->
+  <circle cx="150" cy="200" r="80" fill="none" stroke="#64dfdf" stroke-width="2" opacity="0.3"/>
+  <circle cx="150" cy="200" r="100" fill="none" stroke="#64dfdf" stroke-width="1" opacity="0.2"/>
+  <circle cx="150" cy="200" r="60" fill="none" stroke="#80ffdb" stroke-width="2" opacity="0.4"/>
+
+  <!-- Magic Symbols -->
+  <text x="150" y="140" font-family="serif" font-size="30" fill="#64dfdf" text-anchor="middle" opacity="0.6">✦</text>
+  <text x="100" y="200" font-family="serif" font-size="25" fill="#64dfdf" text-anchor="middle" opacity="0.5">◈</text>
+  <text x="200" y="200" font-family="serif" font-size="25" fill="#64dfdf" text-anchor="middle" opacity="0.5">◈</text>
+  <text x="150" y="260" font-family="serif" font-size="30" fill="#80ffdb" text-anchor="middle" opacity="0.6">✧</text>
+
+  <!-- Glow -->
+  <circle cx="150" cy="200" r="100" fill="url(#elion-magic)" opacity="0.4"/>
+
+  <!-- Robe Body -->
+  <path d="M 150 220 L 120 280 L 110 350 L 190 350 L 180 280 Z" fill="url(#elion-robe)"/>
+
+  <!-- Robe Details -->
+  <path d="M 150 220 L 120 280 L 110 350" stroke="#80ffdb" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M 150 220 L 180 280 L 190 350" stroke="#80ffdb" stroke-width="2" fill="none" opacity="0.6"/>
+
+  <!-- Arms with sleeves -->
+  <ellipse cx="110" cy="250" rx="20" ry="35" fill="url(#elion-robe)" transform="rotate(-20 110 250)"/>
+  <ellipse cx="190" cy="250" rx="20" ry="35" fill="url(#elion-robe)" transform="rotate(20 190 250)"/>
+
+  <!-- Book -->
+  <rect x="70" y="270" width="30" height="40" fill="#8b4513" rx="3"/>
+  <rect x="72" y="272" width="26" height="36" fill="#d2691e" rx="2"/>
+  <line x1="75" y1="280" x2="95" y2="280" stroke="#8b4513" stroke-width="1"/>
+  <line x1="75" y1="290" x2="95" y2="290" stroke="#8b4513" stroke-width="1"/>
+  <line x1="75" y1="300" x2="95" y2="300" stroke="#8b4513" stroke-width="1"/>
+
+  <!-- Magic Light from Hand -->
+  <circle cx="220" cy="280" r="15" fill="#64dfdf" opacity="0.6"/>
+  <circle cx="220" cy="280" r="10" fill="#80ffdb" opacity="0.8"/>
+  <circle cx="220" cy="280" r="5" fill="#ffffff"/>
+
+  <!-- Head -->
+  <circle cx="150" cy="180" r="35" fill="#d4a574"/>
+
+  <!-- Wizard Hat -->
+  <path d="M 120 180 L 150 100 L 180 180 Z" fill="url(#elion-robe)"/>
+  <ellipse cx="150" cy="180" rx="35" ry="8" fill="#5e60ce"/>
+  <circle cx="150" cy="100" r="8" fill="#80ffdb"/>
+
+  <!-- Face -->
+  <ellipse cx="140" cy="180" rx="4" ry="6" fill="#2d2d2d"/>
+  <ellipse cx="160" cy="180" rx="4" ry="6" fill="#2d2d2d"/>
+  <path d="M 140 192 Q 150 195 160 192" stroke="#8b6f47" stroke-width="2" fill="none"/>
+
+  <!-- Beard -->
+  <path d="M 135 195 Q 150 205 165 195 Q 160 210 150 215 Q 140 210 135 195" fill="#e0e0e0"/>
+
+  <!-- Title Text -->
+  <text x="150" y="370" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#80ffdb" text-anchor="middle">현자 엘리온</text>
+  <text x="150" y="390" font-family="Arial, sans-serif" font-size="14" fill="#64dfdf" text-anchor="middle">지혜의 책사</text>
+</svg>
