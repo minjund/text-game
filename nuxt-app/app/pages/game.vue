@@ -146,14 +146,15 @@
       :highest-day="Math.max(reincarnationData.highestDay, kingdom.day)"
       :total-days-played="reincarnationData.totalDaysPlayed + kingdom.day"
       :inherited-cards-count="reincarnationData.inheritedCards?.length || 0"
-      @select-card="selectInheritedCard"
-      @reincarnate-without-card="reincarnateWithoutCard"
+      @select-card="handleReincarnationCardSelect"
+      @reincarnate-without-card="handleReincarnationWithoutCard"
     />
 
     <!-- Passive Cards Collection Modal -->
     <GamePassiveCardsModal
       :show="showPassiveCardsCollection"
       :passive-cards="playerPassiveCards"
+      :inherited-card-ids="reincarnationData.inheritedCards.map(c => c.id)"
       @close="showPassiveCardsCollection = false"
     />
 
@@ -571,6 +572,44 @@ if (process.client) {
   loadReincarnationData()
 }
 
+// 환생 카드 선택 핸들러 (보스 승리 시 스토리로 이동하지 않음)
+const handleReincarnationCardSelect = (card: PassiveCard) => {
+  if (isBossBattleVictory.value) {
+    // 보스 승리 시: 카드만 추가하고 메인 화면 유지
+    const hasCard = reincarnationData.value.inheritedCards.some(c => c.id === card.id)
+    if (!hasCard) {
+      if (reincarnationData.value.inheritedCards.length >= MAX_INHERITED_CARDS) {
+        reincarnationData.value.inheritedCards.shift()
+      }
+      reincarnationData.value.inheritedCards.push(card)
+    }
+
+    if (process.client) {
+      localStorage.setItem('reincarnationData', JSON.stringify(reincarnationData.value))
+    }
+
+    showNotification(`${card.name} 카드를 획득했습니다! (누적 상속 카드: ${reincarnationData.value.inheritedCards.length}개)`, 'success')
+    showReincarnationModal.value = false
+    isBossBattleVictory.value = false
+  } else {
+    // 일반 환생: 스토리로 이동
+    selectInheritedCard(card)
+  }
+}
+
+// 환생 포기 핸들러 (보스 승리 시 스토리로 이동하지 않음)
+const handleReincarnationWithoutCard = () => {
+  if (isBossBattleVictory.value) {
+    // 보스 승리 시: 그냥 모달만 닫기
+    showNotification('카드를 선택하지 않았습니다.', 'info')
+    showReincarnationModal.value = false
+    isBossBattleVictory.value = false
+  } else {
+    // 일반 환생: 스토리로 이동
+    reincarnateWithoutCard()
+  }
+}
+
 // 모험 시스템
 const {
   adventureState,
@@ -631,6 +670,10 @@ const leaderboard = computed(() => {
 // 7일차 침략 전투 플래그
 const isWeeklyInvasion = ref(false)
 
+// 보스 전투 플래그
+const isBossBattle = ref(false)
+const isBossBattleVictory = ref(false) // 보스 전투 승리 여부
+
 // 전투 시스템
 const {
   currentBattle,
@@ -674,7 +717,7 @@ const {
   battleActiveCards
 })
 
-// 전투 종료 처리 (제국 전투 패배 시에만 환생 모달 표시)
+// 전투 종료 처리
 const closeBattle = () => {
   // 전투 결과 및 모드 확인
   const battleResult = currentBattle.value?.result
@@ -683,13 +726,13 @@ const closeBattle = () => {
   // 기존 closeBattle 로직 실행
   closeBattleInternal()
 
-  // 모험 모드인 경우
+  // 모험 모드인 경우 (보스 전투 포함)
   if (adventureState?.value?.active) {
     handleAdventureBattleEnd(battleResult as 'victory' | 'defeat')
     return
   }
 
-  // 제국 전투 패배한 경우에만 환생 모달 표시
+  // 제국 전투 패배한 경우에만 환생 모달 표시 (주간 침략)
   if (battleResult === 'defeat' && battleMode === 'empire') {
     setTimeout(() => {
       if (isWeeklyInvasion) {
@@ -854,14 +897,21 @@ const handleAdventureNodeClick = (node: any) => {
     case 'battle':
     case 'elite':
     case 'boss':
-      // 전투 카드 선택 모달 표시
+      // 덱의 전투 카드로 바로 전투 시작
       if (node.enemy) {
+        // 보스 전투인 경우 플래그 설정
+        if (node.type === 'boss') {
+          isBossBattle.value = true
+        }
+
         pendingBattle.value = {
           enemyName: node.enemy.name,
           enemyPower: node.enemy.power,
           battleType: node.type === 'boss' ? 'empire' : 'normal'
         }
-        showBattleCardSelection.value = true
+
+        // 카드 선택 모달 없이 바로 전투 시작 (덱의 카드 사용)
+        handleBattleCardsConfirm([])
       }
       break
 
@@ -1022,16 +1072,23 @@ const handleBattleCardsConfirm = (cards: any[]) => {
   selectedBattleCards.value = cards
   showBattleCardSelection.value = false
 
-  // 선택된 카드를 battleActiveCards에 추가
+  // 덱에 배치된 전투 카드를 battleActiveCards에 추가
   clearBattleDeck() // 먼저 배틀 덱 초기화
-  cards.forEach(card => {
-    addToBattleDeck(card) // 선택한 카드들을 배틀 덱에 추가
+
+  // 1. 덱의 전투 카드 슬롯에서 카드 가져오기
+  const deckBattleCards = cardDeck.value.battle.filter(c => c !== null) as PassiveCard[]
+
+  // 2. 덱의 전투 카드를 battleActiveCards에 추가
+  deckBattleCards.forEach(card => {
+    addToBattleDeck(card)
   })
 
-  // 선택된 카드 정보 로그
-  if (cards.length > 0) {
-    console.log(`전투 카드 ${cards.length}장 선택:`, cards.map(c => c.name))
+  // 로그
+  if (deckBattleCards.length > 0) {
+    console.log(`덱의 전투 카드 ${deckBattleCards.length}장 사용:`, deckBattleCards.map(c => c.name))
     console.log('battleActiveCards:', battleActiveCards.value)
+  } else {
+    console.log('덱에 배치된 전투 카드가 없습니다.')
   }
 
   // 전투 시작
@@ -1046,6 +1103,42 @@ const handleBattleCardsConfirm = (cards: any[]) => {
 const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
   if (!currentNode.value || !currentNode.value.enemy) return
 
+  // 보스 전투인 경우
+  if (isBossBattle.value) {
+    if (result === 'victory') {
+      // 보스 승리: 보상 지급 + 환생 카드 선택 + 메인 화면 유지
+      const bossReward = {
+        gold: 5000,
+        food: 3000,
+        soldiers: 1000
+      }
+      kingdom.value.resources.gold += bossReward.gold
+      kingdom.value.resources.food += bossReward.food
+      kingdom.value.resources.soldiers += bossReward.soldiers
+
+      showNotification(`👑 보스 처치! 금 +${bossReward.gold}, 식량 +${bossReward.food}, 병력 +${bossReward.soldiers}`, 'success')
+
+      // 모험 완료
+      completeAdventure()
+
+      // 환생 모달 표시 (승리해도 카드 선택 가능, 하지만 스토리로 이동하지 않음)
+      setTimeout(() => {
+        isBossBattle.value = false
+        isBossBattleVictory.value = true // 승리 플래그 설정
+        showReincarnationModal.value = true
+      }, 1000)
+    } else {
+      // 보스 패배: 환생 모달 표시 (스토리로 이동)
+      setTimeout(() => {
+        isBossBattle.value = false
+        isBossBattleVictory.value = false
+        showReincarnationModal.value = true
+      }, 500)
+    }
+    return
+  }
+
+  // 일반 전투인 경우
   if (result === 'victory') {
     // 보상 지급
     completeNode(currentNode.value.enemy.rewards)
@@ -1058,12 +1151,6 @@ const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
     if (currentNode.value.enemy.rewards.cards && currentNode.value.enemy.rewards.cards.length > 0) {
       availablePassiveCards.value = currentNode.value.enemy.rewards.cards
       showPassiveCardSelection.value = true
-    }
-
-    // 보스 처치 시 모험 완료
-    if (currentNode.value.type === 'boss') {
-      completeAdventure()
-      return
     }
 
     // 현재 노드를 완료 상태로 변경하고, 연결된 노드들을 선택 가능하게 만들기
@@ -1236,6 +1323,9 @@ const handleStartCardsSelected = (cards: any[]) => {
 
 // 전장의 기록 튜토리얼 완료 핸들러 (0일차 -> 1일차)
 const handleBattleTutorialComplete = () => {
+  // 전투 재개
+  manualResumeBattle()
+
   // 0일차일 때만 1일차로 진행
   if (kingdom.value.day === 0) {
     kingdom.value.day = 1
@@ -1246,12 +1336,12 @@ const handleBattleTutorialComplete = () => {
 }
 
 // 전장의 기록 튜토리얼 일시정지 핸들러
-const handleBattleTutorialPause = (isPaused: boolean) => {
-  if (isPaused) {
-    // 튜토리얼 시작 시 타이머 정지
+const handleBattleTutorialPause = (isPausedTutorial: boolean) => {
+  // 튜토리얼 시작 시: 타이머 정지 + 전투 일시정지
+  if (isPausedTutorial) {
     stopCardSelectionTimer()
+    manualPauseBattle() // 전투 로그 진행 멈추기
   }
-  // 튜토리얼 종료 시에는 자동으로 타이머가 재개됨 (전투 재개 시)
 }
 // ==================== 튜토리얼 스토리 끝 ====================
 

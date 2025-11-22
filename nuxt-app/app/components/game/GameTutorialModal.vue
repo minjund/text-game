@@ -82,12 +82,12 @@
           </div>
 
           <div class="space-y-2 md:space-y-4 flex-1">
-            <!-- 일반 전투 -->
+            <!-- 모험 -->
             <div class="bg-slate-800/60 border-2 border-red-500/30 rounded-lg md:rounded-xl p-3 md:p-5 hover:border-red-500/60 transition-all">
               <div class="flex items-start gap-2 md:gap-4">
                 <div class="text-2xl md:text-4xl">⚔️</div>
                 <div class="flex-1">
-                  <h4 class="text-sm md:text-lg font-bold text-red-400 mb-0.5 md:mb-1">일반 전투</h4>
+                  <h4 class="text-sm md:text-lg font-bold text-red-400 mb-0.5 md:mb-1">모험</h4>
                   <p class="text-xs md:text-sm text-slate-300 mb-1 md:mb-2">적 세력과 전투를 벌입니다</p>
                   <div class="text-[10px] md:text-xs text-slate-400 space-y-0.5 md:space-y-1">
                     <div>• 승리 시: 금화, 카드 획득</div>

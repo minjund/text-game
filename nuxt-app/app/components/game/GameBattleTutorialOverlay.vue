@@ -84,7 +84,7 @@
                 @click="complete"
                 class="px-6 py-2 md:px-8 md:py-3 bg-white text-green-700 rounded-lg font-bold hover:bg-green-50 transition-all shadow-lg text-base md:text-lg"
               >
-                전투 시작! ⚔️
+                이해했습니다 ✓
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 bg-black/95 z-[9999] flex flex-col">
-    <!-- 헤더: 누적 보상 & 포기 버튼 -->
+    <!-- 헤더: 누적 보상 & 떠나기 버튼 -->
     <div class="flex-shrink-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700 p-3 sm:p-4">
       <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 sm:gap-3 md:gap-6">
@@ -22,7 +22,7 @@
           @click.stop="handleRetreat"
           class="px-3 py-2 sm:px-4 sm:py-2 md:px-5 md:py-3 bg-red-700 hover:bg-red-600 active:bg-red-500 rounded-lg font-bold text-white transition-colors text-sm sm:text-base md:text-lg whitespace-nowrap touch-manipulation"
         >
-          포기
+          떠나기
         </button>
       </div>
     </div>
@@ -139,7 +139,7 @@ const skipTutorial = () => {
   showTutorial.value = false
 }
 
-// 포기 버튼 핸들러
+// 떠나기 버튼 핸들러
 const handleRetreat = () => {
   emit('retreat')
 }

@@ -164,11 +164,11 @@
               </p>
             </div>
 
-            <!-- 일반 전투 -->
+            <!-- 모험 -->
             <div class="bg-gradient-to-br from-red-600/30 to-red-700/30 border-2 border-red-400/50 rounded-lg p-3">
               <div class="flex items-center gap-2 mb-1.5">
                 <span class="text-xl md:text-2xl">⚔️</span>
-                <h3 class="text-sm md:text-base font-bold text-red-300">일반 전투</h3>
+                <h3 class="text-sm md:text-base font-bold text-red-300">모험</h3>
               </div>
               <p class="text-[10px] md:text-xs text-red-100">
                 적과 전투합니다. 승리 시 보상, 패배 시 민심 감소!

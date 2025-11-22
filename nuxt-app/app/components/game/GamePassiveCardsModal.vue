@@ -8,9 +8,15 @@
             <span class="text-2xl sm:text-3xl">🎴</span>
             <div>
               <h2 class="text-base sm:text-lg md:text-xl font-bold text-purple-200">패시브 카드 컬렉션</h2>
-              <p class="text-[10px] sm:text-xs" :class="passiveCards.length >= 15 ? 'text-orange-400' : 'text-slate-400'">
-                보유: {{ passiveCards.length }}/15장
-              </p>
+              <div class="flex items-center gap-2 text-[10px] sm:text-xs">
+                <span :class="passiveCards.length >= 15 ? 'text-orange-400' : 'text-slate-400'">
+                  총 {{ passiveCards.length }}장
+                </span>
+                <span class="text-slate-600">|</span>
+                <span class="text-amber-400">✨ {{ inheritedCards.length }}/6</span>
+                <span class="text-slate-600">|</span>
+                <span class="text-purple-400">🎴 {{ regularCards.length }}/{{ 15 - inheritedCards.length }}</span>
+              </div>
             </div>
           </div>
           <button
@@ -29,32 +35,85 @@
             <p class="text-xs sm:text-sm mt-1 sm:mt-2">이벤트를 진행하여 패시브 카드를 획득하세요!</p>
           </div>
 
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-            <div
-              v-for="(card, index) in passiveCards"
-              :key="index"
-              class="border-2 rounded-lg p-3 sm:p-4 transition-all hover:scale-105"
-              :class="getCardClass(card.rarity)"
-            >
-              <div class="flex items-start gap-2 sm:gap-3">
-                <div class="text-3xl sm:text-4xl">{{ card.icon }}</div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center flex-wrap gap-1 sm:gap-2 mb-1">
-                    <h3 class="text-sm sm:text-base md:text-lg font-bold">{{ card.name }}</h3>
-                    <span
-                      class="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-bold"
-                      :class="getRarityBadgeClass(card.rarity)"
-                    >
-                      {{ getRarityLabel(card.rarity) }}
-                    </span>
+          <div v-else class="space-y-4 sm:space-y-6">
+            <!-- 환생 카드 섹션 -->
+            <div v-if="inheritedCards.length > 0">
+              <div class="flex items-center gap-2 mb-2 sm:mb-3">
+                <span class="text-xl sm:text-2xl">✨</span>
+                <h3 class="text-sm sm:text-base font-bold text-amber-300">환생 카드 ({{ inheritedCards.length }}/6)</h3>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                <div
+                  v-for="(card, index) in inheritedCards"
+                  :key="'inherited-' + index"
+                  class="border-2 rounded-lg p-3 sm:p-4 transition-all hover:scale-105 relative"
+                  :class="getCardClass(card.rarity)"
+                >
+                  <!-- 환생 카드 배지 -->
+                  <div class="absolute top-2 right-2 bg-amber-500 text-amber-950 text-[10px] px-2 py-0.5 rounded-full font-bold shadow-lg">
+                    ✨ 환생
                   </div>
-                  <p class="text-xs sm:text-sm text-slate-300 mb-1 sm:mb-2 line-clamp-2">{{ card.description }}</p>
-                  <div class="space-y-1">
-                    <div class="text-[10px] sm:text-xs text-slate-400 bg-slate-800/50 px-2 py-1 rounded">
-                      <span class="font-semibold">발동:</span> {{ card.trigger }}
+                  <div class="flex items-start gap-2 sm:gap-3">
+                    <div class="text-3xl sm:text-4xl">{{ card.icon }}</div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center flex-wrap gap-1 sm:gap-2 mb-1">
+                        <h3 class="text-sm sm:text-base md:text-lg font-bold">{{ card.name }}</h3>
+                        <span
+                          class="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-bold"
+                          :class="getRarityBadgeClass(card.rarity)"
+                        >
+                          {{ getRarityLabel(card.rarity) }}
+                        </span>
+                      </div>
+                      <p class="text-xs sm:text-sm text-slate-300 mb-1 sm:mb-2 line-clamp-2">{{ card.description }}</p>
+                      <div class="space-y-1">
+                        <div class="text-[10px] sm:text-xs text-slate-400 bg-slate-800/50 px-2 py-1 rounded">
+                          <span class="font-semibold">발동:</span> {{ card.trigger }}
+                        </div>
+                        <div class="text-[10px] sm:text-xs text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded border border-emerald-700/30">
+                          <span class="font-semibold">효과:</span> {{ getEffectSummary(card) }}
+                        </div>
+                      </div>
                     </div>
-                    <div class="text-[10px] sm:text-xs text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded border border-emerald-700/30">
-                      <span class="font-semibold">효과:</span> {{ getEffectSummary(card) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 일반 카드 섹션 -->
+            <div v-if="regularCards.length > 0">
+              <div class="flex items-center gap-2 mb-2 sm:mb-3">
+                <span class="text-xl sm:text-2xl">🎴</span>
+                <h3 class="text-sm sm:text-base font-bold text-purple-300">일반 카드 ({{ regularCards.length }}/{{ 15 - inheritedCards.length }})</h3>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                <div
+                  v-for="(card, index) in regularCards"
+                  :key="'regular-' + index"
+                  class="border-2 rounded-lg p-3 sm:p-4 transition-all hover:scale-105"
+                  :class="getCardClass(card.rarity)"
+                >
+                  <div class="flex items-start gap-2 sm:gap-3">
+                    <div class="text-3xl sm:text-4xl">{{ card.icon }}</div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center flex-wrap gap-1 sm:gap-2 mb-1">
+                        <h3 class="text-sm sm:text-base md:text-lg font-bold">{{ card.name }}</h3>
+                        <span
+                          class="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-bold"
+                          :class="getRarityBadgeClass(card.rarity)"
+                        >
+                          {{ getRarityLabel(card.rarity) }}
+                        </span>
+                      </div>
+                      <p class="text-xs sm:text-sm text-slate-300 mb-1 sm:mb-2 line-clamp-2">{{ card.description }}</p>
+                      <div class="space-y-1">
+                        <div class="text-[10px] sm:text-xs text-slate-400 bg-slate-800/50 px-2 py-1 rounded">
+                          <span class="font-semibold">발동:</span> {{ card.trigger }}
+                        </div>
+                        <div class="text-[10px] sm:text-xs text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded border border-emerald-700/30">
+                          <span class="font-semibold">효과:</span> {{ getEffectSummary(card) }}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -66,7 +125,13 @@
         <!-- Footer -->
         <div class="p-3 sm:p-4 border-t-2 border-purple-600/30 bg-purple-900/20">
           <div class="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 text-xs sm:text-sm text-slate-400">
-            <span>총 {{ passiveCards.length }}개의 패시브 카드</span>
+            <div class="flex flex-col sm:flex-row items-center gap-2">
+              <span>총 {{ passiveCards.length }}개의 카드</span>
+              <span class="hidden sm:inline text-slate-600">|</span>
+              <span class="text-amber-400">✨ 환생: {{ inheritedCards.length }}/6</span>
+              <span class="hidden sm:inline text-slate-600">|</span>
+              <span class="text-purple-400">🎴 일반: {{ regularCards.length }}/{{ 15 - inheritedCards.length }}</span>
+            </div>
             <button
               @click="$emit('close')"
               class="w-full sm:w-auto px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold text-white transition-colors"
@@ -81,7 +146,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 interface PassiveCard {
+  id: string
   icon: string
   name: string
   description: string
@@ -103,12 +171,27 @@ interface PassiveCard {
 interface Props {
   show: boolean
   passiveCards: PassiveCard[]
+  inheritedCardIds?: string[] // 환생 카드 ID 목록
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 defineEmits<{
   'close': []
 }>()
+
+// 환생 카드인지 확인
+const isInheritedCard = (cardId: string) => {
+  return props.inheritedCardIds?.includes(cardId) || false
+}
+
+// 환생 카드와 일반 카드 분리
+const inheritedCards = computed(() => {
+  return props.passiveCards.filter(card => isInheritedCard(card.id))
+})
+
+const regularCards = computed(() => {
+  return props.passiveCards.filter(card => !isInheritedCard(card.id))
+})
 
 const getCardClass = (rarity: string) => {
   const classMap: Record<string, string> = {

@@ -366,17 +366,15 @@ watch(() => props.battle, (newBattle) => {
   if (newBattle && process.client) {
     // 튜토리얼을 한 번도 본 적이 없으면 표시 (처음 전투 진입 시 한 번만)
     if (!tutorialState.value?.hasSeenBattleTutorial) {
+      // 즉시 전투 일시정지 (튜토리얼 표시 전에 전투가 진행되지 않도록)
+      emit('pauseTutorial', true)
+
       // 약간의 지연 후 튜토리얼 표시 (전투 모달이 완전히 로드된 후)
       setTimeout(() => {
         showBattleTutorial.value = true
       }, 500)
     }
   }
-})
-
-// 튜토리얼 상태 변경 감지 (타이머 제어)
-watch(showBattleTutorial, (isShowing) => {
-  emit('pauseTutorial', isShowing)
 })
 
 // 튜토리얼 완료
