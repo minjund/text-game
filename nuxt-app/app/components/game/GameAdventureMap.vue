@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 bg-black/95 z-[9999] flex flex-col">
+  <div class="fixed inset-0 bg-black/95 z-[9999] flex flex-col pt-32 sm:pt-28">
     <!-- 헤더: 누적 보상 & 떠나기 버튼 -->
     <div class="flex-shrink-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700 p-3 sm:p-4">
       <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
@@ -27,52 +27,77 @@
       </div>
     </div>
 
-    <!-- 메인: 맵 영역 -->
-    <div class="flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-4 bg-gradient-to-b from-slate-900 to-black">
-      <div class="w-full max-w-lg mx-auto py-4 sm:py-8">
-        <!-- 7개 층을 세로로 배치 -->
-        <div v-for="(layer, layerIndex) in layers" :key="`layer-${layerIndex}`" class="relative mb-4 sm:mb-6">
-          <!-- 각 층의 노드들 -->
-          <div class="relative min-h-[100px] sm:min-h-[120px] md:min-h-[140px]">
-            <!-- 노드 버튼들 -->
-            <div class="relative flex justify-center items-center gap-2 sm:gap-3 px-2" style="z-index: 10;">
-              <button
-                v-for="node in layer"
-                :key="node.id"
-                @click.stop="handleNodeClick(node)"
-                :disabled="node.status === 'locked' || node.status === 'completed'"
-                :class="[
-                  'relative flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border-3 sm:border-4 transition-all active:scale-95 touch-manipulation shadow-lg',
-                  'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 p-1 sm:p-2',
-                  'flex-shrink-0',
-                  getNodeClass(node)
-                ]"
-              >
-                <!-- 노드 아이콘 -->
-                <span class="text-xl sm:text-2xl md:text-3xl mb-0.5">{{ getNodeInfo(node.type).icon }}</span>
+    <!-- 메인: 미로 영역 -->
+    <div class="flex-1 overflow-auto p-2 sm:p-4 bg-gradient-to-b from-slate-900 to-black">
+      <div class="w-full max-w-4xl mx-auto py-4 sm:py-8">
+        <!-- 10x10 그리드 미로 -->
+        <div class="grid gap-1 sm:gap-2" :style="{ gridTemplateColumns: `repeat(10, minmax(0, 1fr))` }">
+          <div
+            v-for="cell in mazeGrid"
+            :key="cell.key"
+            class="relative aspect-square"
+          >
+            <!-- 보이지 않는 칸 (완전히 숨김) -->
+            <div
+              v-if="!isCellVisible(cell.x, cell.y)"
+              class="w-full h-full bg-black/80 border border-black/90 rounded"
+            ></div>
 
-                <!-- 노드 이름 -->
-                <span class="text-[7px] sm:text-[9px] md:text-[10px] font-bold text-center leading-tight">
-                  {{ getNodeInfo(node.type).name }}
-                </span>
-
-                <!-- 현재 위치 표시 -->
-                <div
-                  v-if="node.status === 'current'"
-                  class="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-yellow-500/50"
-                >
-                  <span class="text-xs sm:text-sm">📍</span>
-                </div>
-
-                <!-- 완료 표시 -->
-                <div
-                  v-if="node.status === 'completed'"
-                  class="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 w-4 h-4 sm:w-5 sm:h-5 bg-green-500 rounded-full flex items-center justify-center shadow-lg"
-                >
-                  <span class="text-[10px] sm:text-xs font-bold">✓</span>
-                </div>
-              </button>
+            <!-- 보이는 벽 (노드가 없는 칸) -->
+            <div
+              v-else-if="!cell.node"
+              class="w-full h-full bg-gradient-to-br from-slate-900 via-slate-800 to-stone-900 border-2 border-stone-700 rounded relative overflow-hidden"
+            >
+              <!-- 벽 텍스처 효과 -->
+              <div class="absolute inset-0 opacity-20">
+                <div class="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-stone-600/30 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-stone-900/50 to-transparent"></div>
+                <div class="absolute inset-0" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,.1) 10px, rgba(0,0,0,.1) 20px);"></div>
+              </div>
+              <!-- 벽 아이콘 -->
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-2xl sm:text-3xl opacity-30">🧱</span>
+              </div>
             </div>
+
+            <!-- 보이는 노드 (visible이거나 completed인 경우만) -->
+            <button
+              v-else
+              @click.stop="handleNodeClick(cell.node)"
+              :disabled="cell.node.status === 'locked'"
+              :class="[
+                'relative w-full h-full flex flex-col items-center justify-center rounded-lg border-2 sm:border-3 transition-all active:scale-95 touch-manipulation shadow-lg',
+                getNodeClass(cell.node),
+                cell.node.type === 'boss' && cell.node.status !== 'completed' ? 'animate-pulse-glow' : ''
+              ]"
+            >
+              <!-- 보스 방 배경 효과 -->
+              <div v-if="cell.node.type === 'boss' && cell.node.status !== 'completed'" class="absolute inset-0 rounded-lg animate-pulse-slow boss-glow"></div>
+
+              <!-- 노드 아이콘 -->
+              <span class="text-lg sm:text-2xl md:text-3xl mb-0.5 relative z-10">{{ getNodeInfo(cell.node.type).icon }}</span>
+
+              <!-- 노드 이름 (작은 화면에서는 숨김) -->
+              <span class="hidden sm:block text-[7px] sm:text-[9px] md:text-[10px] font-bold text-center leading-tight relative z-10">
+                {{ getNodeInfo(cell.node.type).name }}
+              </span>
+
+              <!-- 현재 위치 표시 -->
+              <div
+                v-if="cell.node.status === 'current'"
+                class="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-yellow-500/50"
+              >
+                <span class="text-[10px] sm:text-xs">📍</span>
+              </div>
+
+              <!-- 완료 표시 -->
+              <div
+                v-if="cell.node.status === 'completed'"
+                class="absolute -top-0.5 -right-0.5 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full flex items-center justify-center shadow-lg"
+              >
+                <span class="text-[8px] sm:text-[10px] font-bold">✓</span>
+              </div>
+            </button>
           </div>
         </div>
       </div>
@@ -101,6 +126,7 @@ interface Props {
     food: number
     cards: any[]
   }
+  visibleCells: Set<string>
 }
 
 const props = defineProps<Props>()
@@ -144,34 +170,30 @@ const handleRetreat = () => {
   emit('retreat')
 }
 
-// 노드들을 층별로 그룹화
-const layers = computed(() => {
-  const layerMap = new Map<number, AdventureNode[]>()
+// 10x10 그리드로 변환
+const mazeGrid = computed(() => {
+  const GRID_SIZE = 10
+  const grid: Array<{ key: string; x: number; y: number; node: AdventureNode | null }> = []
 
-  props.nodes.forEach(node => {
-    const layerIndex = Math.round(node.position.y * 6) // 7층이므로 0~6
-    if (!layerMap.has(layerIndex)) {
-      layerMap.set(layerIndex, [])
-    }
-    layerMap.get(layerIndex)!.push(node)
-  })
-
-  // 층별로 정렬하여 배열로 변환
-  const sortedLayers: AdventureNode[][] = []
-  for (let i = 0; i <= 6; i++) {
-    if (layerMap.has(i)) {
-      // 각 층 내에서 x 위치로 정렬
-      const layer = layerMap.get(i)!.sort((a, b) => a.position.x - b.position.x)
-      sortedLayers.push(layer)
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      const node = props.nodes.find(n => n.gridX === x && n.gridY === y) || null
+      grid.push({
+        key: `${x}-${y}`,
+        x,
+        y,
+        node
+      })
     }
   }
 
-  return sortedLayers
+  return grid
 })
 
-// ID로 노드 찾기
-const getNodeById = (nodeId: string) => {
-  return props.nodes.find(n => n.id === nodeId)
+// 셀이 보이는지 체크
+const isCellVisible = (x: number, y: number): boolean => {
+  const key = `${x},${y}`
+  return props.visibleCells.has(key)
 }
 
 // 노드 정보 가져오기
@@ -189,7 +211,7 @@ const getNodeClass = (node: AdventureNode) => {
   }
 
   if (node.status === 'completed') {
-    return `${baseClass} bg-green-900/30 border-green-600 opacity-70 cursor-not-allowed`
+    return `${baseClass} bg-green-900/30 border-green-600 opacity-80 hover:opacity-100 hover:scale-105 cursor-pointer`
   }
 
   if (node.status === 'current') {
@@ -214,7 +236,7 @@ const getNodeClass = (node: AdventureNode) => {
 // 노드 클릭 처리
 const handleNodeClick = (node: AdventureNode) => {
   console.log('Node clicked:', node.type, node.status)
-  if (node.status === 'available' || node.status === 'current') {
+  if (node.status === 'available' || node.status === 'current' || node.status === 'completed') {
     console.log('Emitting node-click event')
     emit('node-click', node)
   } else {
@@ -238,21 +260,11 @@ const handleNodeClick = (node: AdventureNode) => {
   0%,
   100% {
     opacity: 1;
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5), 0 0 40px rgba(168, 85, 247, 0.3);
   }
   50% {
-    opacity: 0.8;
-    box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
-  }
-}
-
-@keyframes bounce-slow {
-  0%,
-  100% {
-    transform: translateY(0) translateX(-50%);
-  }
-  50% {
-    transform: translateY(-8px) translateX(-50%);
+    opacity: 0.9;
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.8), 0 0 60px rgba(168, 85, 247, 0.5);
   }
 }
 
@@ -264,7 +276,7 @@ const handleNodeClick = (node: AdventureNode) => {
   animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.animate-bounce-slow {
-  animation: bounce-slow 1.5s ease-in-out infinite;
+.boss-glow {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, rgba(147, 51, 234, 0.3) 50%, transparent 100%);
 }
 </style>

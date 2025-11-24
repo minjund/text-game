@@ -63,7 +63,7 @@
         @show-passive-cards="showPassiveCardsCollection = true"
         @show-card-deck="showCardDeckModal = true"
         @show-card-guide="showCardCollection = true"
-        @start-normal-battle="startAdventure"
+        @start-normal-battle="handleStartAdventure"
         @recruit-soldiers="recruitSoldiers"
       />
     </div>
@@ -81,7 +81,7 @@
       @show-passive-cards="showPassiveCardsCollection = true"
       @show-card-deck="showCardDeckModal = true"
       @show-card-guide="showCardCollection = true"
-      @start-normal-battle="startAdventure"
+      @start-normal-battle="handleStartAdventure"
       @recruit-soldiers="recruitSoldiers"
     />
 
@@ -243,6 +243,7 @@
       :nodes="adventureState?.nodes || []"
       :current-node-id="adventureState?.currentNodeId || null"
       :accumulated-rewards="adventureState?.accumulatedRewards || {}"
+      :visible-cells="adventureState?.visibleCells || new Set()"
       @node-click="handleAdventureNodeClick"
       @retreat="retreatAdventure"
     />
@@ -272,6 +273,24 @@
       :available-cards="ownedActiveCards"
       @confirm="handleBattleCardsConfirm"
       @cancel="showBattleCardSelection = false"
+    />
+
+    <!-- Dice Roulette -->
+    <GameDiceRoulette
+      :show="showDiceRoulette"
+      :dice-results="adventureState?.diceResults || []"
+      :current-index="adventureState?.currentDiceIndex || 0"
+      :is-rolling="isDiceRolling"
+      @roll="handleRollDice"
+      @use-next="handleUseNextDice"
+    />
+
+    <!-- Path Selection -->
+    <GamePathSelection
+      :show="adventureState?.isSelectingPath || false"
+      :paths="adventureState?.availablePaths || []"
+      :remaining-steps="adventureState?.remainingSteps || 0"
+      @select="handlePathSelect"
     />
 
     <!-- Notification -->
@@ -332,6 +351,8 @@ const GameAdventureRest = defineAsyncComponent(() => import('~/components/game/G
 const GameBattleCardSelection = defineAsyncComponent(() => import('~/components/game/GameBattleCardSelection.vue'))
 const GameInteractiveTutorial = defineAsyncComponent(() => import('~/components/game/GameInteractiveTutorial.vue'))
 const GameCardDeckModal = defineAsyncComponent(() => import('~/components/game/GameCardDeckModal.vue'))
+const GameDiceRoulette = defineAsyncComponent(() => import('~/components/game/GameDiceRoulette.vue'))
+const GamePathSelection = defineAsyncComponent(() => import('~/components/game/GamePathSelection.vue'))
 
 // Composables
 import { useNotification } from '~/composables/useNotification'
@@ -621,12 +642,56 @@ const {
   completeAdventure,
   retreatAdventure,
   failAdventure,
+  rollDice,
+  useNextDice,
+  startAutoMove,
+  selectPath,
   NODE_INFO
 } = useAdventureSystem(kingdom.value.resources, showNotification)
 
 // 모험 관련 모달 상태
 const showAdventureShop = ref(false)
 const showAdventureRest = ref(false)
+
+// 주사위 관련 상태
+const showDiceRoulette = ref(false)
+const isDiceRolling = ref(false)
+
+// 주사위 굴리기 핸들러
+const handleRollDice = async () => {
+  isDiceRolling.value = true
+  // 룰렛 애니메이션 효과
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  rollDice()
+  isDiceRolling.value = false
+  showNotification('룰렛 5개 숫자 생성! 자동으로 이동합니다.', 'success')
+
+  // 첫 번째 숫자 자동 사용
+  setTimeout(() => {
+    const steps = useNextDice()
+    showNotification(`${steps}칸 이동합니다!`, 'info')
+    startAutoMove(steps)
+  }, 500)
+}
+
+// 다음 주사위 사용 핸들러
+const handleUseNextDice = () => {
+  const steps = useNextDice()
+  showNotification(`${steps}칸 이동합니다!`, 'info')
+  // 룰렛 모달은 계속 열려 있음 (진행 상황 확인용)
+  startAutoMove(steps)
+}
+
+// 경로 선택 핸들러
+const handlePathSelect = (nodeId: string) => {
+  selectPath(nodeId)
+}
+
+// 모험 시작 핸들러
+const handleStartAdventure = () => {
+  startAdventure()
+  showDiceRoulette.value = true
+}
 
 // 전투 카드 선택 모달
 const showBattleCardSelection = ref(false)
@@ -851,6 +916,43 @@ watch(showReincarnationModal, (isOpen) => {
   }
 })
 
+// 자동 이동 완료 시 최종 칸의 이벤트 실행 및 다음 숫자 자동 사용
+watch(
+  () => adventureState.value?.isMoving,
+  (isMoving, wasMoving) => {
+    // isMoving이 true에서 false로 바뀌었을 때
+    if (wasMoving && !isMoving) {
+      // 이동이 완전히 끝났고, 갈림길 선택 중이 아닐 때만 이벤트 실행
+      if (
+        adventureState.value.remainingSteps === 0 &&
+        !adventureState.value.isSelectingPath &&
+        adventureState.value.currentNodeId
+      ) {
+        // 최종 도착 칸의 이벤트 실행
+        const node = adventureState.value.nodes.find(n => n.id === adventureState.value.currentNodeId)
+        if (node && !node.completed) {
+          handleAdventureNodeClick(node)
+        } else {
+          // 완료된 칸이거나 이벤트가 없으면 바로 다음 숫자 사용
+          autoUseNextDice()
+        }
+      }
+    }
+  }
+)
+
+// 이벤트 처리 완료 후 자동으로 다음 숫자 사용
+const autoUseNextDice = () => {
+  // 아직 사용할 숫자가 남아있으면 자동으로 다음 숫자 사용
+  if (adventureState.value.currentDiceIndex < adventureState.value.diceResults.length) {
+    setTimeout(() => {
+      const steps = useNextDice()
+      showNotification(`${steps}칸 이동합니다!`, 'info')
+      startAutoMove(steps)
+    }, 800) // 0.8초 딜레이
+  }
+}
+
 // 조언자 모달 표시
 const showAdvisorMessage = (message: any) => {
   currentAdvisorMessage.value = message
@@ -876,6 +978,13 @@ const closeAdvisorModal = () => {
 // 모험 노드 클릭 처리
 const handleAdventureNodeClick = (node: any) => {
   console.log('Node clicked:', node.type, node)
+
+  // 완료된 칸을 다시 클릭한 경우: 이동만 하고 이벤트는 실행하지 않음
+  if (node.completed) {
+    moveToNode(node.id)
+    showNotification('이미 완료한 칸으로 되돌아왔습니다.', 'info')
+    return
+  }
 
   // 모든 노드 타입에서 먼저 moveToNode 호출 (같은 층 다른 노드 비활성화)
   moveToNode(node.id)
@@ -983,6 +1092,11 @@ const handleAdventureShopClose = () => {
 
     // 다음 날 로직 실행
     processNextDay()
+
+    // 상점 완료 후 자동으로 다음 숫자 사용
+    if (adventureState.value.active) {
+      autoUseNextDice()
+    }
   }
 }
 
@@ -1064,6 +1178,11 @@ const handleAdventureRestSelect = (option: 'heal' | 'remove-card' | 'meditate') 
 
     // 다음 날 로직 실행
     processNextDay()
+
+    // 휴식처 완료 후 자동으로 다음 숫자 사용
+    if (adventureState.value.active) {
+      autoUseNextDice()
+    }
   }
 }
 
@@ -1170,6 +1289,11 @@ const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
 
     // 다음 날 로직 실행
     processNextDay()
+
+    // 전투 완료 후 자동으로 다음 숫자 사용 (모험 중일 때만)
+    if (adventureState.value.active) {
+      autoUseNextDice()
+    }
   } else {
     // 패배
     failAdventure()

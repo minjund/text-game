@@ -20,7 +20,7 @@ export interface AdventureNode {
   id: string
   type: NodeType
   status: NodeStatus
-  position: { x: number; y: number } // 맵상 위치
+  position: { x: number; y: number } // 맵상 위치 (미로의 경우 그리드 좌표)
   connections: string[] // 연결된 노드 ID들
 
   // 전투 관련 (type이 battle, elite, boss일 때)
@@ -36,6 +36,13 @@ export interface AdventureNode {
 
   // 완료 여부
   completed: boolean
+
+  // Fog of War: 플레이어에게 보이는지 여부
+  visible?: boolean
+
+  // 미로 전용: 그리드 좌표 (정수)
+  gridX?: number
+  gridY?: number
 }
 
 // 모험 보상
@@ -73,6 +80,17 @@ export interface AdventureState {
 
   // 모험 결과
   result?: 'victory' | 'defeat' | 'retreat'
+
+  // 보이는 셀 좌표 (노드가 없는 벽 포함)
+  visibleCells: Set<string> // "x,y" 형식
+
+  // 주사위 시스템
+  diceResults: number[] // 5개의 주사위 결과 (1-6)
+  currentDiceIndex: number // 현재 사용 중인 주사위 인덱스
+  remainingSteps: number // 남은 이동 칸 수
+  isMoving: boolean // 자동 이동 중인지
+  isSelectingPath: boolean // 갈림길 선택 중인지
+  availablePaths: AdventureNode[] // 선택 가능한 경로들
 }
 
 // 노드 정보 템플릿
