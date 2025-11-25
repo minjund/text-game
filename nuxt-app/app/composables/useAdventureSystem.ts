@@ -14,6 +14,14 @@ export const useAdventureSystem = (
   resources: any,
   showNotification: (message: string, type?: 'success' | 'error' | 'info') => void
 ) => {
+  // 이동 완료 시그널 (watch 트리거용)
+  const moveCompletedNodeId = ref<string | null>(null)
+
+  // 디버깅: 시그널 변경 감지
+  watch(moveCompletedNodeId, (newVal) => {
+    console.log('[useAdventureSystem] 📡 moveCompletedNodeId 변경됨:', newVal)
+  })
+
   // 모험 상태
   const adventureState = ref<AdventureState>({
     active: false,
@@ -454,20 +462,26 @@ export const useAdventureSystem = (
 
   // 다음 주사위 사용
   const useNextDice = () => {
+    console.log('[useNextDice] 호출 - currentDiceIndex:', adventureState.value.currentDiceIndex, 'total:', adventureState.value.diceResults.length)
+
     if (adventureState.value.currentDiceIndex >= adventureState.value.diceResults.length) {
       // 주사위 다 사용함 - 새로 굴리기
+      console.log('[useNextDice] 모든 주사위 사용 완료')
       showNotification('주사위를 다시 굴립니다!', 'info')
       rollDice()
     }
 
     const steps = adventureState.value.diceResults[adventureState.value.currentDiceIndex]
+    console.log('[useNextDice] steps:', steps, '(index:', adventureState.value.currentDiceIndex, ')')
     adventureState.value.currentDiceIndex++
+    console.log('[useNextDice] currentDiceIndex 증가 →', adventureState.value.currentDiceIndex)
     adventureState.value.remainingSteps = steps
     return steps
   }
 
   // 자동 이동 시작
   const startAutoMove = (steps: number) => {
+    console.log('[startAutoMove] 자동 이동 시작 - steps:', steps)
     adventureState.value.remainingSteps = steps
     adventureState.value.isMoving = true
     processNextStep()
@@ -475,25 +489,34 @@ export const useAdventureSystem = (
 
   // 다음 스텝 처리 (이동만 수행, 이벤트는 실행하지 않음)
   const processNextStep = () => {
+    console.log('[processNextStep] 시작 - remainingSteps:', adventureState.value.remainingSteps)
+
     if (adventureState.value.remainingSteps <= 0) {
       // 이동 완료 - 최종 도착 칸에서 이벤트 실행을 위해 isMoving을 false로 설정
+      console.log('[processNextStep] 이동 완료 - isMoving을 false로 설정')
       adventureState.value.isMoving = false
       return
     }
 
     const currentNode = adventureState.value.nodes.find(n => n.id === adventureState.value.currentNodeId)
     if (!currentNode) {
+      console.log('[processNextStep] 현재 노드를 찾을 수 없음')
       adventureState.value.isMoving = false
       return
     }
+
+    console.log('[processNextStep] 현재 노드:', currentNode.gridX, currentNode.gridY, currentNode.type)
 
     // 갈 수 있는 방향 찾기 (완료되지 않은 노드들)
     const availableConnections = currentNode.connections
       .map(connId => adventureState.value.nodes.find(n => n.id === connId))
       .filter(n => n && !n.completed) as AdventureNode[]
 
+    console.log('[processNextStep] 갈 수 있는 방향:', availableConnections.length, '개')
+
     if (availableConnections.length === 0) {
       // 막다른 길 - 이동 중단
+      console.log('[processNextStep] 막다른 길!')
       adventureState.value.isMoving = false
       adventureState.value.remainingSteps = 0
       showNotification('막다른 길입니다! 되돌아가세요.', 'error')
@@ -501,46 +524,82 @@ export const useAdventureSystem = (
     }
 
     if (availableConnections.length > 1) {
-      // 갈림길 - 선택 필요 (이동은 일시정지, remainingSteps는 유지)
+      // 갈림길 - 미로 맵에서 직접 선택
+      console.log('[processNextStep] 갈림길 발견! 사용자 선택 대기')
       adventureState.value.isMoving = false
       adventureState.value.isSelectingPath = true
       adventureState.value.availablePaths = availableConnections
-      showNotification('갈림길입니다! 방향을 선택하세요.', 'info')
+
+      // 선택 가능한 노드들을 available로 표시하고 보이게 설정
+      availableConnections.forEach(node => {
+        node.status = 'available'
+        node.visible = true
+        // visibleCells에도 추가
+        if (node.gridX !== undefined && node.gridY !== undefined) {
+          adventureState.value.visibleCells.add(`${node.gridX},${node.gridY}`)
+        }
+      })
+
+      showNotification('🔀 갈림길입니다! 미로에서 가고 싶은 방향을 클릭하세요.', 'info')
       return
     }
 
     // 직진 - 자동 이동 (이벤트는 실행하지 않고 이동만)
     const nextNode = availableConnections[0]
+    console.log('[processNextStep] 자동 직진:', nextNode.gridX, nextNode.gridY, nextNode.type)
     moveToNode(nextNode.id)
     adventureState.value.remainingSteps--
 
     // 다음 스텝 예약
     if (adventureState.value.remainingSteps > 0) {
-      setTimeout(() => processNextStep(), 500) // 0.5초 딜레이
+      console.log('[processNextStep] 다음 스텝 예약 - 남은 칸:', adventureState.value.remainingSteps)
+      setTimeout(() => processNextStep(), 1000) // 1초 딜레이
     } else {
-      // 이동 완료 - isMoving을 false로 설정하여 이벤트 실행 트리거
+      // 이동 완료
+      console.log('[processNextStep] ✅ 모든 이동 완료!')
+      console.log('[processNextStep] currentNodeId:', adventureState.value.currentNodeId)
+      console.log('[processNextStep] remainingSteps:', adventureState.value.remainingSteps)
+
       adventureState.value.isMoving = false
+
+      // 이동 완료 시그널 발송 (watch 트리거용)
+      if (adventureState.value.currentNodeId) {
+        console.log('[processNextStep] 📡 이동 완료 시그널 발송:', adventureState.value.currentNodeId)
+        moveCompletedNodeId.value = adventureState.value.currentNodeId
+      }
     }
   }
 
   // 경로 선택
   const selectPath = (nodeId: string) => {
+    console.log('[selectPath] 경로 선택됨 - nodeId:', nodeId, '남은 칸:', adventureState.value.remainingSteps)
     adventureState.value.isSelectingPath = false
     moveToNode(nodeId)
     adventureState.value.remainingSteps--
 
     // 이동 계속
     if (adventureState.value.remainingSteps > 0) {
+      console.log('[selectPath] 이동 계속 - 남은 칸:', adventureState.value.remainingSteps)
       adventureState.value.isMoving = true
-      setTimeout(() => processNextStep(), 500)
+      setTimeout(() => processNextStep(), 1000) // 1초 딜레이
     } else {
-      // 이동 완료 - 이벤트 실행 트리거
+      // 이동 완료
+      console.log('[selectPath] ✅ 이동 완료!')
+      console.log('[selectPath] currentNodeId:', adventureState.value.currentNodeId)
+
       adventureState.value.isMoving = false
+
+      // 이동 완료 시그널 발송 (watch 트리거용)
+      if (adventureState.value.currentNodeId) {
+        console.log('[selectPath] 📡 이동 완료 시그널 발송:', adventureState.value.currentNodeId)
+        moveCompletedNodeId.value = adventureState.value.currentNodeId
+      }
     }
   }
 
   return {
     adventureState,
+    moveCompletedNodeId,
     currentNode,
     availableNodes,
     startAdventure,

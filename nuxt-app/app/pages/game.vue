@@ -124,7 +124,7 @@
     <GamePassiveCardModal
       :show="showPassiveCardSelection"
       :cards="availablePassiveCards"
-      @select-card="selectPassiveCard"
+      @select-card="handlePassiveCardSelect"
     />
 
     <!-- Active Cards Modal -->
@@ -244,6 +244,8 @@
       :current-node-id="adventureState?.currentNodeId || null"
       :accumulated-rewards="adventureState?.accumulatedRewards || {}"
       :visible-cells="adventureState?.visibleCells || new Set()"
+      :is-selecting-path="adventureState?.isSelectingPath || false"
+      :available-paths="adventureState?.availablePaths || []"
       @node-click="handleAdventureNodeClick"
       @retreat="retreatAdventure"
     />
@@ -283,15 +285,23 @@
       :is-rolling="isDiceRolling"
       @roll="handleRollDice"
       @use-next="handleUseNextDice"
+      @confirm="handleDiceConfirm"
     />
 
-    <!-- Path Selection -->
-    <GamePathSelection
+    <!-- Dice Progress (상단 작은 표시) -->
+    <GameDiceProgress
+      :show="showDiceProgress"
+      :dice-results="adventureState?.diceResults || []"
+      :current-index="adventureState?.currentDiceIndex || 0"
+    />
+
+    <!-- Path Selection (로드맵에서 직접 선택) -->
+    <!-- <GamePathSelection
       :show="adventureState?.isSelectingPath || false"
       :paths="adventureState?.availablePaths || []"
       :remaining-steps="adventureState?.remainingSteps || 0"
       @select="handlePathSelect"
-    />
+    /> -->
 
     <!-- Notification -->
     <Transition name="notification">
@@ -352,6 +362,7 @@ const GameBattleCardSelection = defineAsyncComponent(() => import('~/components/
 const GameInteractiveTutorial = defineAsyncComponent(() => import('~/components/game/GameInteractiveTutorial.vue'))
 const GameCardDeckModal = defineAsyncComponent(() => import('~/components/game/GameCardDeckModal.vue'))
 const GameDiceRoulette = defineAsyncComponent(() => import('~/components/game/GameDiceRoulette.vue'))
+const GameDiceProgress = defineAsyncComponent(() => import('~/components/game/GameDiceProgress.vue'))
 const GamePathSelection = defineAsyncComponent(() => import('~/components/game/GamePathSelection.vue'))
 
 // Composables
@@ -634,6 +645,7 @@ const handleReincarnationWithoutCard = () => {
 // 모험 시스템
 const {
   adventureState,
+  moveCompletedNodeId,
   currentNode,
   availableNodes,
   startAdventure,
@@ -655,6 +667,7 @@ const showAdventureRest = ref(false)
 
 // 주사위 관련 상태
 const showDiceRoulette = ref(false)
+const showDiceProgress = ref(false)
 const isDiceRolling = ref(false)
 
 // 주사위 굴리기 핸들러
@@ -664,14 +677,24 @@ const handleRollDice = async () => {
   await new Promise(resolve => setTimeout(resolve, 1000))
   rollDice()
   isDiceRolling.value = false
-  showNotification('룰렛 5개 숫자 생성! 자동으로 이동합니다.', 'success')
+  showNotification('룰렛 5개 숫자 생성! 확인 버튼을 눌러주세요.', 'success')
+}
 
-  // 첫 번째 숫자 자동 사용
+// 룰렛 확인 핸들러
+const handleDiceConfirm = () => {
+  console.log('[handleDiceConfirm] 룰렛 확인 버튼 클릭')
+  // 룰렛 모달 닫기
+  showDiceRoulette.value = false
+  // 상단 진행 표시 켜기
+  showDiceProgress.value = true
+
+  // 첫 번째 숫자 사용 시작
   setTimeout(() => {
     const steps = useNextDice()
+    console.log('[handleDiceConfirm] 첫 번째 주사위 사용 - steps:', steps)
     showNotification(`${steps}칸 이동합니다!`, 'info')
     startAutoMove(steps)
-  }, 500)
+  }, 300)
 }
 
 // 다음 주사위 사용 핸들러
@@ -918,38 +941,77 @@ watch(showReincarnationModal, (isOpen) => {
 
 // 자동 이동 완료 시 최종 칸의 이벤트 실행 및 다음 숫자 자동 사용
 watch(
-  () => adventureState.value?.isMoving,
-  (isMoving, wasMoving) => {
-    // isMoving이 true에서 false로 바뀌었을 때
-    if (wasMoving && !isMoving) {
-      // 이동이 완전히 끝났고, 갈림길 선택 중이 아닐 때만 이벤트 실행
-      if (
-        adventureState.value.remainingSteps === 0 &&
-        !adventureState.value.isSelectingPath &&
-        adventureState.value.currentNodeId
-      ) {
-        // 최종 도착 칸의 이벤트 실행
-        const node = adventureState.value.nodes.find(n => n.id === adventureState.value.currentNodeId)
-        if (node && !node.completed) {
-          handleAdventureNodeClick(node)
-        } else {
-          // 완료된 칸이거나 이벤트가 없으면 바로 다음 숫자 사용
-          autoUseNextDice()
-        }
+  () => moveCompletedNodeId.value,
+  (nodeId) => {
+    if (!nodeId) return
+
+    console.log('[watch moveCompleted] 🎯 이동 완료 시그널 수신:', nodeId)
+
+    // 100ms 후에 이벤트 트리거 (상태 안정화 대기)
+    setTimeout(() => {
+      const node = adventureState.value.nodes.find(n => n.id === nodeId)
+
+      console.log('[watch moveCompleted] 📍 도착 노드:', {
+        id: node?.id,
+        type: node?.type,
+        gridX: node?.gridX,
+        gridY: node?.gridY,
+        completed: node?.completed
+      })
+
+      if (node && !node.completed) {
+        // 완료되지 않은 노드 - 이벤트 실행
+        console.log('[watch moveCompleted] ✅ 이벤트 실행!')
+        triggerNodeEvent(node)
+      } else if (node && node.completed) {
+        // 완료된 칸 - 다음 숫자 자동 사용
+        console.log('[watch moveCompleted] ♻️ 이미 완료된 노드 - 다음 숫자 자동 사용')
+        autoUseNextDice()
+      } else {
+        console.log('[watch moveCompleted] ⚠️ 노드를 찾을 수 없음')
       }
-    }
+
+      // 시그널 초기화 (다음 이동을 위해)
+      moveCompletedNodeId.value = null
+    }, 100)
   }
 )
 
 // 이벤트 처리 완료 후 자동으로 다음 숫자 사용
 const autoUseNextDice = () => {
+  console.log('[autoUseNextDice] 🎲 호출됨')
+  console.log('[autoUseNextDice] currentDiceIndex:', adventureState.value.currentDiceIndex)
+  console.log('[autoUseNextDice] total:', adventureState.value.diceResults.length)
+  console.log('[autoUseNextDice] diceResults:', adventureState.value.diceResults)
+  console.log('[autoUseNextDice] adventureActive:', adventureState.value.active)
+
+  // 모험이 비활성화되었는지 확인
+  if (!adventureState.value.active) {
+    console.log('[autoUseNextDice] ⚠️ 모험이 비활성화됨 - 중단')
+    return
+  }
+
   // 아직 사용할 숫자가 남아있으면 자동으로 다음 숫자 사용
   if (adventureState.value.currentDiceIndex < adventureState.value.diceResults.length) {
+    console.log('[autoUseNextDice] ✅ 다음 숫자 사용 가능!')
+
+    // 즉시 실행 (딜레이 제거)
+    const steps = useNextDice()
+    console.log('[autoUseNextDice] 다음 주사위:', steps, '칸')
+    showNotification(`${steps}칸 이동합니다!`, 'info')
+
     setTimeout(() => {
-      const steps = useNextDice()
-      showNotification(`${steps}칸 이동합니다!`, 'info')
+      console.log('[autoUseNextDice] 자동 이동 시작!')
       startAutoMove(steps)
-    }, 800) // 0.8초 딜레이
+    }, 500) // 0.5초만 딜레이
+  } else {
+    // 모든 숫자 사용 완료
+    console.log('[autoUseNextDice] ⚠️ 모든 숫자 사용 완료')
+    setTimeout(() => {
+      showDiceProgress.value = false
+      showDiceRoulette.value = true
+      showNotification('모든 숫자를 사용했습니다! 다시 룰렛을 돌려주세요.', 'info')
+    }, 500)
   }
 }
 
@@ -974,17 +1036,26 @@ const closeAdvisorModal = () => {
   currentAdvisorMessage.value = null
 }
 
-// ==================== 모험 시스템 핸들러 ====================
-// 모험 노드 클릭 처리
-const handleAdventureNodeClick = (node: any) => {
-  console.log('Node clicked:', node.type, node)
+// 패시브 카드 선택 핸들러 (모험 중일 때 자동 이동 재개)
+const handlePassiveCardSelect = (card: any) => {
+  console.log('[handlePassiveCardSelect] 카드 선택됨:', card.name)
 
-  // 완료된 칸을 다시 클릭한 경우: 이동만 하고 이벤트는 실행하지 않음
-  if (node.completed) {
-    moveToNode(node.id)
-    showNotification('이미 완료한 칸으로 되돌아왔습니다.', 'info')
-    return
+  // 원래 selectPassiveCard 호출
+  selectPassiveCard(card)
+
+  // 모험 중일 때는 카드 선택 후 자동으로 다음 숫자 사용
+  if (adventureState.value?.active) {
+    console.log('[handlePassiveCardSelect] 모험 중 - 다음 숫자 자동 사용')
+    setTimeout(() => {
+      autoUseNextDice()
+    }, 500) // 0.5초 딜레이
   }
+}
+
+// ==================== 모험 시스템 핸들러 ====================
+// 노드 이벤트 트리거 (룰렛 자동 이동 후 호출됨)
+const triggerNodeEvent = (node: any) => {
+  console.log('[triggerNodeEvent] 노드 이벤트 트리거 - type:', node.type, 'gridX:', node.gridX, 'gridY:', node.gridY)
 
   // 모든 노드 타입에서 먼저 moveToNode 호출 (같은 층 다른 노드 비활성화)
   moveToNode(node.id)
@@ -999,7 +1070,17 @@ const handleAdventureNodeClick = (node: any) => {
       }
       adventureState.value.currentNodeId = null
 
-      // 다음 날 로직 실행
+      // 시작 노드 완료 후 자동으로 다음 숫자 사용 (processNextDay 전에 호출)
+      if (adventureState.value.active) {
+        console.log('[triggerNodeEvent] 🚪 start 노드 완료')
+        console.log('[triggerNodeEvent] ✅ 다음 숫자 사용 예약')
+        console.log('[triggerNodeEvent] currentDiceIndex:', adventureState.value.currentDiceIndex, '/ total:', adventureState.value.diceResults.length)
+        autoUseNextDice()
+      } else {
+        console.log('[triggerNodeEvent] ⚠️ 모험 중이 아님')
+      }
+
+      // 다음 날 로직 실행 (나중에)
       processNextDay()
       break
 
@@ -1033,7 +1114,17 @@ const handleAdventureNodeClick = (node: any) => {
       }
       adventureState.value.currentNodeId = null
 
-      // 다음 날 로직 실행 (이벤트 카드 뽑기 포함)
+      // 이벤트 노드 완료 후 자동으로 다음 숫자 사용 (processNextDay 전에 호출)
+      if (adventureState.value.active) {
+        console.log('[triggerNodeEvent] ❓ event 노드 완료')
+        console.log('[triggerNodeEvent] ✅ 다음 숫자 사용 예약')
+        console.log('[triggerNodeEvent] currentDiceIndex:', adventureState.value.currentDiceIndex, '/ total:', adventureState.value.diceResults.length)
+        autoUseNextDice()
+      } else {
+        console.log('[triggerNodeEvent] ⚠️ 모험 중이 아님')
+      }
+
+      // 다음 날 로직 실행 (나중에)
       processNextDay()
       break
 
@@ -1068,18 +1159,71 @@ const handleAdventureNodeClick = (node: any) => {
       }
       adventureState.value.currentNodeId = null
 
-      // 다음 날 로직 실행
+      // 보물 노드 완료 후 자동으로 다음 숫자 사용 (processNextDay 전에 호출)
+      if (adventureState.value.active) {
+        console.log('[triggerNodeEvent] 💎 treasure 노드 완료')
+        console.log('[triggerNodeEvent] ✅ 다음 숫자 사용 예약')
+        console.log('[triggerNodeEvent] currentDiceIndex:', adventureState.value.currentDiceIndex, '/ total:', adventureState.value.diceResults.length)
+        autoUseNextDice()
+      } else {
+        console.log('[triggerNodeEvent] ⚠️ 모험 중이 아님')
+      }
+
+      // 다음 날 로직 실행 (나중에)
       processNextDay()
       break
   }
 }
 
+// 모험 노드 클릭 처리 (사용자가 미로에서 직접 클릭)
+const handleAdventureNodeClick = (node: any) => {
+  console.log('Node clicked:', node.type, node)
+
+  // 갈림길 선택 중일 때: 로드맵에서 직접 선택 가능
+  if (adventureState.value.isSelectingPath) {
+    // 선택 가능한 경로 중 하나인지 확인
+    const isValidPath = adventureState.value.availablePaths.some(p => p.id === node.id)
+    if (isValidPath) {
+      selectPath(node.id)
+
+      // 노드 타입별 아이콘
+      const nodeIcons: Record<string, string> = {
+        'battle': '⚔️',
+        'elite': '🔥',
+        'boss': '👑',
+        'event': '❓',
+        'shop': '🏪',
+        'rest': '🏕️',
+        'treasure': '💎',
+        'start': '🚪'
+      }
+      const icon = nodeIcons[node.type] || '➡️'
+      showNotification(`${icon} 방향으로 이동합니다!`, 'info')
+    } else {
+      showNotification('선택 가능한 경로가 아닙니다.', 'error')
+    }
+    return
+  }
+
+  // 완료된 칸을 다시 클릭한 경우: 이동만 하고 이벤트는 실행하지 않음
+  if (node.completed) {
+    moveToNode(node.id)
+    showNotification('이미 완료한 칸으로 되돌아왔습니다.', 'info')
+    return
+  }
+
+  // 완료되지 않은 새로운 칸은 룰렛을 통해서만 이동 가능
+  showNotification('룰렛을 돌려서 이동해주세요!', 'info')
+}
+
 // 상점 닫기 처리
 const handleAdventureShopClose = () => {
+  console.log('[handleAdventureShopClose] 🏪 상점 닫기 호출됨')
   showAdventureShop.value = false
 
   // 현재 노드 완료 처리 및 다음 경로 선택 가능하게
   if (currentNode.value) {
+    console.log('[handleAdventureShopClose] 현재 노드:', currentNode.value.type, currentNode.value.gridX, currentNode.value.gridY)
     currentNode.value.status = 'completed'
     currentNode.value.completed = true
     currentNode.value.connections.forEach(connId => {
@@ -1090,13 +1234,19 @@ const handleAdventureShopClose = () => {
     })
     adventureState.value.currentNodeId = null
 
-    // 다음 날 로직 실행
-    processNextDay()
-
-    // 상점 완료 후 자동으로 다음 숫자 사용
+    // 상점 완료 후 자동으로 다음 숫자 사용 (processNextDay 전에 호출)
     if (adventureState.value.active) {
+      console.log('[handleAdventureShopClose] ✅ 모험 중 - 자동으로 다음 숫자 사용')
+      console.log('[handleAdventureShopClose] currentDiceIndex:', adventureState.value.currentDiceIndex, '/ total:', adventureState.value.diceResults.length)
       autoUseNextDice()
+    } else {
+      console.log('[handleAdventureShopClose] ⚠️ 모험 중이 아님')
     }
+
+    // 다음 날 로직 실행 (나중에)
+    processNextDay()
+  } else {
+    console.log('[handleAdventureShopClose] ⚠️ currentNode가 없음')
   }
 }
 
@@ -1122,7 +1272,24 @@ const handleAdventureShopBuy = (itemType: 'soldiers' | 'food' | 'card' | 'heal')
     case 'card':
       if (kingdom.value.resources.gold >= 300) {
         kingdom.value.resources.gold -= 300
-        // 카드 선택 모달 표시
+        // 상점 모달 닫기 (카드 선택 후 자동 이동 재개를 위해)
+        showAdventureShop.value = false
+
+        // 현재 노드 완료 처리
+        if (currentNode.value) {
+          currentNode.value.status = 'completed'
+          currentNode.value.completed = true
+          currentNode.value.connections.forEach(connId => {
+            const connNode = adventureState.value.nodes.find(n => n.id === connId)
+            if (connNode && connNode.status === 'locked') {
+              connNode.status = 'available'
+            }
+          })
+          adventureState.value.currentNodeId = null
+          processNextDay()
+        }
+
+        // 카드 선택 모달 표시 (handlePassiveCardSelect에서 자동 이동 재개)
         showPassiveCardSelection.value = true
         showNotification('카드를 선택하세요!', 'info')
       }
@@ -1162,10 +1329,12 @@ const handleAdventureRestSelect = (option: 'heal' | 'remove-card' | 'meditate') 
       break
   }
 
+  console.log('[handleAdventureRestSelect] 🏕️ 휴식처 선택:', option)
   showAdventureRest.value = false
 
   // 현재 노드 완료 처리 및 다음 경로 선택 가능하게
   if (currentNode.value) {
+    console.log('[handleAdventureRestSelect] 현재 노드:', currentNode.value.type, currentNode.value.gridX, currentNode.value.gridY)
     currentNode.value.status = 'completed'
     currentNode.value.completed = true
     currentNode.value.connections.forEach(connId => {
@@ -1176,13 +1345,19 @@ const handleAdventureRestSelect = (option: 'heal' | 'remove-card' | 'meditate') 
     })
     adventureState.value.currentNodeId = null
 
-    // 다음 날 로직 실행
-    processNextDay()
-
-    // 휴식처 완료 후 자동으로 다음 숫자 사용
+    // 휴식처 완료 후 자동으로 다음 숫자 사용 (processNextDay 전에 호출)
     if (adventureState.value.active) {
+      console.log('[handleAdventureRestSelect] ✅ 모험 중 - 자동으로 다음 숫자 사용')
+      console.log('[handleAdventureRestSelect] currentDiceIndex:', adventureState.value.currentDiceIndex, '/ total:', adventureState.value.diceResults.length)
       autoUseNextDice()
+    } else {
+      console.log('[handleAdventureRestSelect] ⚠️ 모험 중이 아님')
     }
+
+    // 다음 날 로직 실행 (나중에)
+    processNextDay()
+  } else {
+    console.log('[handleAdventureRestSelect] ⚠️ currentNode가 없음')
   }
 }
 
@@ -1266,10 +1441,14 @@ const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
       'success'
     )
 
+    // 카드 보상이 있는지 확인
+    const hasCardReward = currentNode.value.enemy.rewards.cards && currentNode.value.enemy.rewards.cards.length > 0
+
     // 카드 보상이 있으면 카드 선택 모달 표시
-    if (currentNode.value.enemy.rewards.cards && currentNode.value.enemy.rewards.cards.length > 0) {
+    if (hasCardReward) {
       availablePassiveCards.value = currentNode.value.enemy.rewards.cards
       showPassiveCardSelection.value = true
+      console.log('[handleAdventureBattleEnd] 카드 선택 모달 표시 - 자동 이동은 카드 선택 후 재개')
     }
 
     // 현재 노드를 완료 상태로 변경하고, 연결된 노드들을 선택 가능하게 만들기
@@ -1287,16 +1466,57 @@ const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
     // 현재 노드는 더 이상 current가 아님
     adventureState.value.currentNodeId = null
 
-    // 다음 날 로직 실행
-    processNextDay()
-
-    // 전투 완료 후 자동으로 다음 숫자 사용 (모험 중일 때만)
-    if (adventureState.value.active) {
+    // 전투 완료 후 자동으로 다음 숫자 사용 (모험 중이고 카드 보상이 없을 때만) - processNextDay 전에 호출
+    if (adventureState.value.active && !hasCardReward) {
+      console.log('[handleAdventureBattleEnd] ⚔️ 전투 승리 - 카드 보상 없음')
+      console.log('[handleAdventureBattleEnd] ✅ 자동으로 다음 숫자 사용')
+      console.log('[handleAdventureBattleEnd] currentDiceIndex:', adventureState.value.currentDiceIndex, '/ total:', adventureState.value.diceResults.length)
       autoUseNextDice()
+    } else if (adventureState.value.active && hasCardReward) {
+      console.log('[handleAdventureBattleEnd] ⚔️ 전투 승리 - 카드 보상 있음, 카드 선택 후 재개')
+    } else {
+      console.log('[handleAdventureBattleEnd] ⚠️ 모험 중이 아님')
     }
+
+    // 다음 날 로직 실행 (나중에)
+    processNextDay()
   } else {
-    // 패배
-    failAdventure()
+    // 패배 - 병력 손실하고 계속 진행
+    const lostSoldiers = Math.floor(kingdom.value.resources.soldiers * 0.3)
+    kingdom.value.resources.soldiers = Math.max(0, kingdom.value.resources.soldiers - lostSoldiers)
+
+    showNotification(
+      `패배... 병력 ${lostSoldiers}명 손실. 모험은 계속됩니다.`,
+      'error'
+    )
+
+    // 현재 노드를 완료 상태로 변경 (패배해도 다시 싸우지 않음)
+    currentNode.value.status = 'completed'
+    currentNode.value.completed = true
+
+    // 연결된 노드들을 available로 변경
+    currentNode.value.connections.forEach(connId => {
+      const connNode = adventureState.value.nodes.find(n => n.id === connId)
+      if (connNode && connNode.status === 'locked') {
+        connNode.status = 'available'
+      }
+    })
+
+    // 현재 노드는 더 이상 current가 아님
+    adventureState.value.currentNodeId = null
+
+    // 패배 후에도 자동으로 다음 숫자 사용 (모험 중일 때만) - processNextDay 전에 호출
+    if (adventureState.value.active) {
+      console.log('[handleAdventureBattleEnd] ⚔️ 전투 패배')
+      console.log('[handleAdventureBattleEnd] ✅ 자동으로 다음 숫자 사용')
+      console.log('[handleAdventureBattleEnd] currentDiceIndex:', adventureState.value.currentDiceIndex, '/ total:', adventureState.value.diceResults.length)
+      autoUseNextDice()
+    } else {
+      console.log('[handleAdventureBattleEnd] ⚠️ 모험 중이 아님')
+    }
+
+    // 다음 날 로직 실행 (나중에)
+    processNextDay()
   }
 }
 
@@ -1322,8 +1542,17 @@ const resetToZero = () => {
 
 // 다음 날 진행 로직 (노드 완료 시 자동 실행)
 const processNextDay = () => {
+  console.log('[processNextDay] 호출됨 - day:', kingdom.value.day, '→', kingdom.value.day + 1, 'adventureActive:', adventureState.value?.active)
+
   // 하루 증가
   kingdom.value.day++
+
+  // 모험 중일 때는 특별 이벤트 스킵
+  if (adventureState.value?.active) {
+    console.log('[processNextDay] 모험 중 - 특별 이벤트 스킵')
+    showNotification(`${kingdom.value.day}일차`, 'info')
+    return
+  }
 
   // 튜토리얼 이벤트 체크
   const tutorialEvent = advanceDay(kingdom.value.day)

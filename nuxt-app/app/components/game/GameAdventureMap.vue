@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 bg-black/95 z-[9999] flex flex-col pt-32 sm:pt-28">
+  <div class="fixed inset-0 bg-black/95 z-[9999] flex flex-col pt-16 sm:pt-14">
     <!-- 헤더: 누적 보상 & 떠나기 버튼 -->
     <div class="flex-shrink-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700 p-3 sm:p-4">
       <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
@@ -68,7 +68,9 @@
               :class="[
                 'relative w-full h-full flex flex-col items-center justify-center rounded-lg border-2 sm:border-3 transition-all active:scale-95 touch-manipulation shadow-lg',
                 getNodeClass(cell.node),
-                cell.node.type === 'boss' && cell.node.status !== 'completed' ? 'animate-pulse-glow' : ''
+                cell.node.type === 'boss' && cell.node.status !== 'completed' ? 'animate-pulse-glow' : '',
+                // 갈림길 선택 가능한 노드 강조 (매우 눈에 띄게)
+                isSelectablePathNode(cell.node) ? 'animate-pulse-fast border-4 !border-yellow-300 !shadow-yellow-300/80 scale-110 z-10' : ''
               ]"
             >
               <!-- 보스 방 배경 효과 -->
@@ -96,6 +98,14 @@
                 class="absolute -top-0.5 -right-0.5 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full flex items-center justify-center shadow-lg"
               >
                 <span class="text-[8px] sm:text-[10px] font-bold">✓</span>
+              </div>
+
+              <!-- 갈림길 선택 가능 표시 -->
+              <div
+                v-if="isSelectablePathNode(cell.node)"
+                class="absolute -top-2 -left-2 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-yellow-300 to-orange-400 rounded-full flex items-center justify-center shadow-lg shadow-yellow-500/50 animate-bounce"
+              >
+                <span class="text-[12px] sm:text-[16px] font-bold">👆</span>
               </div>
             </button>
           </div>
@@ -127,6 +137,8 @@ interface Props {
     cards: any[]
   }
   visibleCells: Set<string>
+  isSelectingPath?: boolean
+  availablePaths?: AdventureNode[]
 }
 
 const props = defineProps<Props>()
@@ -233,9 +245,16 @@ const getNodeClass = (node: AdventureNode) => {
   return `${baseClass} ${colorMap[info.color]} hover:scale-110 hover:shadow-xl cursor-pointer`
 }
 
+// 갈림길 선택 가능한 노드인지 확인
+const isSelectablePathNode = (node: AdventureNode): boolean => {
+  if (!props.isSelectingPath || !props.availablePaths) return false
+  return props.availablePaths.some(p => p.id === node.id)
+}
+
 // 노드 클릭 처리
 const handleNodeClick = (node: AdventureNode) => {
   console.log('Node clicked:', node.type, node.status)
+
   if (node.status === 'available' || node.status === 'current' || node.status === 'completed') {
     console.log('Emitting node-click event')
     emit('node-click', node)
@@ -268,12 +287,28 @@ const handleNodeClick = (node: AdventureNode) => {
   }
 }
 
+@keyframes pulse-fast {
+  0%,
+  100% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.9;
+  }
+}
+
 .animate-pulse-slow {
   animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .animate-pulse-glow {
   animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-pulse-fast {
+  animation: pulse-fast 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .boss-glow {
