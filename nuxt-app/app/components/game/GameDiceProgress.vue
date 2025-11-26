@@ -9,15 +9,15 @@
             :key="index"
             :class="[
               'w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold transition-all duration-300',
-              index < currentIndex ? 'bg-gray-700 opacity-40 line-through' :
-              index === currentIndex ? 'bg-gradient-to-br from-green-400 to-emerald-500 scale-110 animate-pulse shadow-md shadow-green-500/50' :
+              index < currentIndex - 1 ? 'bg-gray-700 opacity-40 line-through' :
+              index === currentIndex - 1 ? 'bg-gradient-to-br from-green-400 to-emerald-500 scale-110 animate-pulse shadow-md shadow-green-500/50' :
               'bg-gradient-to-br from-blue-500 to-purple-600 shadow-sm'
             ]"
           >
             {{ result }}
           </div>
         </div>
-        <span class="text-xs text-gray-400">{{ currentIndex + 1 }}/5</span>
+        <span class="text-xs text-gray-400">{{ currentIndex }}/5</span>
       </div>
     </div>
   </div>

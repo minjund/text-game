@@ -90,15 +90,15 @@
     <GameEventModal
       :event="currentEvent"
       :current-resources="kingdom.resources"
-      @close="closeEvent"
-      @select-choice="selectChoice"
+      @close="handleEventClose"
+      @select-choice="handleEventSelectChoice"
     />
 
     <!-- Crossroad Modal -->
     <GameCrossroadModal
       :crossroad="currentCrossroad"
-      @close="closeCrossroad"
-      @select-choice="selectCrossroadChoice"
+      @close="handleCrossroadClose"
+      @select-choice="handleCrossroadSelectChoice"
     />
 
     <!-- Story Battle Modal -->
@@ -247,7 +247,7 @@
       :is-selecting-path="adventureState?.isSelectingPath || false"
       :available-paths="adventureState?.availablePaths || []"
       @node-click="handleAdventureNodeClick"
-      @retreat="retreatAdventure"
+      @retreat="handleRetreat"
     />
 
     <!-- Adventure Shop Modal -->
@@ -661,6 +661,28 @@ const {
   NODE_INFO
 } = useAdventureSystem(kingdom.value.resources, showNotification)
 
+// 모험 떠나기 핸들러
+const handleRetreat = () => {
+  console.log('[handleRetreat] 모험 떠나기 - 맵과 주사위 결과 유지')
+
+  // 룰렛 관련 UI 숨기기
+  showDiceRoulette.value = false
+  showDiceProgress.value = false
+
+  // 보상의 50%만 가져감
+  const halfGold = Math.floor(adventureState.value.accumulatedRewards.gold * 0.5)
+  const halfFood = Math.floor(adventureState.value.accumulatedRewards.food * 0.5)
+
+  kingdom.value.resources.gold += halfGold
+  kingdom.value.resources.food += halfFood
+
+  showNotification(`모험 일시중지... 금 +${halfGold}, 식량 +${halfFood} (50%)`, 'info')
+
+  // active만 false로 (맵과 주사위 결과는 유지)
+  adventureState.value.active = false
+  adventureState.value.result = 'retreat'
+}
+
 // 모험 관련 모달 상태
 const showAdventureShop = ref(false)
 const showAdventureRest = ref(false)
@@ -712,8 +734,33 @@ const handlePathSelect = (nodeId: string) => {
 
 // 모험 시작 핸들러
 const handleStartAdventure = () => {
-  startAdventure()
-  showDiceRoulette.value = true
+  // 이미 맵이 있으면 재개, 없으면 새로 시작
+  if (adventureState.value.nodes.length > 0) {
+    console.log('[handleStartAdventure] 기존 맵 재개')
+    adventureState.value.active = true
+    adventureState.value.result = undefined
+
+    // 주사위 결과가 있으면 자동으로 이동 재개
+    if (adventureState.value.diceResults.length > 0 && adventureState.value.currentDiceIndex < adventureState.value.diceResults.length) {
+      console.log('[handleStartAdventure] 기존 룰렛 결과 유지 - 자동 이동 재개')
+      showDiceProgress.value = true
+      showDiceRoulette.value = false
+
+      // 자동으로 다음 숫자 사용 시작
+      setTimeout(() => {
+        autoUseNextDice()
+      }, 1000) // 1초 후 자동 시작
+    } else {
+      console.log('[handleStartAdventure] 룰렛 모달 열기')
+      showDiceRoulette.value = true
+      showDiceProgress.value = false
+    }
+  } else {
+    console.log('[handleStartAdventure] 새 모험 시작')
+    startAdventure()
+    showDiceRoulette.value = true
+    showDiceProgress.value = false
+  }
 }
 
 // 전투 카드 선택 모달
@@ -929,6 +976,48 @@ const {
   godGameState
 })
 
+// 이벤트 모달 닫기 핸들러 (모험 중일 때 자동 이동)
+const handleEventClose = () => {
+  console.log('[handleEventClose] 호출됨')
+  closeEvent()
+  if (adventureState.value?.active) {
+    console.log('[handleEventClose] 모험 중 - 다음 숫자 자동 사용')
+    autoUseNextDice()
+  } else {
+    console.log('[handleEventClose] 모험 중이 아님')
+  }
+}
+
+// 이벤트 선택지 핸들러 (모험 중일 때 자동 이동)
+const handleEventSelectChoice = (choiceIndex: number) => {
+  console.log('[handleEventSelectChoice] 호출됨 - choice:', choiceIndex)
+  selectChoice(choiceIndex)
+  if (adventureState.value?.active) {
+    console.log('[handleEventSelectChoice] 모험 중 - 다음 숫자 자동 사용')
+    autoUseNextDice()
+  } else {
+    console.log('[handleEventSelectChoice] 모험 중이 아님')
+  }
+}
+
+// 갈림길 모달 닫기 핸들러 (모험 중일 때 자동 이동)
+const handleCrossroadClose = () => {
+  closeCrossroad()
+  if (adventureState.value?.active) {
+    console.log('[handleCrossroadClose] 모험 중 - 다음 숫자 자동 사용')
+    autoUseNextDice()
+  }
+}
+
+// 갈림길 선택지 핸들러 (모험 중일 때 자동 이동)
+const handleCrossroadSelectChoice = (choiceIndex: number) => {
+  selectCrossroadChoice(choiceIndex)
+  if (adventureState.value?.active) {
+    console.log('[handleCrossroadSelectChoice] 모험 중 - 다음 숫자 자동 사용')
+    autoUseNextDice()
+  }
+}
+
 // 게임 일수 기반 침략으로 변경 (handleNextDay에서 처리)
 
 // 환생 모달이 열릴 때 랜덤 카드 3장 생성
@@ -1005,13 +1094,20 @@ const autoUseNextDice = () => {
       startAutoMove(steps)
     }, 500) // 0.5초만 딜레이
   } else {
-    // 모든 숫자 사용 완료
-    console.log('[autoUseNextDice] ⚠️ 모든 숫자 사용 완료')
+    // 모든 숫자 사용 완료 - 룰렛 다시 열기
+    console.log('[autoUseNextDice] ✅ 모든 숫자 사용 완료 - 룰렛 다시 열기')
+
+    // 진행 표시 숨기기
+    showDiceProgress.value = false
+
+    // 주사위 결과 초기화
+    adventureState.value.diceResults = []
+    adventureState.value.currentDiceIndex = 0
+
     setTimeout(() => {
-      showDiceProgress.value = false
       showDiceRoulette.value = true
       showNotification('모든 숫자를 사용했습니다! 다시 룰렛을 돌려주세요.', 'info')
-    }, 500)
+    }, 800)
   }
 }
 
@@ -1068,9 +1164,12 @@ const triggerNodeEvent = (node: any) => {
         startNode.status = 'completed'
         startNode.completed = true
       }
-      adventureState.value.currentNodeId = null
+      // currentNodeId는 유지 (다음 이동의 시작점으로 사용)
 
-      // 시작 노드 완료 후 자동으로 다음 숫자 사용 (processNextDay 전에 호출)
+      // 다음 날 로직 실행
+      processNextDay()
+
+      // 시작 노드 완료 후 자동으로 다음 숫자 사용
       if (adventureState.value.active) {
         console.log('[triggerNodeEvent] 🚪 start 노드 완료')
         console.log('[triggerNodeEvent] ✅ 다음 숫자 사용 예약')
@@ -1079,9 +1178,6 @@ const triggerNodeEvent = (node: any) => {
       } else {
         console.log('[triggerNodeEvent] ⚠️ 모험 중이 아님')
       }
-
-      // 다음 날 로직 실행 (나중에)
-      processNextDay()
       break
 
     case 'battle':
@@ -1112,20 +1208,17 @@ const triggerNodeEvent = (node: any) => {
         eventNode.status = 'completed'
         eventNode.completed = true
       }
-      adventureState.value.currentNodeId = null
+      // currentNodeId는 유지 (다음 이동의 시작점으로 사용)
 
-      // 이벤트 노드 완료 후 자동으로 다음 숫자 사용 (processNextDay 전에 호출)
+      // 모험 중일 때는 이벤트 카드를 직접 뽑아야 함
       if (adventureState.value.active) {
-        console.log('[triggerNodeEvent] ❓ event 노드 완료')
-        console.log('[triggerNodeEvent] ✅ 다음 숫자 사용 예약')
-        console.log('[triggerNodeEvent] currentDiceIndex:', adventureState.value.currentDiceIndex, '/ total:', adventureState.value.diceResults.length)
-        autoUseNextDice()
+        console.log('[triggerNodeEvent] ❓ event 노드 - 이벤트 카드 뽑기')
+        drawEventCard()
+        // 이벤트 선택/닫기 시 handleEventClose/handleEventSelectChoice에서 autoUseNextDice() 호출
       } else {
-        console.log('[triggerNodeEvent] ⚠️ 모험 중이 아님')
+        // 일반 게임 모드에서는 processNextDay() 호출
+        processNextDay()
       }
-
-      // 다음 날 로직 실행 (나중에)
-      processNextDay()
       break
 
     case 'shop':
@@ -1157,9 +1250,12 @@ const triggerNodeEvent = (node: any) => {
         treasureNode.status = 'completed'
         treasureNode.completed = true
       }
-      adventureState.value.currentNodeId = null
+      // currentNodeId는 유지 (다음 이동의 시작점으로 사용)
 
-      // 보물 노드 완료 후 자동으로 다음 숫자 사용 (processNextDay 전에 호출)
+      // 다음 날 로직 실행
+      processNextDay()
+
+      // 보물 노드 완료 후 자동으로 다음 숫자 사용
       if (adventureState.value.active) {
         console.log('[triggerNodeEvent] 💎 treasure 노드 완료')
         console.log('[triggerNodeEvent] ✅ 다음 숫자 사용 예약')
@@ -1168,9 +1264,6 @@ const triggerNodeEvent = (node: any) => {
       } else {
         console.log('[triggerNodeEvent] ⚠️ 모험 중이 아님')
       }
-
-      // 다음 날 로직 실행 (나중에)
-      processNextDay()
       break
   }
 }
@@ -1232,9 +1325,13 @@ const handleAdventureShopClose = () => {
         connNode.status = 'available'
       }
     })
-    adventureState.value.currentNodeId = null
+    // currentNodeId는 유지 (다음 이동의 시작점으로 사용)
+    // adventureState.value.currentNodeId = null
 
-    // 상점 완료 후 자동으로 다음 숫자 사용 (processNextDay 전에 호출)
+    // 다음 날 로직 실행
+    processNextDay()
+
+    // 상점 완료 후 자동으로 다음 숫자 사용
     if (adventureState.value.active) {
       console.log('[handleAdventureShopClose] ✅ 모험 중 - 자동으로 다음 숫자 사용')
       console.log('[handleAdventureShopClose] currentDiceIndex:', adventureState.value.currentDiceIndex, '/ total:', adventureState.value.diceResults.length)
@@ -1242,9 +1339,6 @@ const handleAdventureShopClose = () => {
     } else {
       console.log('[handleAdventureShopClose] ⚠️ 모험 중이 아님')
     }
-
-    // 다음 날 로직 실행 (나중에)
-    processNextDay()
   } else {
     console.log('[handleAdventureShopClose] ⚠️ currentNode가 없음')
   }
@@ -1252,12 +1346,15 @@ const handleAdventureShopClose = () => {
 
 // 상점 구매 처리
 const handleAdventureShopBuy = (itemType: 'soldiers' | 'food' | 'card' | 'heal') => {
+  let purchased = false
+
   switch (itemType) {
     case 'soldiers':
       if (kingdom.value.resources.gold >= 400) {
         kingdom.value.resources.gold -= 400
         kingdom.value.resources.soldiers += 200
         showNotification('병사 200명 모집!', 'success')
+        purchased = true
       }
       break
 
@@ -1266,32 +1363,18 @@ const handleAdventureShopBuy = (itemType: 'soldiers' | 'food' | 'card' | 'heal')
         kingdom.value.resources.gold -= 200
         kingdom.value.resources.food += 500
         showNotification('식량 500 구매!', 'success')
+        purchased = true
       }
       break
 
     case 'card':
       if (kingdom.value.resources.gold >= 300) {
         kingdom.value.resources.gold -= 300
-        // 상점 모달 닫기 (카드 선택 후 자동 이동 재개를 위해)
-        showAdventureShop.value = false
-
-        // 현재 노드 완료 처리
-        if (currentNode.value) {
-          currentNode.value.status = 'completed'
-          currentNode.value.completed = true
-          currentNode.value.connections.forEach(connId => {
-            const connNode = adventureState.value.nodes.find(n => n.id === connId)
-            if (connNode && connNode.status === 'locked') {
-              connNode.status = 'available'
-            }
-          })
-          adventureState.value.currentNodeId = null
-          processNextDay()
-        }
 
         // 카드 선택 모달 표시 (handlePassiveCardSelect에서 자동 이동 재개)
         showPassiveCardSelection.value = true
         showNotification('카드를 선택하세요!', 'info')
+        purchased = true
       }
       break
 
@@ -1301,8 +1384,14 @@ const handleAdventureShopBuy = (itemType: 'soldiers' | 'food' | 'card' | 'heal')
         const healAmount = Math.floor(adventureState.value.startingResources.soldiers * 0.1)
         kingdom.value.resources.soldiers += healAmount
         showNotification(`병력 ${healAmount}명 회복!`, 'success')
+        purchased = true
       }
       break
+  }
+
+  // 구매가 성공했으면 상점 닫기 (카드 제외 - 카드는 선택 후 닫기)
+  if (purchased && itemType !== 'card') {
+    handleAdventureShopClose()
   }
 }
 
@@ -1343,9 +1432,13 @@ const handleAdventureRestSelect = (option: 'heal' | 'remove-card' | 'meditate') 
         connNode.status = 'available'
       }
     })
-    adventureState.value.currentNodeId = null
+    // currentNodeId는 유지 (다음 이동의 시작점으로 사용)
+    // adventureState.value.currentNodeId = null
 
-    // 휴식처 완료 후 자동으로 다음 숫자 사용 (processNextDay 전에 호출)
+    // 다음 날 로직 실행
+    processNextDay()
+
+    // 휴식처 완료 후 자동으로 다음 숫자 사용
     if (adventureState.value.active) {
       console.log('[handleAdventureRestSelect] ✅ 모험 중 - 자동으로 다음 숫자 사용')
       console.log('[handleAdventureRestSelect] currentDiceIndex:', adventureState.value.currentDiceIndex, '/ total:', adventureState.value.diceResults.length)
@@ -1353,9 +1446,6 @@ const handleAdventureRestSelect = (option: 'heal' | 'remove-card' | 'meditate') 
     } else {
       console.log('[handleAdventureRestSelect] ⚠️ 모험 중이 아님')
     }
-
-    // 다음 날 로직 실행 (나중에)
-    processNextDay()
   } else {
     console.log('[handleAdventureRestSelect] ⚠️ currentNode가 없음')
   }
@@ -1463,10 +1553,13 @@ const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
       }
     })
 
-    // 현재 노드는 더 이상 current가 아님
-    adventureState.value.currentNodeId = null
+    // currentNodeId는 유지 (다음 이동의 시작점으로 사용)
+    // adventureState.value.currentNodeId = null
 
-    // 전투 완료 후 자동으로 다음 숫자 사용 (모험 중이고 카드 보상이 없을 때만) - processNextDay 전에 호출
+    // 다음 날 로직 실행
+    processNextDay()
+
+    // 전투 완료 후 자동으로 다음 숫자 사용 (모험 중이고 카드 보상이 없을 때만)
     if (adventureState.value.active && !hasCardReward) {
       console.log('[handleAdventureBattleEnd] ⚔️ 전투 승리 - 카드 보상 없음')
       console.log('[handleAdventureBattleEnd] ✅ 자동으로 다음 숫자 사용')
@@ -1477,9 +1570,6 @@ const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
     } else {
       console.log('[handleAdventureBattleEnd] ⚠️ 모험 중이 아님')
     }
-
-    // 다음 날 로직 실행 (나중에)
-    processNextDay()
   } else {
     // 패배 - 병력 손실하고 계속 진행
     const lostSoldiers = Math.floor(kingdom.value.resources.soldiers * 0.3)
@@ -1502,10 +1592,13 @@ const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
       }
     })
 
-    // 현재 노드는 더 이상 current가 아님
-    adventureState.value.currentNodeId = null
+    // currentNodeId는 유지 (다음 이동의 시작점으로 사용)
+    // adventureState.value.currentNodeId = null
 
-    // 패배 후에도 자동으로 다음 숫자 사용 (모험 중일 때만) - processNextDay 전에 호출
+    // 다음 날 로직 실행
+    processNextDay()
+
+    // 패배 후에도 자동으로 다음 숫자 사용 (모험 중일 때만)
     if (adventureState.value.active) {
       console.log('[handleAdventureBattleEnd] ⚔️ 전투 패배')
       console.log('[handleAdventureBattleEnd] ✅ 자동으로 다음 숫자 사용')
@@ -1514,9 +1607,6 @@ const handleAdventureBattleEnd = (result: 'victory' | 'defeat') => {
     } else {
       console.log('[handleAdventureBattleEnd] ⚠️ 모험 중이 아님')
     }
-
-    // 다음 날 로직 실행 (나중에)
-    processNextDay()
   }
 }
 

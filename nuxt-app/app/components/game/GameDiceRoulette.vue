@@ -57,8 +57,8 @@
             :key="index"
             :class="[
               'w-7 h-7 sm:w-9 sm:h-9 rounded-md flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300',
-              index < currentIndex ? 'bg-gray-700 opacity-40 line-through' :
-              index === currentIndex ? 'bg-gradient-to-br from-green-400 to-emerald-500 scale-110 animate-pulse shadow-md shadow-green-500/50' :
+              index < currentIndex - 1 ? 'bg-gray-700 opacity-40 line-through' :
+              index === currentIndex - 1 ? 'bg-gradient-to-br from-green-400 to-emerald-500 scale-110 animate-pulse shadow-md shadow-green-500/50' :
               'bg-gradient-to-br from-blue-500 to-purple-600 shadow-sm'
             ]"
           >
@@ -70,7 +70,7 @@
       <!-- 상태 텍스트 -->
       <div v-if="diceResults.length > 0" class="text-center mt-2">
         <p class="text-xs sm:text-sm text-yellow-300 font-bold">
-          {{ currentIndex + 1 }} / 5 - {{ statusText }}
+          {{ currentIndex }} / 5 - {{ statusText }}
         </p>
       </div>
 

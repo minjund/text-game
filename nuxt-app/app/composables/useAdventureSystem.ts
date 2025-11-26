@@ -515,11 +515,45 @@ export const useAdventureSystem = (
     console.log('[processNextStep] 갈 수 있는 방향:', availableConnections.length, '개')
 
     if (availableConnections.length === 0) {
-      // 막다른 길 - 이동 중단
-      console.log('[processNextStep] 막다른 길!')
+      // 막다른 길 - 자동으로 되돌아가기
+      console.log('[processNextStep] 막다른 길! 자동으로 되돌아갑니다...')
+      showNotification('막다른 길! 자동으로 되돌아갑니다...', 'info')
+
+      // 방문 기록에서 이전 노드 찾기
+      const currentIndex = adventureState.value.visitedNodes.findIndex(id => id === adventureState.value.currentNodeId)
+      if (currentIndex > 0) {
+        const previousNodeId = adventureState.value.visitedNodes[currentIndex - 1]
+        const previousNode = adventureState.value.nodes.find(n => n.id === previousNodeId)
+
+        if (previousNode) {
+          console.log('[processNextStep] 이전 노드로 이동:', previousNode.gridX, previousNode.gridY, previousNode.type)
+          moveToNode(previousNode.id)
+          adventureState.value.remainingSteps--
+
+          // 다음 스텝 예약
+          if (adventureState.value.remainingSteps > 0) {
+            console.log('[processNextStep] 다음 스텝 예약 - 남은 칸:', adventureState.value.remainingSteps)
+            setTimeout(() => processNextStep(), 1000)
+          } else {
+            // 이동 완료
+            console.log('[processNextStep] ✅ 모든 이동 완료!')
+            adventureState.value.isMoving = false
+
+            // 이동 완료 시그널 발송
+            if (adventureState.value.currentNodeId) {
+              console.log('[processNextStep] 📡 이동 완료 시그널 발송:', adventureState.value.currentNodeId)
+              moveCompletedNodeId.value = adventureState.value.currentNodeId
+            }
+          }
+          return
+        }
+      }
+
+      // 되돌아갈 곳이 없으면 중단
+      console.log('[processNextStep] 되돌아갈 곳이 없음 - 이동 중단')
       adventureState.value.isMoving = false
       adventureState.value.remainingSteps = 0
-      showNotification('막다른 길입니다! 되돌아가세요.', 'error')
+      showNotification('더 이상 갈 곳이 없습니다!', 'error')
       return
     }
 
