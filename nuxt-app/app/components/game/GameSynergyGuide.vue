@@ -14,7 +14,7 @@
             </button>
           </div>
           <p class="text-xs sm:text-sm md:text-base text-slate-300 mt-1 sm:mt-2">
-            25일마다 획득할 수 있는 모든 카드와 시너지 효과를 확인하세요
+            모든 카드와 시너지 효과를 확인하세요
           </p>
         </div>
 

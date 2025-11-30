@@ -1,5 +1,5 @@
 <template>
-  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-black/90 border-t border-gray-700 p-2 z-50">
+  <div class="fixed bottom-0 left-1/2 -translate-x-1/2 bg-black/90 border-t border-gray-700 p-2 z-50 w-full max-w-md">
     <div class="grid grid-cols-3 gap-1.5">
       <!-- Commandments Button -->
       <button

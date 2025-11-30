@@ -230,7 +230,6 @@
                   42일 이내에 <span class="text-red-400 font-bold">아카샤 제국</span>을 정복하세요!
                 </p>
                 <div class="text-[10px] md:text-xs text-slate-300 space-y-0.5 md:space-y-1">
-                  <div>• 7일마다 제국의 침략이 발생합니다</div>
                   <div>• 병력을 키우고 카드를 수집하세요</div>
                   <div>• 실패해도 환생으로 더 강해집니다</div>
                 </div>

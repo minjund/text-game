@@ -294,6 +294,72 @@ export const eventCards: EventCard[] = [
         reward: {}
       }
     ]
+  },
+  {
+    id: 'event_card_1',
+    title: '떠돌이 점술사',
+    description: '신비한 점술사가 나타나 운명의 카드를 제안합니다.',
+    choices: [
+      {
+        text: '금 300을 주고 카드를 받는다',
+        cost: { gold: 300 },
+        reward: {},
+        giveCard: true,
+        cardCount: 3
+      },
+      {
+        text: '거절한다',
+        reward: {}
+      }
+    ]
+  },
+  {
+    id: 'event_card_2',
+    title: '고대 유적 발견',
+    description: '숲 속에서 고대 유적을 발견했습니다. 마법의 힘이 느껴집니다.',
+    choices: [
+      {
+        text: '유적을 조사한다 (카드 획득)',
+        reward: {},
+        giveCard: true,
+        cardCount: 3
+      },
+      {
+        text: '위험할 수 있으니 떠난다',
+        reward: { gold: 200 }
+      }
+    ]
+  },
+  {
+    id: 'event_card_3',
+    title: '신비한 상점',
+    description: '갑자기 나타난 이상한 상점에서 희귀한 물건들을 팔고 있습니다.',
+    choices: [
+      {
+        text: '식량 500을 주고 카드를 받는다',
+        cost: { food: 500 },
+        reward: {},
+        giveCard: true,
+        cardCount: 3
+      },
+      {
+        text: '구경만 하고 떠난다',
+        reward: {}
+      }
+    ]
+  },
+  {
+    id: 'event_card_4',
+    title: '현자의 선물',
+    description: '숲에서 만난 현자가 당신의 운명에 도움이 될 물건을 주겠다고 합니다.',
+    choices: [
+      {
+        text: '선물을 받는다 (카드 획득)',
+        reward: { morale: 5 },
+        giveCard: true,
+        cardCount: 3
+      }
+    ]
   }
 ]
 

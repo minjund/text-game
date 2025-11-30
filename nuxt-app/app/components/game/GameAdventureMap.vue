@@ -1,8 +1,9 @@
 <template>
-  <div class="fixed inset-0 bg-black/95 z-[9999] flex flex-col pt-16 sm:pt-14">
+  <div class="fixed inset-0 bg-black/95 z-[9999] flex justify-center">
+    <div class="w-full max-w-md flex flex-col pt-16 sm:pt-14 bg-black/50">
     <!-- 헤더: 누적 보상 & 떠나기 버튼 -->
     <div class="flex-shrink-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700 p-3 sm:p-4">
-      <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 sm:gap-3 md:gap-6">
           <div class="flex items-center gap-1 sm:gap-2 bg-slate-800/50 border border-yellow-600 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2">
             <span class="text-base sm:text-lg md:text-xl">💰</span>
@@ -119,6 +120,7 @@
       @complete="completeTutorial"
       @skip="skipTutorial"
     />
+    </div>
   </div>
 </template>
 

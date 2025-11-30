@@ -1,52 +1,54 @@
 <template>
-  <div class="min-h-screen">
+  <div class="min-h-screen bg-slate-900">
+    <!-- Mobile View Container -->
+    <div class="max-w-md mx-auto bg-gradient-to-b from-slate-900 to-slate-800 min-h-screen">
     <!-- 헤더 -->
-    <header class="fixed top-0 left-0 right-0 z-[1000] px-4 sm:px-6 md:px-12 lg:px-16 py-4 md:py-5 flex justify-between items-center bg-slate-900/80 backdrop-blur-xl border-b border-purple-500/20">
-      <div class="flex items-center gap-2 sm:gap-3">
-        <span class="text-2xl sm:text-3xl md:text-4xl drop-shadow-[0_0_10px_rgba(139,92,246,0.6)]">✨</span>
-        <span class="text-base sm:text-lg md:text-xl lg:text-2xl font-black font-serif text-slate-200">갓 블레스 유 (GBU)</span>
+    <header class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-[1000] px-4 py-4 flex justify-between items-center bg-slate-900/80 backdrop-blur-xl border-b border-purple-500/20">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl drop-shadow-[0_0_10px_rgba(139,92,246,0.6)]">✨</span>
+        <span class="text-base font-black font-serif text-slate-200">갓 블레스 유</span>
       </div>
       <nav>
         <NuxtLink
           to="/story"
-          class="text-slate-200 no-underline font-semibold text-sm sm:text-base px-3 sm:px-4 md:px-5 py-2 rounded-lg transition-all duration-300 hover:bg-purple-500/20 hover:text-purple-300"
+          class="text-slate-200 no-underline font-semibold text-sm px-3 py-2 rounded-lg transition-all duration-300 hover:bg-purple-500/20 hover:text-purple-300"
         >
-          게임 시작
+          시작
         </NuxtLink>
       </nav>
     </header>
 
     <!-- 히어로 섹션 -->
-    <section class="relative min-h-screen flex items-center justify-center px-4 sm:px-6 md:px-8 pt-24 sm:pt-28 md:pt-32 pb-12 sm:pb-16 md:pb-20 overflow-hidden">
-      <div class="max-w-4xl text-center z-10 relative w-full">
-        <h1 class="font-serif font-black leading-tight mb-6 sm:mb-8 md:mb-10 flex flex-col gap-2 sm:gap-3">
-          <span class="title-line-1 text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl">전설의 왕국을</span>
-          <span class="title-line-2 text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl">건설하라</span>
+    <section class="relative min-h-screen flex items-center justify-center px-4 pt-24 pb-12 overflow-hidden">
+      <div class="text-center z-10 relative w-full">
+        <h1 class="font-serif font-black leading-tight mb-6 flex flex-col gap-2">
+          <span class="title-line-1 text-3xl">전설의 왕국을</span>
+          <span class="title-line-2 text-3xl">건설하라</span>
         </h1>
-        <p class="text-sm sm:text-base md:text-lg lg:text-xl text-slate-400 leading-relaxed mb-8 sm:mb-10 md:mb-12 px-4">
-          장수를 모으고, 군대를 키우고, 적을 정복하라.<br class="hidden sm:block"/>
-          당신의 왕국이 역사에 길이 남을 것입니다.
+        <p class="text-sm text-slate-400 leading-relaxed mb-8 px-4">
+          장수를 모으고, 군대를 키우고,<br/>
+          적을 정복하라.
         </p>
-        <div class="flex justify-center mb-12 sm:mb-16 md:mb-20">
+        <div class="flex justify-center mb-12">
           <NuxtLink to="/story" class="game-btn">
-            <span class="text-xl sm:text-2xl md:text-3xl relative z-10">✨</span>
+            <span class="text-xl relative z-10">✨</span>
             <span class="relative z-10">게임 시작</span>
           </NuxtLink>
         </div>
 
         <!-- 게임 통계 -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-3xl mx-auto px-4 sm:px-6 md:px-10 py-6 sm:py-8 md:py-10 bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-purple-500/20">
-          <div class="text-center py-4 sm:py-0">
-            <div class="stat-number text-3xl sm:text-4xl md:text-5xl">{{ animatedPlayers }}</div>
-            <div class="text-xs sm:text-sm text-slate-400 font-semibold uppercase tracking-wider mt-2">활성 플레이어</div>
+        <div class="grid grid-cols-1 gap-3 px-4 py-6 bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-purple-500/20">
+          <div class="text-center py-2">
+            <div class="stat-number text-3xl">{{ animatedPlayers }}</div>
+            <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">활성 플레이어</div>
           </div>
-          <div class="text-center py-4 sm:py-0 border-t sm:border-t-0 sm:border-l sm:border-r border-purple-500/20">
-            <div class="stat-number text-3xl sm:text-4xl md:text-5xl">{{ animatedKingdoms }}</div>
-            <div class="text-xs sm:text-sm text-slate-400 font-semibold uppercase tracking-wider mt-2">건설된 왕국</div>
+          <div class="text-center py-2 border-t border-purple-500/20">
+            <div class="stat-number text-3xl">{{ animatedKingdoms }}</div>
+            <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">건설된 왕국</div>
           </div>
-          <div class="text-center py-4 sm:py-0 border-t sm:border-t-0 border-purple-500/20">
-            <div class="stat-number text-3xl sm:text-4xl md:text-5xl">{{ animatedBattles }}</div>
-            <div class="text-xs sm:text-sm text-slate-400 font-semibold uppercase tracking-wider mt-2">진행된 전투</div>
+          <div class="text-center py-2 border-t border-purple-500/20">
+            <div class="stat-number text-3xl">{{ animatedBattles }}</div>
+            <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">진행된 전투</div>
           </div>
         </div>
       </div>
@@ -63,53 +65,49 @@
     </section>
 
     <!-- 특징 섹션 -->
-    <section class="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 md:px-8 lg:px-12 max-w-7xl mx-auto">
-      <h2 class="text-3xl sm:text-4xl md:text-5xl font-serif font-black text-center mb-10 sm:mb-12 md:mb-16 section-title">게임 특징</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-10">
+    <section class="py-12 px-4">
+      <h2 class="text-2xl font-serif font-black text-center mb-8 section-title">게임 특징</h2>
+      <div class="grid grid-cols-1 gap-4">
         <div class="feature-card">
-          <div class="text-5xl sm:text-6xl md:text-7xl mb-4 sm:mb-5 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">✨</div>
-          <h3 class="text-xl sm:text-2xl font-bold text-slate-200 mb-3 sm:mb-4 font-serif">신의 계명</h3>
-          <p class="text-sm sm:text-base text-slate-400 leading-relaxed">신이 되어 나라의 기초가 될 5가지 계명을 정하세요</p>
+          <div class="text-4xl mb-3 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">✨</div>
+          <h3 class="text-lg font-bold text-slate-200 mb-2 font-serif">신의 계명</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">나라의 기초가 될 5가지 계명</p>
         </div>
         <div class="feature-card">
-          <div class="text-5xl sm:text-6xl md:text-7xl mb-4 sm:mb-5 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">👥</div>
-          <h3 class="text-xl sm:text-2xl font-bold text-slate-200 mb-3 sm:mb-4 font-serif">전설의 장수</h3>
-          <p class="text-sm sm:text-base text-slate-400 leading-relaxed">고유한 스킬을 가진 장수들을 수집하고 육성하세요</p>
+          <div class="text-4xl mb-3 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">⚔️</div>
+          <h3 class="text-lg font-bold text-slate-200 mb-2 font-serif">전략적 전투</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">텍스트 기반 전투 시스템</p>
         </div>
         <div class="feature-card">
-          <div class="text-5xl sm:text-6xl md:text-7xl mb-4 sm:mb-5 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">⚔️</div>
-          <h3 class="text-xl sm:text-2xl font-bold text-slate-200 mb-3 sm:mb-4 font-serif">전략적 전투</h3>
-          <p class="text-sm sm:text-base text-slate-400 leading-relaxed">텍스트 기반 전투로 장수의 스킬을 활용하세요</p>
+          <div class="text-4xl mb-3 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">🏰</div>
+          <h3 class="text-lg font-bold text-slate-200 mb-2 font-serif">왕국 경영</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">자원 관리와 왕국 성장</p>
         </div>
         <div class="feature-card">
-          <div class="text-5xl sm:text-6xl md:text-7xl mb-4 sm:mb-5 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">🏰</div>
-          <h3 class="text-xl sm:text-2xl font-bold text-slate-200 mb-3 sm:mb-4 font-serif">왕국 경영</h3>
-          <p class="text-sm sm:text-base text-slate-400 leading-relaxed">식량, 금, 병력을 관리하며 왕국을 성장시키세요</p>
-        </div>
-        <div class="feature-card">
-          <div class="text-5xl sm:text-6xl md:text-7xl mb-4 sm:mb-5 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">🎴</div>
-          <h3 class="text-xl sm:text-2xl font-bold text-slate-200 mb-3 sm:mb-4 font-serif">랜덤 이벤트</h3>
-          <p class="text-sm sm:text-base text-slate-400 leading-relaxed">매일 다른 이벤트로 독특한 스토리를 만들어가세요</p>
+          <div class="text-4xl mb-3 drop-shadow-[0_0_20px_rgba(139,92,246,0.4)]">🎴</div>
+          <h3 class="text-lg font-bold text-slate-200 mb-2 font-serif">랜덤 이벤트</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">매일 다른 스토리 전개</p>
         </div>
       </div>
     </section>
 
     <!-- CTA 섹션 -->
-    <section class="py-16 sm:py-20 md:py-24 px-4 sm:px-6 md:px-8 bg-gradient-to-br from-purple-900/10 to-pink-900/10">
-      <div class="max-w-3xl mx-auto text-center">
-        <h2 class="text-3xl sm:text-4xl md:text-5xl font-serif font-black text-slate-200 mb-4 sm:mb-6">지금 당신의 전설을 시작하세요</h2>
-        <p class="text-base sm:text-lg md:text-xl text-slate-400 mb-8 sm:mb-10 md:mb-12">무료로 플레이하고 최고의 통치자가 되어보세요</p>
+    <section class="py-16 px-4 bg-gradient-to-br from-purple-900/10 to-pink-900/10">
+      <div class="text-center">
+        <h2 class="text-2xl font-serif font-black text-slate-200 mb-3">지금 시작하세요</h2>
+        <p class="text-sm text-slate-400 mb-8">무료로 플레이 가능</p>
         <NuxtLink to="/story" class="game-btn">
-          <span class="text-xl sm:text-2xl md:text-3xl relative z-10">✨</span>
+          <span class="text-xl relative z-10">✨</span>
           <span class="relative z-10">게임 시작</span>
         </NuxtLink>
       </div>
     </section>
 
     <!-- 푸터 -->
-    <footer class="py-8 sm:py-10 md:py-12 px-4 sm:px-6 text-center text-slate-500 text-xs sm:text-sm border-t border-purple-500/20">
+    <footer class="py-8 px-4 text-center text-slate-500 text-xs border-t border-purple-500/20">
       <p>&copy; 2025 갓 블레스 유 (GBU). Made with ❤️</p>
     </footer>
+    </div>
   </div>
 </template>
 

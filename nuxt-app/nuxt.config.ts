@@ -3,7 +3,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
-  modules: ['@nuxtjs/tailwindcss'],
+  modules: ['@nuxtjs/tailwindcss', '@vite-pwa/nuxt'],
 
   // SSR 비활성화 (게임이므로 클라이언트 전용)
   ssr: false,
@@ -90,5 +90,41 @@ export default defineNuxtConfig({
   routeRules: {
     '/': { prerender: true },
     '/story': { prerender: true },
+  },
+
+  // PWA 설정
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'Kingdom Wars',
+      short_name: 'Kingdom Wars',
+      description: '42일 안에 아카샤 제국을 정복하는 왕국 경영 전략 게임',
+      theme_color: '#000000',
+      background_color: '#000000',
+      display: 'standalone', // 주소창 숨김
+      orientation: 'portrait',
+      scope: '/text-game/',
+      start_url: '/text-game/',
+      icons: [
+        {
+          src: '/text-game/icon-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+        },
+        {
+          src: '/text-game/icon-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+        },
+      ],
+    },
+    workbox: {
+      navigateFallback: '/text-game/',
+      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+    },
+    devOptions: {
+      enabled: true,
+      type: 'module',
+    },
   },
 })

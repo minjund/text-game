@@ -79,7 +79,7 @@
             <div v-if="cards.length === 0" class="text-center py-12 text-slate-400">
               <div class="text-6xl mb-4">📭</div>
               <p class="text-xl">아직 보유한 카드가 없습니다</p>
-              <p class="text-sm mt-2">25일마다 카드를 획득할 수 있습니다</p>
+              <p class="text-sm mt-2">상점이나 이벤트에서 카드를 획득할 수 있습니다</p>
             </div>
 
             <div v-else class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">

@@ -1,5 +1,5 @@
 <template>
-  <div class="md:hidden fixed top-2 left-2 right-2 z-50 flex flex-col gap-1.5 pointer-events-none">
+  <div class="fixed top-2 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-1.5 pointer-events-none w-full max-w-md px-2">
     <!-- All resources in grid layout -->
     <div class="flex flex-col gap-1.5">
       <!-- Row 1: Timer -->
@@ -61,27 +61,27 @@
 
       <!-- Commandment Effects -->
       <div v-if="commandmentEffects && hasEffects" class="pointer-events-auto">
-        <div class="resource-display compact border-indigo-500 bg-indigo-900/30">
-          <span class="resource-icon">⚖️</span>
-          <div class="resource-info w-full">
-            <span class="resource-label">계명 효과 (매일)</span>
-            <div class="flex flex-wrap gap-1 mt-1">
-              <span v-if="commandmentEffects.morale !== 0" class="text-[9px] px-1.5 py-0.5 rounded" :class="commandmentEffects.morale > 0 ? 'bg-emerald-500/30 text-emerald-200' : 'bg-red-500/30 text-red-200'">
-                민심 {{ commandmentEffects.morale > 0 ? '+' : '' }}{{ commandmentEffects.morale }}
-              </span>
-              <span v-if="commandmentEffects.gold !== 0" class="text-[9px] px-1.5 py-0.5 rounded" :class="commandmentEffects.gold > 0 ? 'bg-emerald-500/30 text-emerald-200' : 'bg-red-500/30 text-red-200'">
-                금 {{ commandmentEffects.gold > 0 ? '+' : '' }}{{ commandmentEffects.gold }}
-              </span>
-              <span v-if="commandmentEffects.military !== 0" class="text-[9px] px-1.5 py-0.5 rounded" :class="commandmentEffects.military > 0 ? 'bg-emerald-500/30 text-emerald-200' : 'bg-red-500/30 text-red-200'">
-                병력 {{ commandmentEffects.military > 0 ? '+' : '' }}{{ commandmentEffects.military }}
-              </span>
-              <span v-if="commandmentEffects.food !== 0" class="text-[9px] px-1.5 py-0.5 rounded" :class="commandmentEffects.food > 0 ? 'bg-emerald-500/30 text-emerald-200' : 'bg-red-500/30 text-red-200'">
-                식량 {{ commandmentEffects.food > 0 ? '+' : '' }}{{ commandmentEffects.food }}
-              </span>
-              <span v-if="commandmentEffects.population !== 0" class="text-[9px] px-1.5 py-0.5 rounded" :class="commandmentEffects.population > 0 ? 'bg-emerald-500/30 text-emerald-200' : 'bg-red-500/30 text-red-200'">
-                인구 {{ commandmentEffects.population > 0 ? '+' : '' }}{{ commandmentEffects.population }}
-              </span>
-            </div>
+        <div class="bg-gradient-to-r from-indigo-900/80 to-purple-900/80 border-2 border-indigo-400 rounded-lg p-2 sm:p-2.5 backdrop-blur-sm shadow-lg">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="text-xl sm:text-2xl">⚖️</span>
+            <span class="text-xs sm:text-sm font-bold text-indigo-200">신의 계명 효과 (매일 적용)</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 sm:gap-2">
+            <span v-if="commandmentEffects.morale !== 0" class="text-[10px] sm:text-xs px-2 py-1 rounded-md font-semibold border" :class="commandmentEffects.morale > 0 ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400' : 'bg-red-500/30 text-red-200 border-red-400'">
+              😊 민심 {{ commandmentEffects.morale > 0 ? '+' : '' }}{{ commandmentEffects.morale }}
+            </span>
+            <span v-if="commandmentEffects.gold !== 0" class="text-[10px] sm:text-xs px-2 py-1 rounded-md font-semibold border" :class="commandmentEffects.gold > 0 ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400' : 'bg-red-500/30 text-red-200 border-red-400'">
+              💰 금 {{ commandmentEffects.gold > 0 ? '+' : '' }}{{ commandmentEffects.gold }}
+            </span>
+            <span v-if="commandmentEffects.military !== 0" class="text-[10px] sm:text-xs px-2 py-1 rounded-md font-semibold border" :class="commandmentEffects.military > 0 ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400' : 'bg-red-500/30 text-red-200 border-red-400'">
+              ⚔️ 병력 {{ commandmentEffects.military > 0 ? '+' : '' }}{{ commandmentEffects.military }}
+            </span>
+            <span v-if="commandmentEffects.food !== 0" class="text-[10px] sm:text-xs px-2 py-1 rounded-md font-semibold border" :class="commandmentEffects.food > 0 ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400' : 'bg-red-500/30 text-red-200 border-red-400'">
+              🍖 식량 {{ commandmentEffects.food > 0 ? '+' : '' }}{{ commandmentEffects.food }}
+            </span>
+            <span v-if="commandmentEffects.population !== 0" class="text-[10px] sm:text-xs px-2 py-1 rounded-md font-semibold border" :class="commandmentEffects.population > 0 ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400' : 'bg-red-500/30 text-red-200 border-red-400'">
+              👥 인구 {{ commandmentEffects.population > 0 ? '+' : '' }}{{ commandmentEffects.population }}
+            </span>
           </div>
         </div>
       </div>
@@ -173,12 +173,9 @@ const daysUntilInvasion = computed(() => {
   return nextInvasionDay - props.currentDay
 })
 
-// 침략 경고 메시지
+// 침략 경고 메시지 (비활성화)
 const invasionWarning = computed(() => {
-  if (props.currentDay >= 42) return ''
-  if (daysUntilInvasion.value === 0) return '⚔️ 오늘 제국 침략!'
-  if (daysUntilInvasion.value === 1) return '⚔️ 내일 제국 침략!'
-  return `⚔️ ${daysUntilInvasion.value}일 후 제국 침략`
+  return '' // 제국 침략 카운트다운 표시 안함
 })
 
 // 계명 효과가 있는지 확인

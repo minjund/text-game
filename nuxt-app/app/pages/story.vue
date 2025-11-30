@@ -1,8 +1,10 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
+  <div class="min-h-screen bg-slate-900">
+    <!-- Mobile View Container -->
+    <div class="max-w-md mx-auto bg-gradient-to-b from-slate-900 to-slate-800 min-h-screen">
     <!-- 스토리 진행 화면 -->
-    <div v-if="gameState === 'story'" class="min-h-screen p-4 sm:p-6 md:p-8 lg:p-10">
-      <div class="max-w-[1000px] mx-auto w-full">
+    <div v-if="gameState === 'story'" class="min-h-screen p-4">
+      <div class="w-full">
         <!-- 텍스트 디스플레이 -->
         <div class="bg-slate-800/80 backdrop-blur-xl border-2 border-slate-600/20 rounded-xl md:rounded-2xl p-5 sm:p-6 md:p-8 lg:p-10 mb-6 md:mb-8 min-h-[250px] md:min-h-[300px]">
           <div
@@ -241,6 +243,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 </template>
 

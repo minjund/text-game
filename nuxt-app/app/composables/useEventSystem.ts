@@ -273,7 +273,17 @@ export const useEventSystem = (options: UseEventSystemOptions) => {
       }
     }
 
-    closeEvent()
+    // 카드 보상이 있으면 카드 선택 모달 표시
+    if (choice.giveCard) {
+      const count = choice.cardCount || 3
+      availablePassiveCards.value = drawRandomCards(count)
+      showPassiveCardSelection.value = true
+      showNotification('카드를 선택하세요!', 'info')
+      // 카드 선택 후 이벤트 닫기
+      closeEvent()
+    } else {
+      closeEvent()
+    }
   }
 
   const closeEvent = () => {

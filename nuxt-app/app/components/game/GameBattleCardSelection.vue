@@ -32,43 +32,27 @@
 
         <!-- Battle Cards Selection -->
         <div class="flex-1 overflow-y-auto p-2 md:p-4">
-          <div class="mb-2 md:mb-3 flex items-center justify-between">
-            <h3 class="text-sm md:text-lg font-bold text-cyan-400">🎴 액티브 카드 선택 (최대 3장)</h3>
-            <div class="text-xs md:text-sm text-slate-400">
-              선택: <span class="text-cyan-400 font-bold">{{ selectedCards.length }}</span> / 3
-            </div>
+          <!-- Header -->
+          <div class="mb-3 md:mb-4">
+            <h3 class="text-sm md:text-lg font-bold text-cyan-400 mb-2">🃏 전투 장착 카드</h3>
+            <p class="text-xs md:text-sm text-slate-400">
+              덱에 장착된 전투 카드가 이번 전투에서 사용됩니다
+            </p>
           </div>
 
-          <!-- No Battle Cards -->
-          <div v-if="battleCards.length === 0" class="text-center py-8 md:py-12 text-slate-400">
-            <div class="text-4xl md:text-6xl mb-2 md:mb-4">🚫</div>
-            <div class="text-sm md:text-lg">보유한 액티브 카드가 없습니다</div>
-            <div class="text-xs md:text-sm mt-1 md:mt-2">액티브 카드 없이 진행됩니다</div>
-          </div>
-
-          <!-- Battle Cards Grid -->
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
+          <!-- Deck Battle Cards Display -->
+          <div v-if="deckBattleCardsCount > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3 mb-4">
             <div
-              v-for="card in battleCards"
+              v-for="card in deckBattleCards.filter(c => c !== null)"
               :key="card.id"
-              @click="toggleCard(card)"
               :class="[
-                'relative bg-gradient-to-br rounded-lg md:rounded-xl border-2 p-3 md:p-4 cursor-pointer transition-all',
-                isSelected(card)
-                  ? 'from-purple-900 to-purple-800 border-purple-400 shadow-lg shadow-purple-500/50 scale-105'
-                  : 'from-slate-700 to-slate-800 border-slate-600 hover:border-slate-500 hover:scale-102',
+                'relative bg-gradient-to-br rounded-lg md:rounded-xl border-2 p-3 md:p-4 transition-all',
+                'from-slate-700 to-slate-800 border-slate-600',
                 card.rarity === 'legendary' ? 'ring-2 ring-yellow-500' :
                 card.rarity === 'epic' ? 'ring-2 ring-purple-500' :
                 card.rarity === 'rare' ? 'ring-2 ring-blue-500' : ''
               ]"
             >
-              <!-- Selected Badge -->
-              <div
-                v-if="isSelected(card)"
-                class="absolute -top-1.5 md:-top-2 -right-1.5 md:-right-2 w-6 h-6 md:w-8 md:h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm md:text-base font-bold shadow-lg"
-              >
-                ✓
-              </div>
 
               <!-- Card Icon -->
               <div class="text-3xl md:text-4xl mb-1 md:mb-2 text-center">{{ card.icon }}</div>
@@ -84,13 +68,15 @@
               </div>
 
               <!-- Card Description -->
-              <div class="text-[10px] md:text-xs text-slate-400 text-center mb-1 md:mb-2">
+              <div class="text-[10px] md:text-xs text-slate-400 text-center mb-1 md:mb-2 line-clamp-2">
                 {{ card.description }}
               </div>
 
-              <!-- Battle Description -->
-              <div class="text-[10px] md:text-xs text-cyan-300 text-center font-semibold mb-1 md:mb-2 px-2 py-1 bg-cyan-900/30 rounded">
-                {{ card.battleDescription }}
+              <!-- Trigger Badge -->
+              <div class="flex justify-center mb-1 md:mb-2">
+                <span class="px-2 py-0.5 bg-slate-800/80 rounded-full text-[10px] md:text-xs text-cyan-300">
+                  {{ getTriggerLabel(card.trigger) }}
+                </span>
               </div>
 
               <!-- Card Rarity Badge -->
@@ -109,12 +95,29 @@
               </div>
             </div>
           </div>
+
+          <!-- No Cards Message -->
+          <div v-else class="text-center py-8 md:py-12">
+            <div class="text-4xl md:text-6xl mb-3 md:mb-4">🚫</div>
+            <div class="text-sm md:text-lg font-bold text-slate-300 mb-2">전투 카드가 없습니다</div>
+            <div class="text-xs md:text-sm text-slate-400 mb-4">
+              덱 설정에서 전투 슬롯에 카드를 장착하세요
+            </div>
+            <div class="bg-amber-900/30 border border-amber-600 rounded-lg p-3 max-w-sm mx-auto">
+              <div class="text-xs md:text-sm text-amber-200">
+                <div class="font-bold mb-1">💡 팁</div>
+                <div>하단의 "덱" 버튼 → 전투 슬롯 3개에 카드 장착</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Footer -->
         <div class="border-t-2 border-slate-700 p-2 md:p-4 bg-slate-900">
           <div class="flex gap-2 md:gap-3">
+            <!-- 보스 전투가 아닐 때만 취소 버튼 표시 -->
             <button
+              v-if="!isBossBattle"
               @click="$emit('cancel')"
               class="flex-1 px-3 md:px-6 py-2 md:py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm md:text-base font-bold transition-colors"
             >
@@ -122,9 +125,12 @@
             </button>
             <button
               @click="confirmSelection"
-              class="flex-1 px-3 md:px-6 py-2 md:py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 rounded-lg text-sm md:text-base font-bold transition-colors shadow-lg"
+              :class="[
+                'px-3 md:px-6 py-2 md:py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 rounded-lg text-sm md:text-base font-bold transition-colors shadow-lg',
+                isBossBattle ? 'w-full' : 'flex-1'
+              ]"
             >
-              {{ battleCards.length === 0 ? '전투 시작' : selectedCards.length > 0 ? `선택 완료 (${selectedCards.length}장)` : '카드 없이 시작' }}
+              {{ deckBattleCardsCount > 0 ? `전투 시작 (카드 ${deckBattleCardsCount}장)` : '전투 시작 (카드 없음)' }}
             </button>
           </div>
         </div>
@@ -151,17 +157,18 @@ interface Props {
   enemyName: string
   enemyPower: number
   playerPower: number
-  availableCards: any[] // 액티브 카드
+  deckBattleCards?: (PassiveCard | null)[] // 덱의 전투 카드
+  isBossBattle?: boolean // 보스 전투 여부
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  deckBattleCards: () => []
+})
 
 const emit = defineEmits<{
-  confirm: [cards: any[]]
+  confirm: []
   cancel: []
 }>()
-
-const selectedCards = ref<any[]>([])
 
 // 튜토리얼 상태
 const { tutorialState, completeCardSelectionTutorial } = useTutorial()
@@ -192,9 +199,9 @@ const skipTutorial = () => {
   completeCardSelectionTutorial()
 }
 
-// 모든 액티브 카드 표시
-const battleCards = computed(() => {
-  return props.availableCards
+// 덱 전투 카드 개수
+const deckBattleCardsCount = computed(() => {
+  return props.deckBattleCards?.filter(card => card !== null).length || 0
 })
 
 // 난이도 계산
@@ -216,23 +223,21 @@ const difficultyColor = computed(() => {
   return 'text-blue-500'
 })
 
-// 카드 선택/해제
-const toggleCard = (card: PassiveCard) => {
-  const index = selectedCards.value.findIndex(c => c.id === card.id)
-  if (index !== -1) {
-    selectedCards.value.splice(index, 1)
-  } else if (selectedCards.value.length < 3) {
-    selectedCards.value.push(card)
-  }
-}
-
-const isSelected = (card: PassiveCard) => {
-  return selectedCards.value.some(c => c.id === card.id)
-}
-
+// 전투 시작
 const confirmSelection = () => {
-  emit('confirm', selectedCards.value)
-  selectedCards.value = []
+  emit('confirm')
+}
+
+// 트리거 레이블
+const getTriggerLabel = (trigger: string) => {
+  const labels: Record<string, string> = {
+    daily: '매일',
+    battle_start: '전투 시작',
+    battle_win: '전투 승리',
+    battle_lose: '전투 패배',
+    recruit: '병력 모집'
+  }
+  return labels[trigger] || trigger
 }
 </script>
 
@@ -245,5 +250,12 @@ const confirmSelection = () => {
 .modal-enter-from,
 .modal-leave-to {
   opacity: 0;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>

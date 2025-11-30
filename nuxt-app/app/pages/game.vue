@@ -1,13 +1,13 @@
 <template>
   <div
-      class="min-h-screen text-white flex flex-col overflow-hidden relative bg-cover bg-center bg-no-repeat"
+      class="min-h-screen text-white flex flex-col overflow-hidden relative bg-cover bg-center bg-no-repeat bg-slate-900"
       :style="{ backgroundImage: `url(${useRuntimeConfig().app.baseURL}images/background/base_back_groud.png)` }"
   >
     <!-- Background Overlay -->
     <div class="absolute inset-0 bg-black/40 z-0"></div>
 
-    <!-- Content Wrapper -->
-    <div class="relative z-10 flex flex-col min-h-screen">
+    <!-- Content Wrapper - Mobile View Container (Centered) -->
+    <div class="relative z-10 flex flex-col min-h-screen max-w-md mx-auto w-full bg-black/20">
     <!-- Start Card Selection (After Story) -->
     <GameStartCardSelection
       v-if="tutorialState?.storyCompleted && !tutorialState?.hasSelectedStartCards"
@@ -33,45 +33,10 @@
       @show-resource-help="handleShowResourceHelp"
     />
 
-    <!-- Desktop Header -->
-    <GameDesktopHeader
-      v-if="!adventureState?.active"
-      :kingdom-name="kingdom.name"
-      :day="kingdom.day"
-      :resources="kingdom.resources"
-      @show-resource-help="handleShowResourceHelp"
-    />
+    <!-- Desktop Components - Hidden (Using Mobile Layout Only) -->
 
-    <!-- Desktop Main Content -->
-    <div v-if="!adventureState?.active" class="hidden md:flex flex-1 max-w-7xl mx-auto w-full p-8 gap-8 justify-between">
-      <!-- Left Sidebar - Stats -->
-      <GameLeftSidebar
-        :timer="remainingTime"
-        :current-day="kingdom.day"
-        :commandment-effects="commandmentEffects"
-      />
-
-      <!-- Center - Main Game Area with Character -->
-<!--      <div class="flex-1 flex items-center justify-center relative">-->
-<!--        <GameCharacter />-->
-<!--      </div>-->
-
-      <!-- Right Sidebar - Actions -->
-      <GameActionPanel
-        :unlocked-features="tutorialState?.unlockedFeatures || []"
-        @show-commandments="showCommandments = true"
-        @show-passive-cards="showPassiveCardsCollection = true"
-        @show-card-deck="showCardDeckModal = true"
-        @show-card-guide="showCardCollection = true"
-        @start-normal-battle="handleStartAdventure"
-        @recruit-soldiers="recruitSoldiers"
-      />
-    </div>
-
-    <!-- Mobile Main Content -->
-<!--    <div class="md:hidden flex-1 overflow-hidden px-3 pt-32 pb-20 flex flex-col gap-3 justify-center relative">-->
-<!--      <GameCharacter />-->
-<!--    </div>-->
+    <!-- Mobile Main Content Area (Spacer) -->
+    <div class="flex-1"></div>
 
     <!-- Mobile Bottom Action Buttons (Fixed) -->
     <GameMobileActions
@@ -118,6 +83,7 @@
       @pause-tutorial="handleBattleTutorialPause"
       @manual-pause="manualPauseBattle"
       @manual-resume="manualResumeBattle"
+      @skip-to-result="handleSkipToResult"
     />
 
     <!-- Passive Card Selection Modal -->
@@ -272,9 +238,10 @@
       :enemy-name="pendingBattle.enemyName"
       :enemy-power="pendingBattle.enemyPower"
       :player-power="kingdom.resources.soldiers"
-      :available-cards="ownedActiveCards"
+      :deck-battle-cards="cardDeck.battle"
+      :is-boss-battle="isBossBattle"
       @confirm="handleBattleCardsConfirm"
-      @cancel="showBattleCardSelection = false"
+      @cancel="handleBattleCardCancel"
     />
 
     <!-- Dice Roulette -->
@@ -377,6 +344,7 @@ import { useSynergyCards } from '~/composables/useSynergyCards'
 import { useAdventureSystem } from '~/composables/useAdventureSystem'
 import { useActiveCards } from '~/composables/useActiveCards'
 import { useCardDeck } from '~/composables/useCardDeck'
+import { convertPassiveCardsToActiveCards } from '~/utils/cardConverter'
 
 // 신 게임 상태 가져오기
 const { nationState: godGameState, startCards: godStartCards } = useGodGame()
@@ -852,6 +820,45 @@ const {
   battleActiveCards
 })
 
+// 결과 빨리보기 - 전투를 즉시 종료
+const handleSkipToResult = () => {
+  if (!currentBattle.value) return
+
+  // 전투를 일시정지
+  if (!isPaused.value) {
+    manualPauseBattle()
+  }
+
+  // 현재 점수를 기반으로 결과 결정
+  const playerWins = attackerScore.value > defenderScore.value
+
+  // 결과 설정
+  currentBattle.value.result = playerWins ? 'victory' : 'defeat'
+
+  // 결과 로그 추가
+  const resultLog = {
+    turn: 999,
+    generalName: '심판관',
+    action: '전투 종료',
+    success: true,
+    message: '',
+    story: playerWins
+      ? `🎉 ${currentBattle.value.attacker.kingdomName}의 승리! (${attackerScore.value} vs ${defenderScore.value})`
+      : `😔 ${currentBattle.value.defender.kingdomName}의 승리... (${attackerScore.value} vs ${defenderScore.value})`,
+    narrativeType: 'narration' as const
+  }
+
+  currentBattle.value.log.push(resultLog)
+
+  // 스크롤을 맨 아래로
+  setTimeout(() => {
+    const container = document.querySelector('.overflow-y-auto')
+    if (container) {
+      container.scrollTop = container.scrollHeight
+    }
+  }, 100)
+}
+
 // 전투 종료 처리
 const closeBattle = () => {
   // 전투 결과 및 모드 확인
@@ -976,16 +983,12 @@ const {
   godGameState
 })
 
-// 이벤트 모달 닫기 핸들러 (모험 중일 때 자동 이동)
+// 이벤트 모달 닫기 핸들러 (선택 없이 닫기만 할 때)
 const handleEventClose = () => {
   console.log('[handleEventClose] 호출됨')
   closeEvent()
-  if (adventureState.value?.active) {
-    console.log('[handleEventClose] 모험 중 - 다음 숫자 자동 사용')
-    autoUseNextDice()
-  } else {
-    console.log('[handleEventClose] 모험 중이 아님')
-  }
+  // 선택지를 고른 경우 handleEventSelectChoice에서 이미 자동 이동 처리했으므로
+  // 여기서는 자동 이동하지 않음 (중복 방지)
 }
 
 // 이벤트 선택지 핸들러 (모험 중일 때 자동 이동)
@@ -1000,13 +1003,11 @@ const handleEventSelectChoice = (choiceIndex: number) => {
   }
 }
 
-// 갈림길 모달 닫기 핸들러 (모험 중일 때 자동 이동)
+// 갈림길 모달 닫기 핸들러 (선택 없이 닫기만 할 때)
 const handleCrossroadClose = () => {
   closeCrossroad()
-  if (adventureState.value?.active) {
-    console.log('[handleCrossroadClose] 모험 중 - 다음 숫자 자동 사용')
-    autoUseNextDice()
-  }
+  // 선택지를 고른 경우 handleCrossroadSelectChoice에서 이미 자동 이동 처리했으므로
+  // 여기서는 자동 이동하지 않음 (중복 방지)
 }
 
 // 갈림길 선택지 핸들러 (모험 중일 때 자동 이동)
@@ -1020,11 +1021,14 @@ const handleCrossroadSelectChoice = (choiceIndex: number) => {
 
 // 게임 일수 기반 침략으로 변경 (handleNextDay에서 처리)
 
-// 환생 모달이 열릴 때 랜덤 카드 3장 생성
+// 환생 모달이 열릴 때 보유한 모든 카드 표시 (중복 상속 가능)
 watch(showReincarnationModal, (isOpen) => {
   if (isOpen && process.client) {
-    // 전체 카드 풀에서 랜덤 3장 선택
-    reincarnationCardOptions.value = drawRandomCards(3)
+    // 보유한 모든 카드를 표시 (중복 상속 허용)
+    reincarnationCardOptions.value = playerPassiveCards.value
+
+    console.log('환생 가능한 카드:', reincarnationCardOptions.value.length, '장')
+    console.log('이미 상속한 카드:', reincarnationData.inheritedCards.length, '장')
   }
 })
 
@@ -1066,6 +1070,73 @@ watch(
   }
 )
 
+// 이동마다 계명과 내정 카드 효과 적용
+const applyMovementEffects = () => {
+  let totalGold = 0
+  let totalFood = 0
+  let totalMorale = 0
+  let totalSoldiers = 0
+
+  // 1. 계명 효과 적용
+  if (godGameState.value) {
+    const effects = godGameState.value.commandmentEffects
+    if (effects) {
+      if (effects.gold) {
+        kingdom.value.resources.gold += effects.gold
+        totalGold += effects.gold
+      }
+      if (effects.food) {
+        kingdom.value.resources.food += effects.food
+        totalFood += effects.food
+      }
+      if (effects.morale) {
+        kingdom.value.resources.morale = Math.min(100, Math.max(0, kingdom.value.resources.morale + effects.morale))
+        totalMorale += effects.morale
+      }
+      if (effects.military) {
+        kingdom.value.resources.soldiers += effects.military
+        totalSoldiers += effects.military
+      }
+    }
+  }
+
+  // 2. 내정 카드 효과 적용 (daily 트리거)
+  const domesticCards = cardDeck.value.domestic.filter(c => c !== null) as PassiveCard[]
+  domesticCards.forEach(card => {
+    if (card.effect) {
+      if (card.effect.gold) {
+        kingdom.value.resources.gold += card.effect.gold
+        totalGold += card.effect.gold
+      }
+      if (card.effect.food) {
+        kingdom.value.resources.food += card.effect.food
+        totalFood += card.effect.food
+      }
+      if (card.effect.morale) {
+        kingdom.value.resources.morale = Math.min(100, Math.max(0, kingdom.value.resources.morale + card.effect.morale))
+        totalMorale += card.effect.morale
+      }
+      if (card.effect.military) {
+        kingdom.value.resources.soldiers += card.effect.military
+        totalSoldiers += card.effect.military
+      }
+    }
+  })
+
+  // 효과 알림 (변동이 있을 경우에만)
+  if (totalGold !== 0 || totalFood !== 0 || totalMorale !== 0 || totalSoldiers !== 0) {
+    let message = '이동 효과: '
+    const effects = []
+    if (totalGold !== 0) effects.push(`금 ${totalGold > 0 ? '+' : ''}${totalGold}`)
+    if (totalFood !== 0) effects.push(`식량 ${totalFood > 0 ? '+' : ''}${totalFood}`)
+    if (totalMorale !== 0) effects.push(`민심 ${totalMorale > 0 ? '+' : ''}${totalMorale}`)
+    if (totalSoldiers !== 0) effects.push(`병력 ${totalSoldiers > 0 ? '+' : ''}${totalSoldiers}`)
+
+    message += effects.join(', ')
+    showNotification(message, 'success')
+  }
+}
+
 // 이벤트 처리 완료 후 자동으로 다음 숫자 사용
 const autoUseNextDice = () => {
   console.log('[autoUseNextDice] 🎲 호출됨')
@@ -1083,6 +1154,9 @@ const autoUseNextDice = () => {
   // 아직 사용할 숫자가 남아있으면 자동으로 다음 숫자 사용
   if (adventureState.value.currentDiceIndex < adventureState.value.diceResults.length) {
     console.log('[autoUseNextDice] ✅ 다음 숫자 사용 가능!')
+
+    // 이동 전 계명 효과와 내정 카드 효과 적용
+    applyMovementEffects()
 
     // 즉시 실행 (딜레이 제거)
     const steps = useNextDice()
@@ -1183,7 +1257,7 @@ const triggerNodeEvent = (node: any) => {
     case 'battle':
     case 'elite':
     case 'boss':
-      // 덱의 전투 카드로 바로 전투 시작
+      // 전투 카드 선택 모달 표시
       if (node.enemy) {
         // 보스 전투인 경우 플래그 설정
         if (node.type === 'boss') {
@@ -1196,8 +1270,8 @@ const triggerNodeEvent = (node: any) => {
           battleType: node.type === 'boss' ? 'empire' : 'normal'
         }
 
-        // 카드 선택 모달 없이 바로 전투 시작 (덱의 카드 사용)
-        handleBattleCardsConfirm([])
+        // 카드 선택 모달 표시
+        showBattleCardSelection.value = true
       }
       break
 
@@ -1298,15 +1372,27 @@ const handleAdventureNodeClick = (node: any) => {
     return
   }
 
-  // 완료된 칸을 다시 클릭한 경우: 이동만 하고 이벤트는 실행하지 않음
+  // 완료된 칸을 다시 클릭한 경우: 인접한 칸이면 이동만 하고 이벤트는 실행하지 않음
   if (node.completed) {
-    moveToNode(node.id)
-    showNotification('이미 완료한 칸으로 되돌아왔습니다.', 'info')
+    // 현재 노드와 인접한지 확인
+    const currentNode = adventureState.value.nodes.find(n => n.id === adventureState.value.currentNodeId)
+    if (currentNode && currentNode.connections.includes(node.id)) {
+      moveToNode(node.id)
+      showNotification('이미 완료한 칸으로 되돌아왔습니다.', 'info')
+    } else {
+      showNotification('현재 위치와 인접한 칸만 이동할 수 있습니다.', 'error')
+    }
     return
   }
 
-  // 완료되지 않은 새로운 칸은 룰렛을 통해서만 이동 가능
-  showNotification('룰렛을 돌려서 이동해주세요!', 'info')
+  // 사용 가능한(available) 칸을 클릭한 경우: 룰렛을 통해서만 이동 가능
+  if (node.status === 'available') {
+    showNotification('룰렛을 돌려서 이동해주세요!', 'info')
+    return
+  }
+
+  // 잠긴(locked) 칸은 클릭 불가
+  showNotification('아직 갈 수 없는 곳입니다.', 'error')
 }
 
 // 상점 닫기 처리
@@ -1370,6 +1456,9 @@ const handleAdventureShopBuy = (itemType: 'soldiers' | 'food' | 'card' | 'heal')
     case 'card':
       if (kingdom.value.resources.gold >= 300) {
         kingdom.value.resources.gold -= 300
+
+        // 랜덤 카드 3장 제공
+        availablePassiveCards.value = drawRandomCards(3)
 
         // 카드 선택 모달 표시 (handlePassiveCardSelect에서 자동 이동 재개)
         showPassiveCardSelection.value = true
@@ -1451,29 +1540,46 @@ const handleAdventureRestSelect = (option: 'heal' | 'remove-card' | 'meditate') 
   }
 }
 
-// 전투 카드 선택 완료 후 전투 시작
-const handleBattleCardsConfirm = (cards: any[]) => {
-  selectedBattleCards.value = cards
+// 전투 카드 선택 취소 (도망가기)
+const handleBattleCardCancel = () => {
   showBattleCardSelection.value = false
 
-  // 덱에 배치된 전투 카드를 battleActiveCards에 추가
-  clearBattleDeck() // 먼저 배틀 덱 초기화
+  // 모험 중일 때: 전투를 건너뛰고 현재 노드를 완료 처리한 후 다음 숫자 사용
+  if (adventureState.value?.active && currentNode.value) {
+    console.log('[handleBattleCardCancel] 전투 회피 - 다음 숫자 사용')
 
-  // 1. 덱의 전투 카드 슬롯에서 카드 가져오기
-  const deckBattleCards = cardDeck.value.battle.filter(c => c !== null) as PassiveCard[]
+    // 현재 노드를 완료 처리 (전투를 피했지만 방문은 완료)
+    currentNode.value.status = 'completed'
+    currentNode.value.completed = true
 
-  // 2. 덱의 전투 카드를 battleActiveCards에 추가
+    // 보스 전투 플래그 초기화
+    if (isBossBattle.value) {
+      isBossBattle.value = false
+    }
+
+    // 다음 숫자 자동 사용
+    setTimeout(() => {
+      autoUseNextDice()
+    }, 300)
+  }
+}
+
+// 전투 카드 선택 완료 후 전투 시작
+const handleBattleCardsConfirm = () => {
+  showBattleCardSelection.value = false
+
+  // 배틀 덱 초기화
+  clearBattleDeck()
+
+  // 덱의 전투 슬롯 카드를 액티브 카드로 변환하여 추가
+  const deckBattleCards = convertPassiveCardsToActiveCards(cardDeck.value.battle)
   deckBattleCards.forEach(card => {
     addToBattleDeck(card)
   })
 
   // 로그
-  if (deckBattleCards.length > 0) {
-    console.log(`덱의 전투 카드 ${deckBattleCards.length}장 사용:`, deckBattleCards.map(c => c.name))
-    console.log('battleActiveCards:', battleActiveCards.value)
-  } else {
-    console.log('덱에 배치된 전투 카드가 없습니다.')
-  }
+  console.log(`덱 전투 카드 ${deckBattleCards.length}장:`, deckBattleCards.map(c => c.name))
+  console.log('총 battleActiveCards:', battleActiveCards.value)
 
   // 전투 시작
   startStoryBattle(

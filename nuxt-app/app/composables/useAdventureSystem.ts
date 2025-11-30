@@ -73,13 +73,22 @@ export const useAdventureSystem = (
       return nodeTypePool[Math.floor(Math.random() * nodeTypePool.length)]
     }
 
-    // 1단계: 시작점에서 도착점까지 메인 경로 생성 (우선 우하 방향으로)
+    // 보스 위치를 랜덤하게 선택 (우하단 영역: x는 6~9, y는 6~9)
+    const bossX = Math.floor(Math.random() * 4) + 6 // 6~9
+    const bossY = Math.floor(Math.random() * 4) + 6 // 6~9
+
+    console.log(`[generateAdventureMap] 보스 위치: (${bossX}, ${bossY})`)
+
+    // 1단계: 시작점에서 보스까지 메인 경로 생성
+    const mainPath: Array<{x: number, y: number}> = []
     let x = 0, y = 0
+    mainPath.push({x, y})
     isPath[y][x] = true
 
-    while (x < GRID_SIZE - 1 || y < GRID_SIZE - 1) {
-      const canGoRight = x < GRID_SIZE - 1
-      const canGoDown = y < GRID_SIZE - 1
+    // 메인 경로: 보스까지 도달
+    while (x < bossX || y < bossY) {
+      const canGoRight = x < bossX
+      const canGoDown = y < bossY
 
       if (canGoRight && canGoDown) {
         // 랜덤으로 우 또는 하
@@ -95,48 +104,120 @@ export const useAdventureSystem = (
       }
 
       isPath[y][x] = true
+      mainPath.push({x, y})
     }
 
-    // 2단계: DFS로 추가 분기 경로 생성 (막다른 길 포함)
-    const visited: boolean[][] = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false))
+    console.log(`[generateAdventureMap] 메인 경로 생성 완료 - ${mainPath.length}칸`)
 
-    const addBranches = (startX: number, startY: number, depth: number, maxDepth: number) => {
-      if (depth > maxDepth) return
-      if (visited[startY][startX]) return
+    // 2단계: 메인 경로에서 분기 경로 생성 (일부는 막다른 길, 일부는 보스로 수렴)
+    // 메인 경로의 중간 지점들에서 분기를 만듦
+    let deadEndCount = 0
+    let connectedBranchCount = 0
 
-      visited[startY][startX] = true
-      isPath[startY][startX] = true
+    for (let i = Math.floor(mainPath.length * 0.2); i < Math.floor(mainPath.length * 0.9); i++) {
+      // 50% 확률로 분기 생성
+      if (Math.random() < 0.5) {
+        const branchStart = mainPath[i]
 
-      // 방향 랜덤 섞기
-      const directions = [
-        { dx: 1, dy: 0 },
-        { dx: 0, dy: 1 },
-        { dx: -1, dy: 0 },
-        { dx: 0, dy: -1 }
-      ].sort(() => Math.random() - 0.5)
+        // 분기 방향: 상하좌우 중 랜덤
+        const directions = ['up', 'down', 'left', 'right']
+        const direction = directions[Math.floor(Math.random() * directions.length)]
 
-      for (const { dx, dy } of directions) {
-        const nx = startX + dx
-        const ny = startY + dy
+        // 분기 길이: 2-5칸
+        const branchLength = Math.floor(Math.random() * 4) + 2
+        let bx = branchStart.x
+        let by = branchStart.y
 
-        if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && !visited[ny][nx]) {
-          // 50% 확률로 분기 생성 (막다른 길)
-          if (Math.random() < 0.5) {
-            addBranches(nx, ny, depth + 1, maxDepth)
+        // 분기 경로 생성
+        for (let j = 0; j < branchLength; j++) {
+          if (direction === 'up' && by > 0) {
+            by--
+          } else if (direction === 'down' && by < GRID_SIZE - 1) {
+            by++
+          } else if (direction === 'left' && bx > 0) {
+            bx--
+          } else if (direction === 'right' && bx < GRID_SIZE - 1) {
+            bx++
+          } else {
+            break // 경계에 도달하면 중단
+          }
+
+          if (!isPath[by][bx]) {
+            isPath[by][bx] = true
           }
         }
-      }
-    }
 
-    // 메인 경로를 따라 랜덤 분기 생성
-    for (let i = 0; i < GRID_SIZE; i++) {
-      for (let j = 0; j < GRID_SIZE; j++) {
-        if (isPath[i][j] && Math.random() < 0.3) {
-          // 30% 확률로 이 위치에서 분기 시작 (최대 3칸 깊이)
-          addBranches(j, i, 0, 3)
+        // 50% 확률로 막다른 길 또는 보스로 연결
+        const isDeadEnd = Math.random() < 0.5
+
+        if (isDeadEnd) {
+          // 막다른 길: 여기서 중단 (보스나 메인 경로로 연결하지 않음)
+          deadEndCount++
+          console.log(`[generateAdventureMap] 막다른 길 생성: (${bx}, ${by})`)
+        } else {
+          // 분기 경로를 보스 방향으로 연결 (메인 경로로 합류하거나 보스로 직접)
+          let attempts = 0
+          const maxAttempts = 20
+          while ((bx !== bossX || by !== bossY) && attempts < maxAttempts) {
+            attempts++
+
+            // 이미 메인 경로에 도달했으면 중단
+            if (mainPath.some(p => p.x === bx && p.y === by) && (bx !== branchStart.x || by !== branchStart.y)) {
+              break
+            }
+
+            // 보스 방향으로 이동
+            const canGoRight = bx < bossX
+            const canGoDown = by < bossY
+            const canGoLeft = bx > bossX
+            const canGoUp = by > bossY
+
+            if (canGoRight && canGoDown) {
+              if (Math.random() < 0.5) {
+                bx++
+              } else {
+                by++
+              }
+            } else if (canGoLeft && canGoDown) {
+              if (Math.random() < 0.5) {
+                bx--
+              } else {
+                by++
+              }
+            } else if (canGoRight && canGoUp) {
+              if (Math.random() < 0.5) {
+                bx++
+              } else {
+                by--
+              }
+            } else if (canGoLeft && canGoUp) {
+              if (Math.random() < 0.5) {
+                bx--
+              } else {
+                by--
+              }
+            } else if (canGoRight) {
+              bx++
+            } else if (canGoDown) {
+              by++
+            } else if (canGoLeft) {
+              bx--
+            } else if (canGoUp) {
+              by--
+            } else {
+              break
+            }
+
+            if (bx >= 0 && bx < GRID_SIZE && by >= 0 && by < GRID_SIZE) {
+              isPath[by][bx] = true
+            }
+          }
+          connectedBranchCount++
         }
       }
     }
+
+    console.log(`[generateAdventureMap] 분기 경로 생성 완료 - 총 ${isPath.flat().filter(Boolean).length}칸 (막다른 길: ${deadEndCount}개, 연결 경로: ${connectedBranchCount}개)`)
 
     // 통로인 칸에만 노드 배치
     let nodeIdCounter = 0
@@ -148,7 +229,7 @@ export const useAdventureSystem = (
 
         if (x === 0 && y === 0) {
           nodeType = 'start'
-        } else if (x === GRID_SIZE - 1 && y === GRID_SIZE - 1) {
+        } else if (x === bossX && y === bossY) {
           nodeType = 'boss'
         } else {
           nodeType = getRandomNodeType()
@@ -276,8 +357,11 @@ export const useAdventureSystem = (
       }
     })
 
-    // 보스 방(9,9)도 항상 보이게 설정
-    adventureState.value.visibleCells.add('9,9')
+    // 보스 방도 항상 보이게 설정
+    const bossNode = nodes.find(n => n.type === 'boss')
+    if (bossNode && bossNode.gridX !== undefined && bossNode.gridY !== undefined) {
+      adventureState.value.visibleCells.add(`${bossNode.gridX},${bossNode.gridY}`)
+    }
 
     // 시작 노드를 현재 위치로 설정
     const startNode = nodes.find(n => n.gridX === 0 && n.gridY === 0)
@@ -370,10 +454,11 @@ export const useAdventureSystem = (
       const connNode = adventureState.value.nodes.find(n => n.id === connId)
       if (connNode) {
         connNode.visible = true
-        // 완료된 칸도 available로 (다시 클릭 가능)
-        if (connNode.status === 'locked' || connNode.status === 'completed') {
+        // 잠긴 칸만 available로 변경 (완료된 칸은 completed 상태 유지)
+        if (connNode.status === 'locked') {
           connNode.status = 'available'
         }
+        // 완료된 칸은 그대로 completed 상태 유지 (클릭은 가능하지만 시각적으로 구분됨)
       }
     })
   }
@@ -584,6 +669,20 @@ export const useAdventureSystem = (
     moveToNode(nextNode.id)
     adventureState.value.remainingSteps--
 
+    // 보스 방에 도달하면 즉시 전투 시작 (남은 스텝 무시)
+    if (nextNode.type === 'boss') {
+      console.log('[processNextStep] 👑 보스 방 도달! 즉시 전투 시작')
+      adventureState.value.remainingSteps = 0
+      adventureState.value.isMoving = false
+
+      // 이동 완료 시그널 발송 (전투 트리거)
+      if (adventureState.value.currentNodeId) {
+        console.log('[processNextStep] 📡 보스 전투 시그널 발송:', adventureState.value.currentNodeId)
+        moveCompletedNodeId.value = adventureState.value.currentNodeId
+      }
+      return
+    }
+
     // 다음 스텝 예약
     if (adventureState.value.remainingSteps > 0) {
       console.log('[processNextStep] 다음 스텝 예약 - 남은 칸:', adventureState.value.remainingSteps)
@@ -608,8 +707,23 @@ export const useAdventureSystem = (
   const selectPath = (nodeId: string) => {
     console.log('[selectPath] 경로 선택됨 - nodeId:', nodeId, '남은 칸:', adventureState.value.remainingSteps)
     adventureState.value.isSelectingPath = false
+    const selectedNode = adventureState.value.nodes.find(n => n.id === nodeId)
     moveToNode(nodeId)
     adventureState.value.remainingSteps--
+
+    // 보스 방에 도달하면 즉시 전투 시작 (남은 스텝 무시)
+    if (selectedNode?.type === 'boss') {
+      console.log('[selectPath] 👑 보스 방 도달! 즉시 전투 시작')
+      adventureState.value.remainingSteps = 0
+      adventureState.value.isMoving = false
+
+      // 이동 완료 시그널 발송 (전투 트리거)
+      if (adventureState.value.currentNodeId) {
+        console.log('[selectPath] 📡 보스 전투 시그널 발송:', adventureState.value.currentNodeId)
+        moveCompletedNodeId.value = adventureState.value.currentNodeId
+      }
+      return
+    }
 
     // 이동 계속
     if (adventureState.value.remainingSteps > 0) {

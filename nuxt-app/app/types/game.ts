@@ -88,6 +88,8 @@ export interface EventChoice {
     soldiers?: number
     morale?: number
   }
+  giveCard?: boolean // 카드 선택 모달을 열지 여부
+  cardCount?: number // 제공할 카드 수 (기본값: 3)
 }
 
 // 갈림길 카드 (25일마다)

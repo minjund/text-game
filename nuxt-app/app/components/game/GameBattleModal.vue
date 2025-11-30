@@ -1,6 +1,6 @@
 <template>
   <Transition name="modal">
-    <div v-if="battle" class="fixed inset-0 bg-black/90 z-[10001]">
+    <div v-if="battle" class="fixed inset-0 bg-black/90 z-[10001] flex justify-center">
       <!-- 전장의 기록 튜토리얼 오버레이 -->
       <GameBattleTutorialOverlay
         :show="showBattleTutorial"
@@ -8,7 +8,7 @@
         @skip="skipTutorial"
       />
 
-      <div class="w-full h-full flex flex-col bg-gradient-to-br from-slate-800 to-slate-900 md:border-2 md:border-red-600 md:rounded-lg md:max-w-5xl md:max-h-[90vh] md:m-auto md:mt-[5vh]">
+      <div class="w-full max-w-md h-full flex flex-col bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-red-600 rounded-lg max-h-screen m-auto">
         <!-- Header -->
         <div class="bg-gradient-to-r from-red-900 to-red-800 border-b-2 border-red-600 p-2 md:p-4 flex-shrink-0">
           <div class="flex items-center justify-between mb-1 md:mb-2">
@@ -27,8 +27,13 @@
               >
                 {{ isPaused ? '▶ 재개' : '⏸ 일시정지' }}
               </button>
-              <button @click.stop="handleClose" class="text-xl md:text-2xl hover:text-red-400 transition-colors px-2 py-1">
-                ✕
+              <!-- 결과 빨리보기 버튼 (전투 중에만 표시) -->
+              <button
+                v-if="!battle.result"
+                @click.stop="skipToResult"
+                class="px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-bold rounded bg-orange-600 hover:bg-orange-500 active:bg-orange-700 transition-colors whitespace-nowrap"
+              >
+                ⏩ 결과 빨리보기
               </button>
             </div>
           </div>
@@ -235,6 +240,7 @@ const emit = defineEmits<{
   skipCardSelection: []
   manualPause: []
   manualResume: []
+  skipToResult: []
 }>()
 
 // 점수 차이 계산
@@ -400,6 +406,11 @@ const togglePause = () => {
   } else {
     emit('manualPause')
   }
+}
+
+// 결과 빨리보기
+const skipToResult = () => {
+  emit('skipToResult')
 }
 </script>
 

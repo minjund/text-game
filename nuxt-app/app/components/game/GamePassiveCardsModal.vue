@@ -1,7 +1,7 @@
 <template>
   <Transition name="modal">
     <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/80" @click.self="$emit('close')">
-      <div class="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-purple-600/50 rounded-lg sm:rounded-xl w-full max-w-2xl max-h-[95vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
+      <div class="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-purple-600/50 rounded-lg sm:rounded-xl w-full max-w-md max-h-[95vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
         <!-- Header -->
         <div class="flex items-center justify-between p-3 sm:p-4 border-b-2 border-purple-600/30 bg-purple-900/20">
           <div class="flex items-center gap-2 sm:gap-3">

@@ -15,9 +15,6 @@
                 <span class="text-yellow-300 font-bold">⏰ 목표:</span> <span class="text-red-300 font-bold">42일</span> 안에 <span class="text-red-300 font-bold">아카샤 제국</span>을 정복하세요!
               </p>
               <p class="text-sm md:text-base text-amber-100">
-                <span class="text-yellow-300 font-bold">⚔️ 주의:</span> <span class="text-red-300 font-bold">7일마다 제국의 침략</span>이 시작됩니다!
-              </p>
-              <p class="text-sm md:text-base text-amber-100">
                 <span class="text-yellow-300 font-bold">🔄 환생:</span> 실패해도 강력한 보너스와 함께 다시 시작할 수 있습니다.
               </p>
             </div>

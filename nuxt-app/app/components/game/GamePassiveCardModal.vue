@@ -1,13 +1,13 @@
 <template>
   <Transition name="modal">
-    <div v-if="show" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" @click.self="() => {}">
+    <div v-if="show" class="fixed inset-0 bg-black/70 flex items-center justify-center z-[10000] p-4" @click.self="() => {}">
       <div class="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-purple-600 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden">
         <!-- Header -->
         <div class="bg-gradient-to-r from-purple-900 to-purple-800 border-b-2 border-purple-600 p-4 text-center">
           <h2 class="text-2xl font-bold mb-1 flex items-center justify-center gap-2">
             <span>🎴</span> 축복의 카드
           </h2>
-          <p class="text-purple-200">25일이 지났습니다! 3장 중 1장의 패시브 카드를 선택하세요.</p>
+          <p class="text-purple-200">3장 중 1장의 패시브 카드를 선택하세요.</p>
         </div>
 
         <!-- Cards Grid -->
