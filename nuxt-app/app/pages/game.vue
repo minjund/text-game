@@ -1,8 +1,17 @@
 <template>
   <div
-      class="min-h-screen text-white flex flex-col overflow-hidden relative bg-cover bg-center bg-no-repeat bg-slate-900"
-      :style="{ backgroundImage: `url(${useRuntimeConfig().app.baseURL}images/background/base_back_groud.png)` }"
+      class="min-h-screen text-white flex flex-col overflow-hidden relative bg-slate-900"
   >
+    <!-- Background Video -->
+    <video
+      autoplay
+      loop
+      muted
+      playsinline
+      class="absolute inset-0 w-full h-full object-cover z-0"
+      :src="`${useRuntimeConfig().app.baseURL}images/background/base_back_ani.mp4`"
+    ></video>
+
     <!-- Background Overlay -->
     <div class="absolute inset-0 bg-black/40 z-0"></div>
 
@@ -296,6 +305,7 @@ import type { PassiveCard } from '../types/passive-cards'
 import { drawRandomCards, MAX_PASSIVE_CARDS, MAX_INHERITED_CARDS } from '../types/passive-cards'
 import { enemyKingdoms } from '../data/mockData'
 import { useGodGame } from '~/composables/useGodGame'
+import { useRealTimeGameTimer } from '~/composables/useRealTimeGameTimer'
 
 // 항상 표시되는 컴포넌트 (즉시 로드)
 import GameMobileResources from '~/components/game/GameMobileResources.vue'
@@ -376,17 +386,8 @@ const currentAdvisorMessage = ref<any>(null)
 // 액티브 카드 모달 상태
 const showActiveCardsModal = ref(false)
 
-// 게임 타이머 (게임 일수 기반)
-const remainingTime = computed(() => {
-  const daysLeft = Math.max(0, 42 - kingdom.value.day)
-  return {
-    days: daysLeft,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-    isExpired: daysLeft === 0
-  }
-})
+// 실시간 타이머 (현실시간 12일)
+const { remainingTime, gameStartTime, gameEndTime } = useRealTimeGameTimer()
 
 // 계명 효과 계산 (일일 변동사항)
 const commandmentEffects = computed(() => {
@@ -631,24 +632,14 @@ const {
 
 // 모험 떠나기 핸들러
 const handleRetreat = () => {
-  console.log('[handleRetreat] 모험 떠나기 - 맵과 주사위 결과 유지')
+  console.log('[handleRetreat] 모험 떠나기 - 완전히 종료하고 처음부터 시작')
 
   // 룰렛 관련 UI 숨기기
   showDiceRoulette.value = false
   showDiceProgress.value = false
 
-  // 보상의 50%만 가져감
-  const halfGold = Math.floor(adventureState.value.accumulatedRewards.gold * 0.5)
-  const halfFood = Math.floor(adventureState.value.accumulatedRewards.food * 0.5)
-
-  kingdom.value.resources.gold += halfGold
-  kingdom.value.resources.food += halfFood
-
-  showNotification(`모험 일시중지... 금 +${halfGold}, 식량 +${halfFood} (50%)`, 'info')
-
-  // active만 false로 (맵과 주사위 결과는 유지)
-  adventureState.value.active = false
-  adventureState.value.result = 'retreat'
+  // retreatAdventure 호출 (보상 50% 지급 및 상태 초기화)
+  retreatAdventure()
 }
 
 // 모험 관련 모달 상태
@@ -1067,6 +1058,35 @@ watch(
       // 시그널 초기화 (다음 이동을 위해)
       moveCompletedNodeId.value = null
     }, 100)
+  }
+)
+
+// 현실시간 12일 경과 시 세계 멸망 및 게임 리셋
+watch(
+  () => remainingTime.value.isExpired,
+  (isExpired) => {
+    if (isExpired) {
+      console.log('[게임 리셋] 현실시간 12일 경과 - 세계가 멸망합니다!')
+
+      // 알림 표시
+      showNotification('⚠️ 현실시간 12일이 경과했습니다! 세계가 멸망하여 게임이 초기화됩니다...', 'error')
+
+      // 2초 후 게임 리셋
+      setTimeout(() => {
+        if (process.client) {
+          // localStorage에서 게임 관련 데이터 제거 (환생 데이터는 유지)
+          localStorage.removeItem('gameData')
+          localStorage.removeItem('gameStartTime')
+          localStorage.removeItem('invasionTracker')
+          localStorage.removeItem('playerName')
+          localStorage.removeItem('kingdomName')
+          localStorage.removeItem('tutorialProgress')
+
+          // 스토리 페이지로 리다이렉트
+          window.location.href = '/story'
+        }
+      }, 2000)
+    }
   }
 )
 

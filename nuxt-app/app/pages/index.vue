@@ -6,7 +6,7 @@
     <header class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-[1000] px-4 py-4 flex justify-between items-center bg-slate-900/80 backdrop-blur-xl border-b border-purple-500/20">
       <div class="flex items-center gap-2">
         <span class="text-2xl drop-shadow-[0_0_10px_rgba(139,92,246,0.6)]">✨</span>
-        <span class="text-base font-black font-serif text-slate-200">갓 블레스 유</span>
+        <span class="text-base font-black font-serif text-slate-200">God Bless You</span>
       </div>
       <nav>
         <NuxtLink
@@ -105,7 +105,7 @@
 
     <!-- 푸터 -->
     <footer class="py-8 px-4 text-center text-slate-500 text-xs border-t border-purple-500/20">
-      <p>&copy; 2025 갓 블레스 유 (GBU). Made with ❤️</p>
+      <p>&copy; 2025 God Bless You (GBU). Made with ❤️</p>
     </footer>
     </div>
   </div>

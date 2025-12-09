@@ -10,10 +10,10 @@
 
       <!-- 룰렛 슬롯 머신 (컴팩트) -->
       <div class="relative bg-gradient-to-br from-amber-900 via-yellow-800 to-amber-900 border-2 sm:border-3 border-yellow-600 rounded-xl p-2 sm:p-3 shadow-lg mb-2">
-        <!-- 5개의 룰렛 슬롯 (작게) -->
+        <!-- 3개의 룰렛 슬롯 (작게) -->
         <div class="flex gap-1 sm:gap-2 justify-center">
           <div
-            v-for="(slot, index) in 5"
+            v-for="(slot, index) in 3"
             :key="index"
             class="relative bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-yellow-500 rounded-lg w-10 h-16 sm:w-14 sm:h-24 overflow-hidden shadow-md"
           >
@@ -70,7 +70,7 @@
       <!-- 상태 텍스트 -->
       <div v-if="diceResults.length > 0" class="text-center mt-2">
         <p class="text-xs sm:text-sm text-yellow-300 font-bold">
-          {{ currentIndex }} / 5 - {{ statusText }}
+          {{ currentIndex }} / 3 - {{ statusText }}
         </p>
       </div>
 
@@ -95,7 +95,7 @@
         </button>
 
         <button
-          v-if="!isRolling && currentIndex >= 5"
+          v-if="!isRolling && currentIndex >= 3"
           @click="handleRoll"
           class="group relative px-3 py-1.5 sm:px-5 sm:py-2.5 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 hover:from-purple-600 hover:via-pink-600 hover:to-purple-700 active:scale-95 rounded-lg text-white font-bold text-xs sm:text-sm shadow-lg shadow-purple-500/50 transition-all overflow-hidden"
         >
@@ -128,8 +128,8 @@ const emit = defineEmits<{
 const statusText = computed(() => {
   if (props.isRolling) return '룰렛을 돌리는 중...'
   if (props.diceResults.length === 0) return '룰렛을 돌려주세요!'
-  if (props.currentIndex >= 5) return '모든 숫자를 사용했습니다!'
-  return `남은 숫자: ${5 - props.currentIndex}개`
+  if (props.currentIndex >= 3) return '모든 숫자를 사용했습니다!'
+  return `남은 숫자: ${3 - props.currentIndex}개`
 })
 
 const handleRoll = () => {

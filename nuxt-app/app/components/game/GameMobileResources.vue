@@ -1,25 +1,44 @@
 <template>
-  <div class="fixed top-2 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-1.5 pointer-events-none w-full max-w-md px-2">
+  <div class="fixed top-0 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-1.5 pointer-events-none w-full max-w-md">
+    <!-- Header Background -->
+    <div
+      class="backdrop-blur-md border-b border-gray-700 px-2 py-2 bg-cover bg-center bg-no-repeat relative"
+      :style="{ backgroundImage: `url(${useRuntimeConfig().app.baseURL}images/background/header_back_ground.png)` }"
+    >
+    <!-- Overlay for better text visibility -->
+    <div class="absolute inset-0 bg-black/40 -z-10"></div>
     <!-- All resources in grid layout -->
     <div class="flex flex-col gap-1.5">
-      <!-- Row 1: Timer -->
-      <div class="flex justify-between gap-1.5">
-        <!-- Timer - full width -->
-        <div class="w-full pointer-events-auto">
-          <div
-            class="resource-display compact"
-            :class="timer.isExpired ? 'border-red-500' : timer.days < 7 ? 'border-yellow-500' : 'border-indigo-500'"
-          >
-            <span class="resource-icon">⏰</span>
-            <div class="resource-info">
-              <span class="resource-label">제국 정복 기한</span>
-              <span v-if="!timer.isExpired" class="resource-value text-xs">
-                {{ timer.days }}일 남음
-              </span>
-              <span v-else class="resource-value text-xs text-red-400">종료!</span>
-            </div>
-          </div>
-        </div>
+      <!-- Row 1: All Resources (Food, Gold, Soldiers, Morale) -->
+      <div class="grid grid-cols-4 gap-1 pointer-events-auto">
+        <ResourceDisplay
+          icon="🍖"
+          label="식량"
+          :value="resources.food"
+          variant="compact"
+          @show-help="$emit('show-resource-help', 'food')"
+        />
+        <ResourceDisplay
+          icon="💰"
+          label="금"
+          :value="resources.gold"
+          variant="compact"
+          @show-help="$emit('show-resource-help', 'gold')"
+        />
+        <ResourceDisplay
+          icon="⚔️"
+          label="병사"
+          :value="resources.soldiers"
+          variant="compact"
+          @show-help="$emit('show-resource-help', 'soldiers')"
+        />
+        <ResourceDisplay
+          icon="❤️"
+          label="민심"
+          :value="resources.morale"
+          variant="compact"
+          @show-help="$emit('show-resource-help', 'morale')"
+        />
       </div>
 
       <!-- Row 2: Day and Reincarnation -->
@@ -85,42 +104,7 @@
           </div>
         </div>
       </div>
-
-      <!-- Row 3: Food and Gold -->
-      <div class="flex justify-between gap-1.5">
-        <ResourceDisplay
-          icon="🍖"
-          label="식량"
-          :value="resources.food"
-          variant="compact"
-          @show-help="$emit('show-resource-help', 'food')"
-        />
-        <ResourceDisplay
-          icon="💰"
-          label="금"
-          :value="resources.gold"
-          variant="compact"
-          @show-help="$emit('show-resource-help', 'gold')"
-        />
-      </div>
-
-      <!-- Row 4: Soldiers and Morale -->
-      <div class="flex justify-between gap-1.5">
-        <ResourceDisplay
-          icon="⚔️"
-          label="병사"
-          :value="resources.soldiers"
-          variant="compact"
-          @show-help="$emit('show-resource-help', 'soldiers')"
-        />
-        <ResourceDisplay
-          icon="❤️"
-          label="민심"
-          :value="resources.morale"
-          variant="compact"
-          @show-help="$emit('show-resource-help', 'morale')"
-        />
-      </div>
+    </div>
     </div>
   </div>
 </template>
@@ -168,7 +152,7 @@ defineEmits<{
 
 // 다음 제국 침략까지 남은 일수 계산
 const daysUntilInvasion = computed(() => {
-  if (props.currentDay >= 42) return 0 // 42일 이후에는 침략 없음
+  if (props.currentDay >= 12) return 0 // 12일 이후에는 침략 없음 (세계 멸망)
   const nextInvasionDay = Math.ceil((props.currentDay + 1) / 7) * 7
   return nextInvasionDay - props.currentDay
 })

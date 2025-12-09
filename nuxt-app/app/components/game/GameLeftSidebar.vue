@@ -1,13 +1,5 @@
 <template>
   <div class="w-80 space-y-4">
-    <GameTimerCard
-      :days="timer.days"
-      :hours="timer.hours"
-      :minutes="timer.minutes"
-      :seconds="timer.seconds"
-      :is-expired="timer.isExpired"
-    />
-
     <!-- Invasion Warning -->
     <div
       v-if="invasionWarning"
@@ -50,7 +42,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import GameTimerCard from './GameTimerCard.vue'
 
 interface TimerData {
   days: number
@@ -78,7 +69,7 @@ const props = defineProps<Props>()
 
 // 다음 제국 침략까지 남은 일수 계산
 const daysUntilInvasion = computed(() => {
-  if (props.currentDay >= 42) return 0 // 42일 이후에는 침략 없음
+  if (props.currentDay >= 12) return 0 // 12일 이후에는 침략 없음 (세계 멸망)
   const nextInvasionDay = Math.ceil((props.currentDay + 1) / 7) * 7
   return nextInvasionDay - props.currentDay
 })

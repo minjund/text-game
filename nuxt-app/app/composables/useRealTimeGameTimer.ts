@@ -8,7 +8,7 @@ export interface RemainingTime {
   isExpired: boolean
 }
 
-const GAME_DURATION_DAYS = 42 // 6주
+const GAME_DURATION_DAYS = 12 // 12일 후 세계 멸망
 
 const getGameStartTime = (): Date => {
   if (process.client) {

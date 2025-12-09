@@ -1,8 +1,14 @@
 <template>
-  <div :class="['resource-display', variant, 'group relative']">
-    <span class="resource-icon">{{ icon }}</span>
-    <div class="resource-info">
-      <span class="resource-label">{{ label }}</span>
+  <div :class="['resource-display', variant, 'group relative', iconImage ? 'flex-col items-center' : '']">
+    <img
+      v-if="iconImage"
+      :src="`${useRuntimeConfig().app.baseURL}images/mark/${iconImage}`"
+      :alt="label"
+      class="resource-icon-img"
+    />
+    <span v-else class="resource-icon">{{ icon }}</span>
+    <div class="resource-info" :class="iconImage ? 'items-center' : ''">
+      <span v-if="!iconImage" class="resource-label">{{ label }}</span>
       <span class="resource-value">{{ formattedValue }}</span>
     </div>
     <button
@@ -45,6 +51,17 @@ const formattedValue = computed(() => {
   }
   return val.toLocaleString()
 })
+
+// 라벨에 따라 이미지 파일명 매핑
+const iconImage = computed(() => {
+  const imageMap: Record<string, string> = {
+    '식량': 'food.png',
+    '금': 'gold.png',
+    '민심': 'public_opinion.png',
+    '병사': 'soldier.png'
+  }
+  return imageMap[props.label] || null
+})
 </script>
 
 <style scoped>
@@ -67,6 +84,13 @@ const formattedValue = computed(() => {
 
 .resource-icon {
   font-size: 24px;
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4));
+}
+
+.resource-icon-img {
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
   filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4));
 }
 
@@ -99,6 +123,11 @@ const formattedValue = computed(() => {
 
 .resource-display.compact .resource-icon {
   font-size: 20px;
+}
+
+.resource-display.compact .resource-icon-img {
+  width: 96px;
+  height: 96px;
 }
 
 .resource-display.compact .resource-info {

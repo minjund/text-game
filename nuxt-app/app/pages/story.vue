@@ -1,29 +1,72 @@
 <template>
-  <div class="min-h-screen bg-slate-900">
-    <!-- Mobile View Container -->
-    <div class="max-w-md mx-auto bg-gradient-to-b from-slate-900 to-slate-800 min-h-screen">
-    <!-- 스토리 진행 화면 -->
-    <div v-if="gameState === 'story'" class="min-h-screen p-4">
-      <div class="w-full">
-        <!-- 텍스트 디스플레이 -->
-        <div class="bg-slate-800/80 backdrop-blur-xl border-2 border-slate-600/20 rounded-xl md:rounded-2xl p-5 sm:p-6 md:p-8 lg:p-10 mb-6 md:mb-8 min-h-[250px] md:min-h-[300px]">
-          <div
-            v-for="(text, index) in visibleTexts"
-            :key="index"
-            class="text-base sm:text-lg md:text-xl leading-relaxed mb-4 md:mb-5"
-            :class="isDialogue(text) ? 'text-slate-400 italic' : 'text-slate-200'"
-          >
-            <span v-if="index < typedLines">{{ text }}</span>
-            <span v-else-if="index === typedLines">{{ currentLineTypedText }}</span>
+  <div
+    class="min-h-screen bg-slate-900 bg-cover bg-center bg-no-repeat relative overflow-hidden"
+    :style="{ backgroundImage: `url(${useRuntimeConfig().app.baseURL}images/background/base_back_groud.png)` }"
+  >
+    <!-- Background Overlay -->
+    <div class="absolute inset-0 bg-black/40 z-0"></div>
+
+    <!-- 고정 헤더 - 계명 선택 시에만 표시 -->
+    <div
+      v-if="showCommandmentsSection && localSelectedCommandments.length > 0"
+      class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-b-2 border-amber-400/30 shadow-lg"
+    >
+      <div class="max-w-md mx-auto px-4 py-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-bold text-amber-400">선택된 계명 효과</span>
+          <span class="text-xs text-slate-400">{{ localSelectedCommandments.length }} / 5</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <div v-if="totalDailyEffects.morale !== 0" class="px-2 py-1 rounded text-xs font-semibold" :class="totalDailyEffects.morale > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+            ❤️ {{ totalDailyEffects.morale > 0 ? '+' : '' }}{{ totalDailyEffects.morale }}
+          </div>
+          <div v-if="totalDailyEffects.gold !== 0" class="px-2 py-1 rounded text-xs font-semibold" :class="totalDailyEffects.gold > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+            💰 {{ totalDailyEffects.gold > 0 ? '+' : '' }}{{ totalDailyEffects.gold }}
+          </div>
+          <div v-if="totalDailyEffects.military !== 0" class="px-2 py-1 rounded text-xs font-semibold" :class="totalDailyEffects.military > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+            ⚔️ {{ totalDailyEffects.military > 0 ? '+' : '' }}{{ totalDailyEffects.military }}
+          </div>
+          <div v-if="totalDailyEffects.food !== 0" class="px-2 py-1 rounded text-xs font-semibold" :class="totalDailyEffects.food > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+            🌾 {{ totalDailyEffects.food > 0 ? '+' : '' }}{{ totalDailyEffects.food }}
+          </div>
+          <div v-if="totalDailyEffects.population !== 0" class="px-2 py-1 rounded text-xs font-semibold" :class="totalDailyEffects.population > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+            👥 {{ totalDailyEffects.population > 0 ? '+' : '' }}{{ totalDailyEffects.population }}
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Mobile View Container -->
+    <div class="max-w-md mx-auto min-h-screen relative z-10">
+    <!-- 스토리 진행 화면 -->
+    <div v-if="gameState === 'story'" class="min-h-screen p-4" :class="{ 'pt-32': showCommandmentsSection && localSelectedCommandments.length > 0 }">
+      <div class="w-full">
+        <!-- 텍스트 디스플레이 (양피지 효과) -->
+        <Transition name="parchment-fade" mode="out-in">
+          <div
+            :key="currentChapterIndex"
+            ref="parchmentRef"
+            class="parchment-container parchment-background p-5 sm:p-6 md:p-8 lg:p-10 mb-6 md:mb-8 min-h-[250px] md:min-h-[300px] relative rounded-xl md:rounded-2xl overflow-hidden"
+          >
+            <div
+              v-for="(text, index) in visibleTexts"
+              :key="index"
+              class="parchment-content text-base sm:text-lg md:text-xl leading-relaxed mb-4 md:mb-5 relative z-10"
+              :class="isDialogue(text) ? 'text-amber-900/80 italic font-serif' : 'text-amber-950 font-serif'"
+            >
+              <span v-if="index < typedLines">{{ text }}</span>
+              <span v-else-if="index === typedLines">{{ currentLineTypedText }}</span>
+            </div>
+          </div>
+        </Transition>
 
         <!-- 선택지 버튼 (choice_intro 또는 reward 챕터에서만) -->
         <div v-if="showPathChoices" class="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-5 mt-6 md:mt-8">
           <button
             v-for="path in availablePaths"
             :key="path.id"
-            @click="selectPathFromStory(path.id)"
+            :ref="el => setPathButtonRef(el, path.id)"
+            @click="handlePathClick(path.id)"
             class="px-6 py-3 sm:px-7 sm:py-3.5 md:px-8 md:py-4 bg-slate-800/80 backdrop-blur-xl border-2 border-amber-500/50 rounded-lg md:rounded-xl text-amber-400 font-bold text-base sm:text-lg cursor-pointer transition-all hover:bg-amber-400/20 hover:border-amber-400/80 hover:shadow-[0_0_30px_rgba(251,191,36,0.4)] hover:translate-y-[-4px] active:translate-y-[-2px] flex items-center gap-2 sm:gap-2.5 w-full sm:w-auto justify-center"
           >
             {{ path.icon }} {{ path.name }}
@@ -35,7 +78,8 @@
           <button
             v-for="choice in locationChoices"
             :key="choice.id"
-            @click="selectLocationChoice(choice.id)"
+            :ref="el => setLocationButtonRef(el, choice.id)"
+            @click="handleLocationClick(choice.id)"
             class="flex flex-col items-stretch w-full sm:min-w-[250px] sm:max-w-[300px] px-4 py-4 sm:px-5 sm:py-5 gap-2 sm:gap-3 bg-slate-800/80 backdrop-blur-xl border-2 border-amber-500/50 rounded-lg md:rounded-xl text-amber-400 font-bold cursor-pointer transition-all hover:bg-amber-400/20 hover:border-amber-400/80 hover:shadow-[0_0_30px_rgba(251,191,36,0.4)] hover:translate-y-[-4px] active:translate-y-[-2px]"
           >
             <div class="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl">
@@ -75,13 +119,17 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              <div v-for="card in startCardOptions" :key="card.id"
-                   @click="toggleStartCard(card)"
-                   class="relative bg-slate-800/60 backdrop-blur-xl rounded-xl p-4 border-2 transition-all cursor-pointer"
-                   :class="{
-                     'border-amber-400 bg-amber-400/10 shadow-[0_0_30px_rgba(251,191,36,0.3)]': selectedStartCards.some(c => c.id === card.id),
-                     'border-slate-600/20 hover:border-amber-400/50': !selectedStartCards.some(c => c.id === card.id)
-                   }">
+              <div
+                v-for="card in startCardOptions"
+                :key="card.id"
+                :ref="el => setCardRef(el, card.id)"
+                @click="handleCardClick(card)"
+                class="relative bg-slate-800/60 backdrop-blur-xl rounded-xl p-4 border-2 transition-all cursor-pointer hover:scale-105 hover:shadow-xl"
+                :class="{
+                  'border-amber-400 bg-amber-400/10 shadow-[0_0_30px_rgba(251,191,36,0.3)]': selectedStartCards.some(c => c.id === card.id),
+                  'border-slate-600/20 hover:border-amber-400/50': !selectedStartCards.some(c => c.id === card.id)
+                }"
+              >
                 <div v-if="selectedStartCards.some(c => c.id === card.id)"
                      class="absolute top-2 right-2 w-6 h-6 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-black text-xs shadow-[0_2px_8px_rgba(16,185,129,0.5)]">
                   ✓
@@ -122,7 +170,7 @@
                 </button>
                 <span v-else class="text-sm text-slate-500 italic">리롤 기회 사용됨</span>
               </div>
-              <div class="h-3 bg-slate-800/80 rounded-md overflow-hidden border border-amber-400/30">
+              <div class="h-3 bg-slate-900/90 rounded-md overflow-hidden border border-amber-400/30">
                 <div class="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-[width] duration-300 shadow-[0_0_10px_rgba(251,191,36,0.6)]" :style="{ width: (localSelectedCommandments.length / 5 * 100) + '%' }"></div>
               </div>
             </div>
@@ -131,12 +179,12 @@
               <div
                   v-for="commandment in availableCommandments"
                   :key="commandment.id"
-                  class="bg-slate-800/60 backdrop-blur-xl rounded-xl p-4 border-2 transition-all relative"
+                  class="bg-slate-900/90 backdrop-blur-xl rounded-xl p-4 border-2 transition-all relative"
                   :class="{
                   'border-amber-400/80 bg-amber-400/10 shadow-[0_0_30px_rgba(251,191,36,0.3)]': isSelected(commandment),
                   'opacity-40 cursor-not-allowed': !isSelected(commandment) && localSelectedCommandments.length >= 5,
-                  'border-slate-600/20 hover:border-amber-400/50 hover:shadow-[0_4px_20px_rgba(251,191,36,0.15)]': !isSelected(commandment) && localSelectedCommandments.length < 5,
-                  'bg-slate-800/80': expandedCommandments[commandment.id]
+                  'border-slate-600/40 hover:border-amber-400/50 hover:shadow-[0_4px_20px_rgba(251,191,36,0.15)]': !isSelected(commandment) && localSelectedCommandments.length < 5,
+                  'bg-slate-900/95': expandedCommandments[commandment.id]
                 }"
               >
                 <!-- Compact Header -->
@@ -195,7 +243,7 @@
             </div>
 
             <!-- 선택한 계명의 일일 효과 합산 표시 -->
-            <div v-if="localSelectedCommandments.length > 0" class="max-w-[800px] mx-auto mb-8 p-6 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 backdrop-blur-xl border-2 border-indigo-500/50 rounded-xl">
+            <div v-if="localSelectedCommandments.length > 0" class="max-w-[800px] mx-auto mb-8 p-6 bg-gradient-to-br from-indigo-900/80 to-purple-900/80 backdrop-blur-xl border-2 border-indigo-500/50 rounded-xl">
               <h3 class="text-lg font-bold text-indigo-200 mb-4 flex items-center gap-2">
                 <span>📊</span> 매일 변화되는 수치 (합산)
               </h3>
@@ -248,15 +296,43 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted} from 'vue'
+import {ref, computed, watch, onMounted, nextTick} from 'vue'
 import { useRouter } from 'vue-router'
 import { tutorialStory, reincarnationStory } from '~/data/tutorialStory'
 import { AVAILABLE_COMMANDMENTS, type Commandment } from '~/types/god-game'
 import { type PassiveCard, PASSIVE_CARDS } from '~/types/passive-cards'
 import { useGodGame } from '~/composables/useGodGame'
+import { useParchmentUnfold, useButtonPulse } from '~/composables/useAnimations'
 
 const router = useRouter()
 const { setNationName, setSelectedCommandments, setStartCards, initializeNation } = useGodGame()
+
+// Animation refs and composables
+const parchmentRef = ref<HTMLElement>()
+const pathButtonRefs = ref<Map<string, HTMLElement>>(new Map())
+const locationButtonRefs = ref<Map<string, HTMLElement>>(new Map())
+const cardRefs = ref<Map<string, HTMLElement>>(new Map())
+const { unfold } = useParchmentUnfold()
+const { pulse, shine } = useButtonPulse()
+
+// Set button refs
+const setPathButtonRef = (el: any, pathId: string) => {
+  if (el) {
+    pathButtonRefs.value.set(pathId, el as HTMLElement)
+  }
+}
+
+const setLocationButtonRef = (el: any, choiceId: string) => {
+  if (el) {
+    locationButtonRefs.value.set(choiceId, el as HTMLElement)
+  }
+}
+
+const setCardRef = (el: any, cardId: string) => {
+  if (el) {
+    cardRefs.value.set(cardId, el as HTMLElement)
+  }
+}
 
 // 환생 데이터 불러오기
 const reincarnationCount = ref(0)
@@ -632,8 +708,14 @@ const completeTyping = () => {
 }
 
 // 챕터 변경 감지
-watch(currentChapterIndex, () => {
+watch(currentChapterIndex, async () => {
   typeText()
+
+  // 양피지 펼치기 애니메이션
+  await nextTick()
+  if (parchmentRef.value) {
+    unfold(parchmentRef.value)
+  }
 })
 
 const showNextHandle = computed(() => {
@@ -709,6 +791,19 @@ const handleNext = () => {
   }
 }
 
+// 경로 선택 버튼 클릭 핸들러 (애니메이션 추가)
+const handlePathClick = (pathId: string) => {
+  const button = pathButtonRefs.value.get(pathId)
+  if (button) {
+    pulse(button)
+    shine(button)
+  }
+
+  setTimeout(() => {
+    selectPathFromStory(pathId)
+  }, 200)
+}
+
 // 스토리 중 경로 선택
 const selectPathFromStory = async (pathId: string) => {
   // 선택한 경로 저장
@@ -741,6 +836,18 @@ const selectPathFromStory = async (pathId: string) => {
   if (chapterIndex !== undefined && chapterIndex !== -1) {
     currentChapterIndex.value = chapterIndex
   }
+}
+
+// 이벤트 선택지 버튼 클릭 핸들러 (애니메이션 추가)
+const handleLocationClick = (choiceId: string) => {
+  const button = locationButtonRefs.value.get(choiceId)
+  if (button) {
+    pulse(button)
+  }
+
+  setTimeout(() => {
+    selectLocationChoice(choiceId)
+  }, 200)
 }
 
 // 이벤트 선택지 선택 (성공/실패)
@@ -1277,6 +1384,16 @@ const rerollCommandments = () => {
   selectRandomCommandments()
 }
 
+// 카드 클릭 핸들러 (애니메이션 추가)
+const handleCardClick = (card: PassiveCard) => {
+  const cardElement = cardRefs.value.get(card.id)
+  if (cardElement) {
+    pulse(cardElement)
+  }
+
+  toggleStartCard(card)
+}
+
 // 시작 카드 선택/해제
 const toggleStartCard = (card: PassiveCard) => {
   const index = selectedStartCards.value.findIndex(c => c.id === card.id)
@@ -1375,6 +1492,30 @@ const confirmCommandments = () => {
 </script>
 
 <style scoped>
+/* 양피지 배경 이미지 */
+.parchment-background {
+  background-image: url('/images/object/parchment.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+/* 양피지 위에 약간의 오버레이 (가독성 향상) */
+.parchment-background::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 248, 230, 0.5);
+  z-index: 1;
+}
+
+/* 양피지 텍스트가 오버레이 위에 표시되도록 */
+.parchment-content {
+  position: relative;
+  z-index: 10;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

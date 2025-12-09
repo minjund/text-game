@@ -486,8 +486,25 @@ export const useAdventureSystem = (
       'success'
     )
 
-    // 모험 종료
+    // 모험 상태 초기화
     adventureState.value.active = false
+    adventureState.value.currentNodeId = null
+    adventureState.value.nodes = []
+    adventureState.value.depth = 0
+    adventureState.value.visitedNodes = []
+    adventureState.value.visibleCells = new Set<string>()
+    adventureState.value.diceResults = []
+    adventureState.value.currentDiceIndex = 0
+    adventureState.value.remainingSteps = 0
+    adventureState.value.isMoving = false
+    adventureState.value.isSelectingPath = false
+    adventureState.value.availablePaths = []
+    adventureState.value.accumulatedRewards = {
+      gold: 0,
+      food: 0,
+      soldiers: 0,
+      cards: []
+    }
   }
 
   // 모험 포기 (지금까지 획득한 보상만 가져감)
@@ -503,8 +520,25 @@ export const useAdventureSystem = (
 
     showNotification(`모험 포기... 금 +${halfGold}, 식량 +${halfFood} (50%)`, 'info')
 
-    // 모험 종료
+    // 모험 상태 초기화
     adventureState.value.active = false
+    adventureState.value.currentNodeId = null
+    adventureState.value.nodes = []
+    adventureState.value.depth = 0
+    adventureState.value.visitedNodes = []
+    adventureState.value.visibleCells = new Set<string>()
+    adventureState.value.diceResults = []
+    adventureState.value.currentDiceIndex = 0
+    adventureState.value.remainingSteps = 0
+    adventureState.value.isMoving = false
+    adventureState.value.isSelectingPath = false
+    adventureState.value.availablePaths = []
+    adventureState.value.accumulatedRewards = {
+      gold: 0,
+      food: 0,
+      soldiers: 0,
+      cards: []
+    }
   }
 
   // 모험 실패 (패배)
@@ -516,8 +550,25 @@ export const useAdventureSystem = (
 
     showNotification('모험 실패... 병력 30% 손실', 'error')
 
-    // 모험 종료
+    // 모험 상태 초기화
     adventureState.value.active = false
+    adventureState.value.currentNodeId = null
+    adventureState.value.nodes = []
+    adventureState.value.depth = 0
+    adventureState.value.visitedNodes = []
+    adventureState.value.visibleCells = new Set<string>()
+    adventureState.value.diceResults = []
+    adventureState.value.currentDiceIndex = 0
+    adventureState.value.remainingSteps = 0
+    adventureState.value.isMoving = false
+    adventureState.value.isSelectingPath = false
+    adventureState.value.availablePaths = []
+    adventureState.value.accumulatedRewards = {
+      gold: 0,
+      food: 0,
+      soldiers: 0,
+      cards: []
+    }
   }
 
   // 현재 노드 가져오기
@@ -534,10 +585,10 @@ export const useAdventureSystem = (
     )
   })
 
-  // 주사위 5개 굴리기
+  // 주사위 3개 굴리기
   const rollDice = () => {
     const results: number[] = []
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 3; i++) {
       results.push(Math.floor(Math.random() * 6) + 1) // 1-6
     }
     adventureState.value.diceResults = results

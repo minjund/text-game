@@ -1,61 +1,84 @@
 <template>
-  <div class="fixed bottom-0 left-1/2 -translate-x-1/2 bg-black/90 border-t border-gray-700 p-2 z-50 w-full max-w-md">
-    <div class="grid grid-cols-3 gap-1.5">
+  <div
+    class="fixed bottom-0 left-1/2 -translate-x-1/2 border-t border-gray-700 p-2 z-50 w-full max-w-md bg-cover bg-center bg-no-repeat relative"
+    :style="{ backgroundImage: `url(${useRuntimeConfig().app.baseURL}images/background/under_back_ground.png)` }"
+  >
+    <!-- Overlay for better button visibility -->
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="grid grid-cols-3 gap-1.5 relative z-10">
       <!-- Commandments Button -->
       <button
         @click="$emit('show-commandments')"
-        class="flex flex-col items-center justify-center bg-amber-700/80 border border-amber-600 rounded-lg p-1.5 active:bg-amber-600 transition-all"
+        class="flex items-center justify-center bg-transparent rounded-lg active:opacity-70 transition-all h-16"
       >
-        <div class="text-xl mb-0.5">✨</div>
-        <h3 class="text-[9px] font-bold">계명</h3>
+        <img
+          :src="`${useRuntimeConfig().app.baseURL}images/button/commandment.png`"
+          alt="계명"
+          class="w-full h-full object-contain"
+        />
       </button>
 
       <!-- Passive Cards Button -->
       <button
         @click="$emit('show-passive-cards')"
-        class="flex flex-col items-center justify-center bg-purple-700/80 border border-purple-600 rounded-lg p-1.5 active:bg-purple-600 transition-all"
+        class="flex items-center justify-center bg-transparent rounded-lg active:opacity-70 transition-all h-16"
       >
-        <div class="text-xl mb-0.5">🎴</div>
-        <h3 class="text-[9px] font-bold">카드</h3>
+        <img
+          :src="`${useRuntimeConfig().app.baseURL}images/button/card.png`"
+          alt="카드"
+          class="w-full h-full object-contain"
+        />
       </button>
 
       <!-- Card Deck Button -->
       <button
         @click="$emit('show-card-deck')"
-        class="flex flex-col items-center justify-center bg-orange-700/80 border border-orange-600 rounded-lg p-1.5 active:bg-orange-600 transition-all"
+        class="flex items-center justify-center bg-transparent rounded-lg active:opacity-70 transition-all h-16"
       >
-        <div class="text-xl mb-0.5">🃏</div>
-        <h3 class="text-[9px] font-bold">덱</h3>
+        <img
+          :src="`${useRuntimeConfig().app.baseURL}images/button/deck.png`"
+          alt="덱"
+          class="w-full h-full object-contain"
+        />
       </button>
 
       <!-- Card Guide Button -->
       <button
         @click="$emit('show-card-guide')"
-        class="flex flex-col items-center justify-center bg-indigo-700/80 border border-indigo-600 rounded-lg p-1.5 active:bg-indigo-600 transition-all"
+        class="flex items-center justify-center bg-transparent rounded-lg active:opacity-70 transition-all h-16"
       >
-        <div class="text-xl mb-0.5">📚</div>
-        <h3 class="text-[9px] font-bold">도감</h3>
+        <img
+          :src="`${useRuntimeConfig().app.baseURL}images/button/encyclopedia.png`"
+          alt="도감"
+          class="w-full h-full object-contain"
+        />
       </button>
 
       <!-- Adventure Button -->
       <button
         @click="$emit('start-normal-battle')"
-        class="flex flex-col items-center justify-center bg-green-700/80 border border-green-600 rounded-lg p-1.5 active:bg-green-600 transition-all"
+        class="flex items-center justify-center bg-transparent rounded-lg active:opacity-70 transition-all h-16"
       >
-        <div class="text-lg mb-0.5">⚔️</div>
-        <h3 class="text-[8px] font-bold">모험</h3>
+        <img
+          :src="`${useRuntimeConfig().app.baseURL}images/button/adventure.png`"
+          alt="모험"
+          class="w-full h-full object-contain"
+        />
       </button>
 
       <!-- Recruit Button -->
       <button
         @click="$emit('recruit-soldiers')"
-        class="flex flex-col items-center justify-center bg-gray-700/80 border border-gray-600 rounded-lg p-1.5 active:bg-gray-600 transition-all"
+        class="flex items-center justify-center bg-transparent rounded-lg active:opacity-70 transition-all h-16"
       >
-        <div class="text-xl mb-0.5">🛡️</div>
-        <h3 class="text-[9px] font-bold">모집</h3>
+        <img
+          :src="`${useRuntimeConfig().app.baseURL}images/button/recruitment.png`"
+          alt="모집"
+          class="w-full h-full object-contain"
+        />
       </button>
     </div>
-  </div>
+    </div>
 </template>
 
 <script setup lang="ts">
