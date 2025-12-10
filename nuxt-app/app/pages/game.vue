@@ -51,7 +51,7 @@
     <GameMobileActions
       v-if="!adventureState?.active"
       :unlocked-features="tutorialState?.unlockedFeatures || []"
-      @show-commandments="showCommandments = true"
+      @show-battle-history="showBattleHistory = true"
       @show-passive-cards="showPassiveCardsCollection = true"
       @show-card-deck="showCardDeckModal = true"
       @show-card-guide="showCardCollection = true"
@@ -156,6 +156,13 @@
       :show="showCommandments"
       :commandments="godGameState?.selectedCommandments || []"
       @close="showCommandments = false"
+    />
+
+    <!-- Battle History Modal -->
+    <GameBattleHistoryModal
+      :show="showBattleHistory"
+      :battles="battleHistory"
+      @close="showBattleHistory = false"
     />
 
     <!-- Advisor Modal (Tutorial) -->
@@ -326,6 +333,7 @@ const GameReincarnationModal = defineAsyncComponent(() => import('~/components/g
 const GamePassiveCardsModal = defineAsyncComponent(() => import('~/components/game/GamePassiveCardsModal.vue'))
 const GameCardCollection = defineAsyncComponent(() => import('~/components/game/GameCardCollection.vue'))
 const GameCommandmentsModal = defineAsyncComponent(() => import('~/components/game/GameCommandmentsModal.vue'))
+const GameBattleHistoryModal = defineAsyncComponent(() => import('~/components/game/GameBattleHistoryModal.vue'))
 const GameAdvisorModal = defineAsyncComponent(() => import('~/components/game/GameAdvisorModal.vue'))
 const GameSynergyCardSelection = defineAsyncComponent(() => import('~/components/game/GameSynergyCardSelection.vue'))
 const GameSynergyCollection = defineAsyncComponent(() => import('~/components/game/GameSynergyCollection.vue'))
@@ -354,10 +362,14 @@ import { useSynergyCards } from '~/composables/useSynergyCards'
 import { useAdventureSystem } from '~/composables/useAdventureSystem'
 import { useActiveCards } from '~/composables/useActiveCards'
 import { useCardDeck } from '~/composables/useCardDeck'
+import { useBGM } from '~/composables/useBGM'
 import { convertPassiveCardsToActiveCards } from '~/utils/cardConverter'
 
 // 신 게임 상태 가져오기
 const { nationState: godGameState, startCards: godStartCards } = useGodGame()
+
+// BGM 관리
+const { playBGM, stopBGM } = useBGM()
 
 // 영구 효과
 const permanentEffects = ref<PermanentEffect[]>([])
@@ -524,6 +536,56 @@ const availableDailyCards = ref<PassiveCard[]>([])
 // 신의 계명 모달
 const showCommandments = ref(false)
 
+// 전투 히스토리 모달
+const showBattleHistory = ref(false)
+
+// 전투 히스토리 데이터
+interface BattleRecord {
+  timestamp: number
+  result: 'victory' | 'defeat'
+  enemyName: string
+  battleType: string
+  day: number
+  score?: {
+    player: number
+    enemy: number
+  }
+}
+
+const battleHistory = ref<BattleRecord[]>([])
+
+// localStorage에서 전투 히스토리 로드
+const loadBattleHistory = () => {
+  if (process.client) {
+    const saved = localStorage.getItem('battleHistory')
+    if (saved) {
+      try {
+        battleHistory.value = JSON.parse(saved)
+      } catch (e) {
+        console.error('Failed to load battle history:', e)
+        battleHistory.value = []
+      }
+    }
+  }
+}
+
+// localStorage에 전투 히스토리 저장
+const saveBattleHistory = () => {
+  if (process.client) {
+    localStorage.setItem('battleHistory', JSON.stringify(battleHistory.value))
+  }
+}
+
+// 전투 기록 추가
+const addBattleRecord = (record: BattleRecord) => {
+  battleHistory.value.push(record)
+  // 최대 100개 기록만 유지
+  if (battleHistory.value.length > 100) {
+    battleHistory.value = battleHistory.value.slice(-100)
+  }
+  saveBattleHistory()
+}
+
 // 튜토리얼 모달 (0일차)
 const showTutorial = ref(false)
 
@@ -634,6 +696,9 @@ const {
 const handleRetreat = () => {
   console.log('[handleRetreat] 모험 떠나기 - 완전히 종료하고 처음부터 시작')
 
+  // 기본 BGM으로 전환
+  playBGM('base', { loop: true, volume: 0.3 })
+
   // 룰렛 관련 UI 숨기기
   showDiceRoulette.value = false
   showDiceProgress.value = false
@@ -693,6 +758,9 @@ const handlePathSelect = (nodeId: string) => {
 
 // 모험 시작 핸들러
 const handleStartAdventure = () => {
+  // 모험 BGM 재생
+  playBGM('adventure', { loop: true, volume: 0.3 })
+
   // 이미 맵이 있으면 재개, 없으면 새로 시작
   if (adventureState.value.nodes.length > 0) {
     console.log('[handleStartAdventure] 기존 맵 재개')
@@ -856,8 +924,31 @@ const closeBattle = () => {
   const battleResult = currentBattle.value?.result
   const battleMode = currentBattleMode.value
 
+  // 전투 기록 저장
+  if (currentBattle.value && battleResult) {
+    const record: BattleRecord = {
+      timestamp: Date.now(),
+      result: battleResult,
+      enemyName: currentBattle.value.defender.kingdomName,
+      battleType: battleMode || 'pve',
+      day: kingdom.value.day,
+      score: {
+        player: attackerScore.value,
+        enemy: defenderScore.value
+      }
+    }
+    addBattleRecord(record)
+  }
+
   // 기존 closeBattle 로직 실행
   closeBattleInternal()
+
+  // BGM 복원: 모험 중이면 adventure BGM, 아니면 base BGM
+  if (adventureState?.value?.active) {
+    playBGM('adventure', { loop: true, volume: 0.3 })
+  } else {
+    playBGM('base', { loop: true, volume: 0.3 })
+  }
 
   // 모험 모드인 경우 (보스 전투 포함)
   if (adventureState?.value?.active) {
@@ -1914,13 +2005,13 @@ const handleBattleTutorialPause = (isPausedTutorial: boolean) => {
 }
 // ==================== 튜토리얼 스토리 끝 ====================
 
-// ==================== BGM 관리 ====================
-const bgmAudio = ref<HTMLAudioElement | null>(null)
-
 onMounted(() => {
   if (process.client) {
     // 카드 덱 로드
     loadDeck()
+
+    // 전투 히스토리 로드
+    loadBattleHistory()
 
     // 디버깅: tutorialState 확인
     console.log('📘 Tutorial State:', {
@@ -1938,35 +2029,14 @@ onMounted(() => {
       console.log('🎯 showTutorial set to:', showTutorial.value)
     }, 500)
 
-    // BGM 로드 및 재생
-    const config = useRuntimeConfig();
-    bgmAudio.value = new Audio(config.app.baseURL + '/bgm/baseBgm.mp3');
-    bgmAudio.value.loop = true // 반복 재생
-    bgmAudio.value.volume = 0.3 // 볼륨 30% (0.0 ~ 1.0)
-
-    // 재생 시도
-    bgmAudio.value.play().catch(error => {
-      console.log('BGM 자동 재생 실패 (사용자 상호작용 필요):', error)
-      // 브라우저 자동재생 정책으로 인해 첫 클릭 시 재생하도록 이벤트 리스너 추가
-      const playBgmOnInteraction = () => {
-        if (bgmAudio.value) {
-          bgmAudio.value.play().catch(e => console.log('BGM 재생 오류:', e))
-        }
-        document.removeEventListener('click', playBgmOnInteraction)
-      }
-      document.addEventListener('click', playBgmOnInteraction, { once: true })
-    })
+    // 기본 BGM 재생
+    playBGM('base', { loop: true, volume: 0.3 })
   }
 })
 
 onUnmounted(() => {
-  // 컴포넌트 언마운트 시 BGM 정지 및 정리
-  if (bgmAudio.value) {
-    bgmAudio.value.pause()
-    bgmAudio.value.currentTime = 0
-    bgmAudio.value = null
-  }
+  // 컴포넌트 언마운트 시 BGM 정지
+  stopBGM()
 })
-// ==================== BGM 관리 끝 ====================
 
 </script>

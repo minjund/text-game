@@ -205,6 +205,10 @@ import { ref, computed, watch, onMounted } from 'vue'
 import type { Battle } from '~/types/game'
 import type { ActiveCard } from '~/types/active-cards'
 import { useTutorial } from '~/composables/useTutorial'
+import { useBGM } from '~/composables/useBGM'
+
+// BGM 관리
+const { playBGM } = useBGM()
 
 // 튜토리얼 시스템
 const { tutorialState, completeBattleTutorial } = useTutorial()
@@ -368,8 +372,14 @@ const getCardGlowClass = (card: ActiveCard) => {
 const battleLogContainer = ref<HTMLElement | null>(null)
 
 // 전투 모달이 열릴 때 튜토리얼 체크
-watch(() => props.battle, (newBattle) => {
-  if (newBattle && process.client) {
+watch(() => props.battle, (newBattle, oldBattle) => {
+  // 전투가 새로 시작될 때만 실행 (null -> Battle 객체로 변경될 때)
+  if (newBattle && !oldBattle && process.client) {
+    console.log('[GameBattleModal] Battle started, playing battle BGM')
+
+    // 전투 BGM 재생
+    playBGM('battle', { loop: true, volume: 0.3 })
+
     // 튜토리얼을 한 번도 본 적이 없으면 표시 (처음 전투 진입 시 한 번만)
     if (!tutorialState.value?.hasSeenBattleTutorial) {
       // 즉시 전투 일시정지 (튜토리얼 표시 전에 전투가 진행되지 않도록)

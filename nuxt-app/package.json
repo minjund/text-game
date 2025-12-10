@@ -8,7 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "deploy": "gh-pages -d .output/public -t"
+    "deploy": "rm -rf node_modules/.cache/gh-pages && gh-pages -d .output/public"
   },
   "dependencies": {
     "@formkit/auto-animate": "^0.9.0",

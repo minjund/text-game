@@ -120,7 +120,26 @@ export default defineNuxtConfig({
     },
     workbox: {
       navigateFallback: '/text-game/',
-      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+      globPatterns: ['**/*.{js,css,html,svg,ico}'],
+      // 큰 이미지 파일과 비디오는 런타임 캐싱으로 처리
+      globIgnores: ['**/images/**/*.png', '**/images/**/*.jpg', '**/images/**/*.mp4'],
+      maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB로 증가
+      runtimeCaching: [
+        {
+          urlPattern: /^https:\/\/.*\/images\/.*/i,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'images-cache',
+            expiration: {
+              maxEntries: 100,
+              maxAgeSeconds: 60 * 60 * 24 * 30, // 30일
+            },
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
+          },
+        },
+      ],
     },
     devOptions: {
       enabled: true,

@@ -2,13 +2,13 @@
   <div class="fixed top-0 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-1.5 pointer-events-none w-full max-w-md">
     <!-- Header Background -->
     <div
-      class="backdrop-blur-md border-b border-gray-700 px-2 py-2 bg-cover bg-center bg-no-repeat relative"
+      class="backdrop-blur-md border-b border-gray-700 px-2 py-2 bg-cover bg-center bg-no-repeat relative min-h-[120px]"
       :style="{ backgroundImage: `url(${useRuntimeConfig().app.baseURL}images/background/header_back_ground.png)` }"
     >
     <!-- Overlay for better text visibility -->
-    <div class="absolute inset-0 bg-black/40 -z-10"></div>
+    <div class="absolute inset-0 bg-black/60"></div>
     <!-- All resources in grid layout -->
-    <div class="flex flex-col gap-1.5">
+    <div class="flex flex-col gap-1.5 relative z-10">
       <!-- Row 1: All Resources (Food, Gold, Soldiers, Morale) -->
       <div class="grid grid-cols-4 gap-1 pointer-events-auto">
         <ResourceDisplay

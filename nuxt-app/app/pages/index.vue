@@ -1,7 +1,31 @@
 <template>
   <div class="min-h-screen bg-slate-900">
-    <!-- Mobile View Container -->
-    <div class="max-w-md mx-auto bg-gradient-to-b from-slate-900 to-slate-800 min-h-screen">
+    <!-- Opening Video -->
+    <div v-if="showOpening"
+         class="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden">
+      <!-- 블러 배경 (여백 채우기) -->
+      <video
+        ref="backgroundVideo"
+        autoplay
+        muted
+        playsinline
+        class="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-60"
+        :src="`${useRuntimeConfig().app.baseURL}images/animation/opening.mp4`"
+      ></video>
+
+      <!-- 메인 동영상 (전체 표시) -->
+      <video
+        ref="openingVideo"
+        autoplay
+        playsinline
+        class="relative z-10 w-full h-full object-contain"
+        style="transform: translateY(-8%) scale(1.1);"
+        :src="`${useRuntimeConfig().app.baseURL}images/animation/opening.mp4`"
+      ></video>
+    </div>
+
+    <!-- Mobile View Container (only show if not showing opening) -->
+    <div v-else class="max-w-md mx-auto bg-gradient-to-b from-slate-900 to-slate-800 min-h-screen">
     <!-- 헤더 -->
     <header class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-[1000] px-4 py-4 flex justify-between items-center bg-slate-900/80 backdrop-blur-xl border-b border-purple-500/20">
       <div class="flex items-center gap-2">
@@ -112,7 +136,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+
+// Opening 영상 관리
+const showOpening = ref(true)
+const openingVideo = ref<HTMLVideoElement | null>(null)
+const backgroundVideo = ref<HTMLVideoElement | null>(null)
+const openingTimer = ref<NodeJS.Timeout | null>(null)
 
 // 애니메이션 숫자
 const animatedPlayers = ref(0)
@@ -122,6 +152,19 @@ const animatedBattles = ref(0)
 const targetPlayers = 1247
 const targetKingdoms = 892
 const targetBattles = 15634
+
+// BGM 관리
+const { playBGM } = useBGM()
+
+// Opening 종료 후 스토리로 이동
+const skipOpening = () => {
+  if (openingTimer.value) {
+    clearTimeout(openingTimer.value)
+    openingTimer.value = null
+  }
+  // 바로 스토리 페이지로 이동 (index 페이지 안 보이도록)
+  navigateTo('/story')
+}
 
 // 숫자 애니메이션
 const animateNumber = (from: number, to: number, duration: number, callback: (val: number) => void) => {
@@ -138,9 +181,39 @@ const animateNumber = (from: number, to: number, duration: number, callback: (va
 }
 
 onMounted(() => {
+  // 8초 후 자동으로 스토리 페이지로 이동
+  openingTimer.value = setTimeout(() => {
+    skipOpening()
+  }, 8000)
+
+  // Opening 비디오 볼륨 설정 및 재생 처리
+  if (openingVideo.value) {
+    openingVideo.value.volume = 0.5 // 볼륨 50%
+
+    // 자동재생 실패 시 사용자 클릭으로 재생
+    openingVideo.value.play().catch(error => {
+      console.log('Opening video autoplay prevented:', error)
+      console.log('Click to play video with sound')
+    })
+  }
+
   animateNumber(0, targetPlayers, 2000, (val) => animatedPlayers.value = val)
   animateNumber(0, targetKingdoms, 2200, (val) => animatedKingdoms.value = val)
   animateNumber(0, targetBattles, 2400, (val) => animatedBattles.value = val)
+
+  // 메인 BGM 재생 (opening 후)
+  setTimeout(() => {
+    if (!showOpening.value) {
+      playBGM('main', { loop: true, volume: 0.3 })
+    }
+  }, 8100)
+})
+
+onUnmounted(() => {
+  if (openingTimer.value) {
+    clearTimeout(openingTimer.value)
+    openingTimer.value = null
+  }
 })
 </script>
 
