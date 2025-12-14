@@ -9,12 +9,13 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-6">
-        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2 relative group">
+      <div class="flex items-center gap-4">
+        <!-- Food -->
+        <div class="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm border-2 border-green-500 rounded-lg px-4 py-2 relative group transition-all hover:shadow-lg hover:shadow-green-500/20">
           <span class="text-2xl">🍖</span>
           <div>
-            <p class="text-xs text-slate-400">식량</p>
-            <p class="text-lg font-bold">{{ resources.food }}</p>
+            <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">식량</p>
+            <p class="text-lg font-bold text-slate-100">{{ resources.food }}</p>
           </div>
           <button
             @click="$emit('show-resource-help', 'food')"
@@ -24,11 +25,13 @@
             ?
           </button>
         </div>
-        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2 relative group">
+
+        <!-- Gold -->
+        <div class="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm border-2 border-yellow-500 rounded-lg px-4 py-2 relative group transition-all hover:shadow-lg hover:shadow-yellow-500/20">
           <span class="text-2xl">💰</span>
           <div>
-            <p class="text-xs text-slate-400">금화</p>
-            <p class="text-lg font-bold">{{ resources.gold }}</p>
+            <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">금화</p>
+            <p class="text-lg font-bold text-slate-100">{{ resources.gold }}</p>
           </div>
           <button
             @click="$emit('show-resource-help', 'gold')"
@@ -38,11 +41,13 @@
             ?
           </button>
         </div>
-        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2 relative group">
+
+        <!-- Soldiers -->
+        <div class="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm border-2 border-red-500 rounded-lg px-4 py-2 relative group transition-all hover:shadow-lg hover:shadow-red-500/20">
           <span class="text-2xl">⚔️</span>
           <div>
-            <p class="text-xs text-slate-400">병사</p>
-            <p class="text-lg font-bold">{{ resources.soldiers }}</p>
+            <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">병사</p>
+            <p class="text-lg font-bold text-slate-100">{{ resources.soldiers }}</p>
           </div>
           <button
             @click="$emit('show-resource-help', 'soldiers')"
@@ -52,11 +57,13 @@
             ?
           </button>
         </div>
-        <div class="flex items-center gap-2 bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-2 relative group">
+
+        <!-- Morale -->
+        <div class="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm border-2 border-pink-500 rounded-lg px-4 py-2 relative group transition-all hover:shadow-lg hover:shadow-pink-500/20">
           <span class="text-2xl">❤️</span>
           <div>
-            <p class="text-xs text-slate-400">사기</p>
-            <p class="text-lg font-bold">{{ resources.morale }}</p>
+            <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">민심</p>
+            <p class="text-lg font-bold text-slate-100">{{ resources.morale }}</p>
           </div>
           <button
             @click="$emit('show-resource-help', 'morale')"

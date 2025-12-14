@@ -5,7 +5,8 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
+    "generate": "nuxt generate && npm run postgenerate",
+    "postgenerate": "cp .output/public/200.html .output/public/index.html && cp .output/public/200.html .output/public/404.html",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "deploy": "rm -rf node_modules/.cache/gh-pages && gh-pages -d .output/public"

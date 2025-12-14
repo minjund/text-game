@@ -11,34 +11,41 @@
     <div class="flex flex-col gap-1.5 relative z-10">
       <!-- Row 1: All Resources (Food, Gold, Soldiers, Morale) -->
       <div class="grid grid-cols-4 gap-1 pointer-events-auto">
-        <ResourceDisplay
-          icon="🍖"
-          label="식량"
-          :value="resources.food"
-          variant="compact"
-          @show-help="$emit('show-resource-help', 'food')"
-        />
-        <ResourceDisplay
-          icon="💰"
-          label="금"
-          :value="resources.gold"
-          variant="compact"
-          @show-help="$emit('show-resource-help', 'gold')"
-        />
-        <ResourceDisplay
-          icon="⚔️"
-          label="병사"
-          :value="resources.soldiers"
-          variant="compact"
-          @show-help="$emit('show-resource-help', 'soldiers')"
-        />
-        <ResourceDisplay
-          icon="❤️"
-          label="민심"
-          :value="resources.morale"
-          variant="compact"
-          @show-help="$emit('show-resource-help', 'morale')"
-        />
+        <!-- Food -->
+        <div class="resource-display compact border-green-500">
+          <span class="resource-icon">🍖</span>
+          <div class="resource-info">
+            <span class="resource-label">식량</span>
+            <span class="resource-value">{{ resources.food }}</span>
+          </div>
+        </div>
+
+        <!-- Gold -->
+        <div class="resource-display compact border-yellow-500">
+          <span class="resource-icon">💰</span>
+          <div class="resource-info">
+            <span class="resource-label">금</span>
+            <span class="resource-value">{{ resources.gold }}</span>
+          </div>
+        </div>
+
+        <!-- Soldiers -->
+        <div class="resource-display compact border-red-500">
+          <span class="resource-icon">⚔️</span>
+          <div class="resource-info">
+            <span class="resource-label">병사</span>
+            <span class="resource-value">{{ resources.soldiers }}</span>
+          </div>
+        </div>
+
+        <!-- Morale -->
+        <div class="resource-display compact border-pink-500">
+          <span class="resource-icon">❤️</span>
+          <div class="resource-info">
+            <span class="resource-label">민심</span>
+            <span class="resource-value">{{ resources.morale }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- Row 2: Day and Reincarnation -->
@@ -111,7 +118,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import ResourceDisplay from '~/components/game/ResourceDisplay.vue'
 import type { Resources } from '~/composables/useGameResources'
 
 interface TimerData {

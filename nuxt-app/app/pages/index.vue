@@ -17,6 +17,7 @@
       <video
         ref="openingVideo"
         autoplay
+        muted
         playsinline
         class="relative z-10 w-full h-full object-contain"
         style="transform: translateY(-8%) scale(1.1);"
@@ -186,14 +187,17 @@ onMounted(() => {
     skipOpening()
   }, 8000)
 
-  // Opening 비디오 볼륨 설정 및 재생 처리
+  // Opening 비디오 재생 처리
   if (openingVideo.value) {
-    openingVideo.value.volume = 0.5 // 볼륨 50%
-
-    // 자동재생 실패 시 사용자 클릭으로 재생
+    // 자동재생 실패 시 재시도
     openingVideo.value.play().catch(error => {
       console.log('Opening video autoplay prevented:', error)
-      console.log('Click to play video with sound')
+      // 사용자가 페이지를 클릭하면 재생 시도
+      const playOnInteraction = () => {
+        openingVideo.value?.play()
+        document.removeEventListener('click', playOnInteraction)
+      }
+      document.addEventListener('click', playOnInteraction)
     })
   }
 

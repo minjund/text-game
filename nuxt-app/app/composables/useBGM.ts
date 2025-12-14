@@ -1,19 +1,22 @@
 import { ref } from 'vue'
 
-type BGMType = 'main' | 'adventure' | 'battle' | 'base'
+type BGMType = 'main' | 'adventure' | 'battle' | 'base' | 'story'
 
 // Singleton pattern: ref를 함수 외부에 선언하여 모든 컴포넌트가 같은 인스턴스 공유
 const currentBGM = ref<HTMLAudioElement | null>(null)
 const currentType = ref<BGMType | null>(null)
 
 const bgmFiles: Record<BGMType, string> = {
-  main: '/bgm/main_song.mp3',
-  adventure: '/bgm/adventure_song.mp3',
-  battle: '/bgm/battle_song.mp3',
-  base: '/bgm/baseBgm.mp3'
+  main: 'bgm/main_song1.mp3',
+  adventure: 'bgm/adventure_song.mp3',
+  battle: 'bgm/battle_song.mp3',
+  base: 'bgm/baseBgm.mp3',
+  story: 'bgm/story_song.mp3'
 }
 
 export const useBGM = () => {
+  // useRuntimeConfig는 composable 내부에서 호출해야 함
+  const config = useRuntimeConfig()
 
   const playBGM = (type: BGMType, options: { loop?: boolean; volume?: number } = {}) => {
     if (!process.client) return
@@ -38,8 +41,10 @@ export const useBGM = () => {
       currentBGM.value = null
     }
 
-    // Create and play new BGM
-    const audio = new Audio(bgmFiles[type])
+    // Create and play new BGM - baseURL과 파일 경로 결합
+    const bgmPath = `${config.app.baseURL}${bgmFiles[type]}`
+    console.log(`[BGM] Loading from path: ${bgmPath}`)
+    const audio = new Audio(bgmPath)
     audio.loop = options.loop ?? true
     audio.volume = options.volume ?? 0.3
 

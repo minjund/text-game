@@ -1,7 +1,7 @@
 <template>
   <div
     class="min-h-screen bg-slate-900 bg-cover bg-center bg-no-repeat relative overflow-hidden"
-    :style="{ backgroundImage: `url(${useRuntimeConfig().app.baseURL}images/background/base_back_groud.png)` }"
+    :style="{ backgroundImage: `url(${useRuntimeConfig().app.baseURL}images/background/story_background.png)` }"
   >
     <!-- Background Overlay -->
     <div class="absolute inset-0 bg-black/40 z-0"></div>
@@ -9,28 +9,28 @@
     <!-- 고정 헤더 - 계명 선택 시에만 표시 -->
     <div
       v-if="showCommandmentsSection && localSelectedCommandments.length > 0"
-      class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-b-2 border-amber-400/30 shadow-lg"
+      class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-b-2 border-amber-400/50 shadow-[0_4px_20px_rgba(251,191,36,0.3)]"
     >
       <div class="max-w-md mx-auto px-4 py-3">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-bold text-amber-400">선택된 계명 효과</span>
-          <span class="text-xs text-slate-400">{{ localSelectedCommandments.length }} / 5</span>
+          <span class="text-sm font-bold text-amber-300 font-cinzel drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">선택된 계명 효과</span>
+          <span class="text-xs text-amber-400/80 font-semibold">{{ localSelectedCommandments.length }} / 5</span>
         </div>
         <div class="flex flex-wrap gap-2">
-          <div v-if="totalDailyEffects.morale !== 0" class="px-2 py-1 rounded text-xs font-semibold" :class="totalDailyEffects.morale > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
-            ❤️ {{ totalDailyEffects.morale > 0 ? '+' : '' }}{{ totalDailyEffects.morale }}
+          <div v-if="totalDailyEffects.morale !== 0" class="px-2 py-1 rounded text-xs font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" :class="totalDailyEffects.morale > 0 ? 'bg-amber-500/30 text-amber-100 border border-amber-400/50' : 'bg-red-600/30 text-red-200 border border-red-500/50'">
+            민심 {{ totalDailyEffects.morale > 0 ? '+' : '' }}{{ totalDailyEffects.morale }}
           </div>
-          <div v-if="totalDailyEffects.gold !== 0" class="px-2 py-1 rounded text-xs font-semibold" :class="totalDailyEffects.gold > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
-            💰 {{ totalDailyEffects.gold > 0 ? '+' : '' }}{{ totalDailyEffects.gold }}
+          <div v-if="totalDailyEffects.gold !== 0" class="px-2 py-1 rounded text-xs font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" :class="totalDailyEffects.gold > 0 ? 'bg-amber-500/30 text-amber-100 border border-amber-400/50' : 'bg-red-600/30 text-red-200 border border-red-500/50'">
+            금 {{ totalDailyEffects.gold > 0 ? '+' : '' }}{{ totalDailyEffects.gold }}
           </div>
-          <div v-if="totalDailyEffects.military !== 0" class="px-2 py-1 rounded text-xs font-semibold" :class="totalDailyEffects.military > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
-            ⚔️ {{ totalDailyEffects.military > 0 ? '+' : '' }}{{ totalDailyEffects.military }}
+          <div v-if="totalDailyEffects.military !== 0" class="px-2 py-1 rounded text-xs font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" :class="totalDailyEffects.military > 0 ? 'bg-amber-500/30 text-amber-100 border border-amber-400/50' : 'bg-red-600/30 text-red-200 border border-red-500/50'">
+            병력 {{ totalDailyEffects.military > 0 ? '+' : '' }}{{ totalDailyEffects.military }}
           </div>
-          <div v-if="totalDailyEffects.food !== 0" class="px-2 py-1 rounded text-xs font-semibold" :class="totalDailyEffects.food > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
-            🌾 {{ totalDailyEffects.food > 0 ? '+' : '' }}{{ totalDailyEffects.food }}
+          <div v-if="totalDailyEffects.food !== 0" class="px-2 py-1 rounded text-xs font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" :class="totalDailyEffects.food > 0 ? 'bg-amber-500/30 text-amber-100 border border-amber-400/50' : 'bg-red-600/30 text-red-200 border border-red-500/50'">
+            식량 {{ totalDailyEffects.food > 0 ? '+' : '' }}{{ totalDailyEffects.food }}
           </div>
-          <div v-if="totalDailyEffects.population !== 0" class="px-2 py-1 rounded text-xs font-semibold" :class="totalDailyEffects.population > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
-            👥 {{ totalDailyEffects.population > 0 ? '+' : '' }}{{ totalDailyEffects.population }}
+          <div v-if="totalDailyEffects.population !== 0" class="px-2 py-1 rounded text-xs font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" :class="totalDailyEffects.population > 0 ? 'bg-amber-500/30 text-amber-100 border border-amber-400/50' : 'bg-red-600/30 text-red-200 border border-red-500/50'">
+            인구 {{ totalDailyEffects.population > 0 ? '+' : '' }}{{ totalDailyEffects.population }}
           </div>
         </div>
       </div>
@@ -42,23 +42,20 @@
     <div v-if="gameState === 'story'" class="min-h-screen p-4" :class="{ 'pt-32': showCommandmentsSection && localSelectedCommandments.length > 0 }">
       <div class="w-full">
         <!-- 텍스트 디스플레이 (양피지 효과) -->
-        <Transition name="parchment-fade" mode="out-in">
+        <div
+          ref="parchmentRef"
+          class="parchment-container parchment-background p-5 sm:p-6 md:p-8 lg:p-10 mb-6 md:mb-8 min-h-[250px] md:min-h-[300px] relative rounded-xl md:rounded-2xl overflow-hidden"
+        >
           <div
-            :key="currentChapterIndex"
-            ref="parchmentRef"
-            class="parchment-container parchment-background p-5 sm:p-6 md:p-8 lg:p-10 mb-6 md:mb-8 min-h-[250px] md:min-h-[300px] relative rounded-xl md:rounded-2xl overflow-hidden"
+            v-for="(text, index) in visibleTexts"
+            :key="index"
+            class="parchment-content text-base sm:text-lg md:text-xl leading-relaxed mb-4 md:mb-5 relative z-10"
+            :class="isDialogue(text) ? 'text-amber-900/80 italic font-serif' : 'text-amber-950 font-serif'"
           >
-            <div
-              v-for="(text, index) in visibleTexts"
-              :key="index"
-              class="parchment-content text-base sm:text-lg md:text-xl leading-relaxed mb-4 md:mb-5 relative z-10"
-              :class="isDialogue(text) ? 'text-amber-900/80 italic font-serif' : 'text-amber-950 font-serif'"
-            >
-              <span v-if="index < typedLines">{{ text }}</span>
-              <span v-else-if="index === typedLines">{{ currentLineTypedText }}</span>
-            </div>
+            <span v-if="index < typedLines">{{ text }}</span>
+            <span v-else-if="index === typedLines">{{ currentLineTypedText }}</span>
           </div>
-        </Transition>
+        </div>
 
         <!-- 선택지 버튼 (choice_intro 또는 reward 챕터에서만) -->
         <div v-if="showPathChoices" class="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-5 mt-6 md:mt-8">
@@ -102,10 +99,14 @@
           <div class="flex justify-center">
             <button
               @click="confirmNationName"
-              class="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-3.5 md:px-12 md:py-4 bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 rounded-lg md:rounded-xl font-bold text-base sm:text-lg hover:translate-y-[-2px] hover:shadow-[0_8px_20px_rgba(251,191,36,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:translate-y-[-1px]"
+              class="relative cursor-pointer transition-all hover:translate-y-[-4px] hover:drop-shadow-[0_8px_20px_rgba(251,191,36,0.6)] active:translate-y-[-2px] disabled:opacity-50 disabled:cursor-not-allowed"
               :disabled="!localNationName.trim()"
             >
-              확정하기
+              <img
+                :src="`${useRuntimeConfig().app.baseURL}images/button/confirmed.png`"
+                alt="확정하기"
+                class="w-auto h-48 sm:h-56 md:h-64 object-contain"
+              />
             </button>
           </div>
         </div>
@@ -145,33 +146,36 @@
 
             <div class="text-center">
               <button @click="confirmStartCards"
-                      class="px-12 py-4 bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 rounded-xl font-bold text-lg hover:translate-y-[-2px] hover:shadow-[0_8px_20px_rgba(251,191,36,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      class="relative cursor-pointer transition-all hover:translate-y-[-4px] hover:drop-shadow-[0_8px_20px_rgba(251,191,36,0.6)] active:translate-y-[-2px] disabled:opacity-50 disabled:cursor-not-allowed"
                       :disabled="selectedStartCards.length !== 3">
-                <span class="mr-2">✨</span>
-                카드 선택 완료 ({{ selectedStartCards.length }}/3)
+                <img
+                  :src="`${useRuntimeConfig().app.baseURL}images/button/confirmed.png`"
+                  alt="확정하기"
+                  class="w-auto h-48 sm:h-56 md:h-64 object-contain"
+                />
               </button>
             </div>
           </div>
         </div>
 
         <!-- 5계명 선택 영역 (commandments 챕터에 도달했을 때만 표시) -->
-        <div v-else-if="showCommandmentsSection && showNextHandle" ref="commandmentsSection" class="mt-12 sm:mt-16 md:mt-20 pt-8 sm:pt-10 border-t-2 border-amber-400/30">
+        <div v-else-if="showCommandmentsSection && showNextHandle" ref="commandmentsSection" class="mt-12 sm:mt-16 md:mt-20 pt-8 sm:pt-10 border-t-2 border-amber-400/50 shadow-[0_-2px_20px_rgba(251,191,36,0.2)]">
           <div class="max-w-[1600px] mx-auto">
             <div class="max-w-[800px] mx-auto mb-10">
               <div class="flex justify-between items-center mb-2.5 gap-5 flex-col md:flex-row md:items-center">
-                <span class="text-base font-semibold text-slate-300">선택된 계명: {{ localSelectedCommandments.length }} / 5 </span>
-                <span class="text-base font-semibold text-slate-300">(선택에 따라 게임의 이벤트가 다르게 발생합니다.)</span>
+                <span class="text-base font-bold text-amber-200 font-cinzel drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">선택된 계명: {{ localSelectedCommandments.length }} / 5 </span>
+                <span class="text-base font-semibold text-amber-300/80 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">(선택에 따라 게임의 이벤트가 다르게 발생합니다.)</span>
                 <button
                     v-if="rerollCount < maxRerolls"
                     @click="rerollCommandments"
                     class="px-4 py-2 bg-gradient-to-br from-violet-600 to-indigo-600 border-2 border-violet-600/50 rounded-lg text-white font-semibold text-sm cursor-pointer transition-all whitespace-nowrap hover:bg-gradient-to-br hover:from-violet-700 hover:to-indigo-700 hover:border-violet-600/80 hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:translate-y-[-2px] w-full md:w-auto text-center"
                 >
-                  🎲 계명 다시 뽑기 ({{ maxRerolls - rerollCount }}번 남음)
+                  계명 다시 뽑기 ({{ maxRerolls - rerollCount }}번 남음)
                 </button>
                 <span v-else class="text-sm text-slate-500 italic">리롤 기회 사용됨</span>
               </div>
-              <div class="h-3 bg-slate-900/90 rounded-md overflow-hidden border border-amber-400/30">
-                <div class="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-[width] duration-300 shadow-[0_0_10px_rgba(251,191,36,0.6)]" :style="{ width: (localSelectedCommandments.length / 5 * 100) + '%' }"></div>
+              <div class="h-3 bg-slate-900/90 rounded-md overflow-hidden border-2 border-amber-400/50 shadow-[0_0_15px_rgba(251,191,36,0.2)]">
+                <div class="h-full bg-gradient-to-r from-amber-400 to-amber-600 transition-[width] duration-300 shadow-[0_0_15px_rgba(251,191,36,0.8)]" :style="{ width: (localSelectedCommandments.length / 5 * 100) + '%' }"></div>
               </div>
             </div>
 
@@ -179,30 +183,29 @@
               <div
                   v-for="commandment in availableCommandments"
                   :key="commandment.id"
-                  class="bg-slate-900/90 backdrop-blur-xl rounded-xl p-4 border-2 transition-all relative"
+                  class="stone-tablet backdrop-blur-xl rounded-xl p-4 border-2 transition-all relative font-cinzel"
                   :class="{
-                  'border-amber-400/80 bg-amber-400/10 shadow-[0_0_30px_rgba(251,191,36,0.3)]': isSelected(commandment),
+                  'border-amber-400 bg-amber-400/10 shadow-[0_0_40px_rgba(251,191,36,0.6),0_0_20px_rgba(251,191,36,0.8)] ring-4 ring-amber-400/50': isSelected(commandment),
                   'opacity-40 cursor-not-allowed': !isSelected(commandment) && localSelectedCommandments.length >= 5,
-                  'border-slate-600/40 hover:border-amber-400/50 hover:shadow-[0_4px_20px_rgba(251,191,36,0.15)]': !isSelected(commandment) && localSelectedCommandments.length < 5,
-                  'bg-slate-900/95': expandedCommandments[commandment.id]
+                  'border-slate-600/60 hover:border-amber-400/70 hover:shadow-[0_0_25px_rgba(251,191,36,0.4)] cursor-pointer': !isSelected(commandment) && localSelectedCommandments.length < 5,
+                  'stone-tablet-expanded': expandedCommandments[commandment.id]
                 }"
               >
                 <!-- Compact Header -->
                 <div class="flex items-center gap-2 cursor-pointer mb-2" @click.stop="toggleExpand(commandment.id)">
-                  <span class="text-[28px] drop-shadow-[0_0_10px_rgba(251,191,36,0.4)]">{{ commandment.icon }}</span>
-                  <h3 class="text-base font-bold text-slate-200 flex-1">{{ commandment.name }}</h3>
+                  <h3 class="text-base font-bold text-amber-100 flex-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{{ commandment.name }}</h3>
                   <div class="ml-auto flex items-center gap-2">
-                    <div v-if="isSelected(commandment)" class="w-5 h-5 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-black text-xs shadow-[0_2px_8px_rgba(16,185,129,0.5)]">✓</div>
-                    <span class="text-xs text-slate-300 transition-transform duration-300" :class="{ 'rotate-180': expandedCommandments[commandment.id] }">▼</span>
+                    <div v-if="isSelected(commandment)" class="w-5 h-5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center text-slate-900 font-black text-xs shadow-[0_0_15px_rgba(251,191,36,0.8)]">✓</div>
+                    <span class="text-xs text-amber-200 transition-transform duration-300" :class="{ 'rotate-180': expandedCommandments[commandment.id] }">▼</span>
                   </div>
                 </div>
 
                 <!-- Collapsed View -->
                 <div v-if="!expandedCommandments[commandment.id]" class="mt-1">
-                  <p class="text-xs text-slate-400 mb-2 leading-normal">{{ commandment.description.slice(0, 60) }}...</p>
+                  <p class="text-xs text-amber-200/80 mb-2 leading-normal drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{{ commandment.description.slice(0, 60) }}...</p>
                   <button
                       @click.stop="toggleCommandment(commandment)"
-                      class="w-full px-3 py-1.5 bg-amber-400/20 border border-amber-400/40 rounded-md text-amber-400 font-semibold text-xs cursor-pointer transition-all hover:bg-amber-400/30 hover:border-amber-400/60 disabled:opacity-40 disabled:cursor-not-allowed"
+                      class="w-full px-3 py-1.5 bg-amber-400/30 border-2 border-amber-400/60 rounded-md text-amber-100 font-bold text-xs cursor-pointer transition-all hover:bg-amber-400/40 hover:border-amber-400/80 hover:shadow-[0_0_15px_rgba(251,191,36,0.5)] disabled:opacity-40 disabled:cursor-not-allowed"
                       :disabled="!isSelected(commandment) && localSelectedCommandments.length >= 5"
                   >
                     {{ isSelected(commandment) ? '✓ 선택됨' : '선택하기' }}
@@ -211,29 +214,29 @@
 
                 <!-- Expanded View -->
                 <div v-else class="mt-1 animate-[slideDown_0.3s_ease]" @click.stop>
-                  <p class="text-[13px] text-slate-400 mb-3 leading-relaxed">{{ commandment.description }}</p>
+                  <p class="text-[13px] text-amber-200/90 mb-3 leading-relaxed drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">{{ commandment.description }}</p>
 
                   <div class="flex flex-wrap gap-1.5">
-                    <div v-if="commandment.effects.morale !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.morale > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+                    <div v-if="commandment.effects.morale !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" :class="commandment.effects.morale > 0 ? 'bg-amber-500/30 text-amber-100 border border-amber-400/50' : 'bg-red-600/30 text-red-200 border border-red-500/50'">
                       민심: {{ commandment.effects.morale > 0 ? '+' : '' }}{{ commandment.effects.morale }}
                     </div>
-                    <div v-if="commandment.effects.gold !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.gold > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+                    <div v-if="commandment.effects.gold !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" :class="commandment.effects.gold > 0 ? 'bg-amber-500/30 text-amber-100 border border-amber-400/50' : 'bg-red-600/30 text-red-200 border border-red-500/50'">
                       금: {{ commandment.effects.gold > 0 ? '+' : '' }}{{ commandment.effects.gold }}
                     </div>
-                    <div v-if="commandment.effects.military !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.military > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+                    <div v-if="commandment.effects.military !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" :class="commandment.effects.military > 0 ? 'bg-amber-500/30 text-amber-100 border border-amber-400/50' : 'bg-red-600/30 text-red-200 border border-red-500/50'">
                       군사: {{ commandment.effects.military > 0 ? '+' : '' }}{{ commandment.effects.military }}
                     </div>
-                    <div v-if="commandment.effects.food !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.food > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+                    <div v-if="commandment.effects.food !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" :class="commandment.effects.food > 0 ? 'bg-amber-500/30 text-amber-100 border border-amber-400/50' : 'bg-red-600/30 text-red-200 border border-red-500/50'">
                       식량: {{ commandment.effects.food > 0 ? '+' : '' }}{{ commandment.effects.food }}
                     </div>
-                    <div v-if="commandment.effects.population !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold" :class="commandment.effects.population > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'">
+                    <div v-if="commandment.effects.population !== 0" class="px-2.5 py-0.5 rounded-md text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" :class="commandment.effects.population > 0 ? 'bg-amber-500/30 text-amber-100 border border-amber-400/50' : 'bg-red-600/30 text-red-200 border border-red-500/50'">
                       인구: {{ commandment.effects.population > 0 ? '+' : '' }}{{ commandment.effects.population }}
                     </div>
                   </div>
 
                   <button
                       @click.stop="toggleCommandment(commandment)"
-                      class="w-full px-4 py-2 bg-gradient-to-br from-amber-400 to-amber-500 border-0 rounded-lg text-slate-800 font-bold text-[13px] cursor-pointer transition-all mt-2.5 hover:translate-y-[-2px] hover:shadow-[0_4px_12px_rgba(251,191,36,0.4)] disabled:opacity-40 disabled:cursor-not-allowed"
+                      class="w-full px-4 py-2 bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-amber-500 rounded-lg text-slate-900 font-bold text-[13px] cursor-pointer transition-all mt-2.5 hover:translate-y-[-2px] hover:shadow-[0_0_20px_rgba(251,191,36,0.8)] hover:border-amber-300 disabled:opacity-40 disabled:cursor-not-allowed"
                       :disabled="!isSelected(commandment) && localSelectedCommandments.length >= 5"
                   >
                     {{ isSelected(commandment) ? '✓ 선택 해제' : '이 계명 선택하기' }}
@@ -242,39 +245,17 @@
               </div>
             </div>
 
-            <!-- 선택한 계명의 일일 효과 합산 표시 -->
-            <div v-if="localSelectedCommandments.length > 0" class="max-w-[800px] mx-auto mb-8 p-6 bg-gradient-to-br from-indigo-900/80 to-purple-900/80 backdrop-blur-xl border-2 border-indigo-500/50 rounded-xl">
-              <h3 class="text-lg font-bold text-indigo-200 mb-4 flex items-center gap-2">
-                <span>📊</span> 매일 변화되는 수치 (합산)
-              </h3>
-              <div class="flex flex-wrap gap-2">
-                <div v-if="totalDailyEffects.morale !== 0" class="px-4 py-2 rounded-lg text-sm font-semibold" :class="totalDailyEffects.morale > 0 ? 'bg-emerald-500/30 text-emerald-200 border-2 border-emerald-500/50' : 'bg-red-500/30 text-red-200 border-2 border-red-500/50'">
-                  민심: {{ totalDailyEffects.morale > 0 ? '+' : '' }}{{ totalDailyEffects.morale }} /일
-                </div>
-                <div v-if="totalDailyEffects.gold !== 0" class="px-4 py-2 rounded-lg text-sm font-semibold" :class="totalDailyEffects.gold > 0 ? 'bg-emerald-500/30 text-emerald-200 border-2 border-emerald-500/50' : 'bg-red-500/30 text-red-200 border-2 border-red-500/50'">
-                  금: {{ totalDailyEffects.gold > 0 ? '+' : '' }}{{ totalDailyEffects.gold }} /일
-                </div>
-                <div v-if="totalDailyEffects.military !== 0" class="px-4 py-2 rounded-lg text-sm font-semibold" :class="totalDailyEffects.military > 0 ? 'bg-emerald-500/30 text-emerald-200 border-2 border-emerald-500/50' : 'bg-red-500/30 text-red-200 border-2 border-red-500/50'">
-                  병력: {{ totalDailyEffects.military > 0 ? '+' : '' }}{{ totalDailyEffects.military }} /일
-                </div>
-                <div v-if="totalDailyEffects.food !== 0" class="px-4 py-2 rounded-lg text-sm font-semibold" :class="totalDailyEffects.food > 0 ? 'bg-emerald-500/30 text-emerald-200 border-2 border-emerald-500/50' : 'bg-red-500/30 text-red-200 border-2 border-red-500/50'">
-                  식량: {{ totalDailyEffects.food > 0 ? '+' : '' }}{{ totalDailyEffects.food }} /일
-                </div>
-                <div v-if="totalDailyEffects.population !== 0" class="px-4 py-2 rounded-lg text-sm font-semibold" :class="totalDailyEffects.population > 0 ? 'bg-emerald-500/30 text-emerald-200 border-2 border-emerald-500/50' : 'bg-red-500/30 text-red-200 border-2 border-red-500/50'">
-                  인구: {{ totalDailyEffects.population > 0 ? '+' : '' }}{{ totalDailyEffects.population }} /일
-                </div>
-              </div>
-              <p class="text-xs text-indigo-300/70 mt-3">* 다음 날을 누를 때마다 위 수치만큼 변화합니다</p>
-            </div>
-
             <div class="text-center px-4">
               <button
                   @click="confirmCommandments"
-                  class="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-3.5 md:px-12 md:py-4 bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 rounded-lg md:rounded-xl font-bold text-base sm:text-lg hover:translate-y-[-2px] hover:shadow-[0_8px_20px_rgba(251,191,36,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:translate-y-[-1px]"
+                  class="relative cursor-pointer transition-all hover:translate-y-[-4px] hover:drop-shadow-[0_8px_20px_rgba(251,191,36,0.6)] active:translate-y-[-2px] disabled:opacity-50 disabled:cursor-not-allowed"
                   :disabled="localSelectedCommandments.length !== 5"
               >
-                <span class="mr-2">⚡</span>
-                계명 확정하기
+                <img
+                  :src="`${useRuntimeConfig().app.baseURL}images/button/confirmed.png`"
+                  alt="계명 확정하기"
+                  class="w-auto h-48 sm:h-56 md:h-64 object-contain"
+                />
               </button>
             </div>
           </div>
@@ -284,9 +265,13 @@
         <div v-else-if="showNextHandle" class="flex justify-center sm:justify-end items-center">
           <button
             @click="handleNext"
-            class="w-full sm:w-auto px-8 py-3 sm:px-9 sm:py-3.5 md:px-10 md:py-3.5 bg-gradient-to-br from-amber-400 to-amber-500 text-slate-900 rounded-lg md:rounded-xl font-bold text-base sm:text-lg hover:translate-y-[-2px] hover:shadow-[0_8px_20px_rgba(251,191,36,0.4)] transition-all active:translate-y-[-1px]"
+            class="relative cursor-pointer transition-all hover:translate-y-[-4px] hover:drop-shadow-[0_8px_20px_rgba(251,191,36,0.6)] active:translate-y-[-2px]"
           >
-            다음 →
+            <img
+              :src="`${useRuntimeConfig().app.baseURL}images/button/next_button.png`"
+              alt="다음"
+              class="w-auto h-48 sm:h-56 md:h-64 object-contain"
+            />
           </button>
         </div>
       </div>
@@ -296,23 +281,26 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted, nextTick} from 'vue'
+import {ref, computed, watch, onMounted, onUnmounted, nextTick} from 'vue'
 import { useRouter } from 'vue-router'
 import { tutorialStory, reincarnationStory } from '~/data/tutorialStory'
 import { AVAILABLE_COMMANDMENTS, type Commandment } from '~/types/god-game'
 import { type PassiveCard, PASSIVE_CARDS } from '~/types/passive-cards'
 import { useGodGame } from '~/composables/useGodGame'
 import { useParchmentUnfold, useButtonPulse } from '~/composables/useAnimations'
+import { useBGM } from '~/composables/useBGM'
+import { gsap } from 'gsap'
 
 const router = useRouter()
 const { setNationName, setSelectedCommandments, setStartCards, initializeNation } = useGodGame()
+const { playBGM, stopBGM } = useBGM()
 
 // Animation refs and composables
 const parchmentRef = ref<HTMLElement>()
 const pathButtonRefs = ref<Map<string, HTMLElement>>(new Map())
 const locationButtonRefs = ref<Map<string, HTMLElement>>(new Map())
 const cardRefs = ref<Map<string, HTMLElement>>(new Map())
-const { unfold } = useParchmentUnfold()
+const { unfold, fold } = useParchmentUnfold()
 const { pulse, shine } = useButtonPulse()
 
 // Set button refs
@@ -368,9 +356,17 @@ onMounted(() => {
     }
   }
 
+  // 스토리 BGM 재생
+  playBGM('story', { loop: true, volume: 0.3 })
+
   setTimeout(() => {
     typeText()
   }, 100)
+})
+
+onUnmounted(() => {
+  // 컴포넌트 언마운트 시 BGM 정지
+  stopBGM()
 })
 
 // 스토리 상태
@@ -384,6 +380,9 @@ const typedLines = ref(0) // 완전히 타이핑된 줄 수
 const currentLineTypedText = ref('') // 현재 줄에서 타이핑된 텍스트
 const isTyping = ref(false)
 let typingTimer: NodeJS.Timeout | null = null
+
+// 양피지 애니메이션 진행 상태
+const isParchmentAnimating = ref(false)
 
 // 왕국 이름
 const localNationName = ref('')
@@ -428,6 +427,11 @@ const showPathChoices = computed(() => {
 
 // 세부 선택지 표시 여부 (각 이벤트 선택)
 const showLocationChoices = computed(() => {
+  // 이미 3개 이벤트를 완료했으면 선택지 표시 안함
+  if (eventCount.value >= 3) {
+    return false
+  }
+
   const chapterId = currentChapter.value?.id
   return chapterId === 'path_admin_choice_1' ||
           chapterId === 'path_admin_choice_2' ||
@@ -646,52 +650,62 @@ const isDialogue = (text: string): boolean => {
 
 // 타이핑 애니메이션
 const typeText = () => {
+  // 기존 타이핑 강제 중단
   if (typingTimer) {
     clearTimeout(typingTimer)
     typingTimer = null
   }
 
+  // 완전히 초기화
   typedLines.value = 0
   currentLineTypedText.value = ''
-  isTyping.value = true
+  isTyping.value = false
 
   const texts = currentTexts.value
   if (texts.length === 0) {
-    isTyping.value = false
     return
   }
 
-  let currentLine = 0
-  let currentChar = 0
+  // 약간의 지연 후 타이핑 시작 (DOM 업데이트 완료 대기)
+  setTimeout(() => {
+    isTyping.value = true
+    let currentLine = 0
+    let currentChar = 0
 
-  const typeNextChar = () => {
-    if (currentLine >= texts.length) {
-      isTyping.value = false
-      return
-    }
+    const typeNextChar = () => {
+      // 타이핑이 중단되었는지 확인
+      if (!isTyping.value) {
+        return
+      }
 
-    const currentText = texts[currentLine]
-
-    if (currentChar < currentText.length) {
-      currentLineTypedText.value = currentText.substring(0, currentChar + 1)
-      currentChar++
-      typingTimer = setTimeout(typeNextChar, 10)
-    } else {
-      // 현재 줄 완료
-      typedLines.value = currentLine + 1
-      currentLineTypedText.value = ''
-      currentLine++
-      currentChar = 0
-
-      if (currentLine < texts.length) {
-        typingTimer = setTimeout(typeNextChar, 100) // 줄 바꿈 시 짧은 대기
-      } else {
+      if (currentLine >= texts.length) {
         isTyping.value = false
+        return
+      }
+
+      const currentText = texts[currentLine]
+
+      if (currentChar < currentText.length) {
+        currentLineTypedText.value = currentText.substring(0, currentChar + 1)
+        currentChar++
+        typingTimer = setTimeout(typeNextChar, 10)
+      } else {
+        // 현재 줄 완료
+        typedLines.value = currentLine + 1
+        currentLineTypedText.value = ''
+        currentLine++
+        currentChar = 0
+
+        if (currentLine < texts.length) {
+          typingTimer = setTimeout(typeNextChar, 100) // 줄 바꿈 시 짧은 대기
+        } else {
+          isTyping.value = false
+        }
       }
     }
-  }
 
-  typeNextChar()
+    typeNextChar()
+  }, 50)
 }
 
 
@@ -707,19 +721,13 @@ const completeTyping = () => {
   isTyping.value = false
 }
 
-// 챕터 변경 감지
-watch(currentChapterIndex, async () => {
-  typeText()
-
-  // 양피지 펼치기 애니메이션
-  await nextTick()
-  if (parchmentRef.value) {
-    unfold(parchmentRef.value)
-  }
-})
+// 챕터 변경 감지 (타이핑은 unfold 완료 후에 시작하도록 별도 제어)
+// watch(currentChapterIndex, () => {
+//   typeText()
+// })
 
 const showNextHandle = computed(() => {
-  return !isTyping.value && !showCardSelection.value
+  return !isTyping.value && !showCardSelection.value && !isParchmentAnimating.value
 })
 
 // 다음 버튼 핸들러
@@ -766,12 +774,12 @@ const handleNext = () => {
       const epilogueId = reincarnationCount.value > 0 ? 'reborn_epilogue' : 'epilogue'
       const epilogueIndex = currentStory.value.findIndex(ch => ch.id === epilogueId)
       if (epilogueIndex !== -1) {
-        currentChapterIndex.value = epilogueIndex
+        transitionToChapter(epilogueIndex)
       }
     } else {
       // 아직 이벤트가 남았으면 다음 챕터로 진행
       if (!isLastChapter.value) {
-        currentChapterIndex.value++
+        transitionToChapter(currentChapterIndex.value + 1)
       }
     }
     return
@@ -785,10 +793,63 @@ const handleNext = () => {
     return
   }
 
-  // 다음 챕터로
+  // 다음 챕터로 (양피지 애니메이션과 함께)
   if (!isLastChapter.value) {
-    currentChapterIndex.value++
+    transitionToChapter(currentChapterIndex.value + 1)
   }
+}
+
+// 양피지 접었다 펼치는 애니메이션과 함께 챕터 전환
+const transitionToChapter = (newChapterIndex: number) => {
+  if (!parchmentRef.value) {
+    // ref가 없으면 바로 전환
+    currentChapterIndex.value = newChapterIndex
+    typeText()
+    return
+  }
+
+  const parchmentElement = parchmentRef.value
+
+  // 애니메이션 시작 (버튼 숨김)
+  isParchmentAnimating.value = true
+
+  // 1. 양피지 접기 애니메이션
+  fold(parchmentElement, () => {
+    // 2. 챕터 변경 (양피지가 완전히 접힌 후)
+    currentChapterIndex.value = newChapterIndex
+
+    // 3. 잠시 대기 후 양피지 펼치기
+    nextTick(() => {
+      // 타이핑 상태 초기화 (깜빡임 방지)
+      typedLines.value = 0
+      currentLineTypedText.value = ''
+      isTyping.value = false
+
+      // 양피지가 접힌 상태를 명시적으로 유지
+      gsap.set(parchmentElement, {
+        scaleY: 0.05,
+        transformOrigin: 'center center',
+        opacity: 1,
+      })
+
+      // 새 텍스트 콘텐츠를 보이도록 설정 (타이핑 애니메이션을 위해)
+      const contentElements = parchmentElement.querySelectorAll('.parchment-content')
+      gsap.set(contentElements, {
+        opacity: 1,
+        y: 0,
+      })
+
+      setTimeout(() => {
+        // 4. 양피지 펼치기 시작
+        unfold(parchmentElement, () => {
+          // 5. 양피지가 완전히 펼쳐진 후 타이핑 시작
+          typeText()
+          // 애니메이션 완료 (버튼 다시 표시)
+          isParchmentAnimating.value = false
+        })
+      }, 300)
+    })
+  })
 }
 
 // 경로 선택 버튼 클릭 핸들러 (애니메이션 추가)
@@ -834,7 +895,7 @@ const selectPathFromStory = async (pathId: string) => {
 
   const chapterIndex = pathChapters[pathId]
   if (chapterIndex !== undefined && chapterIndex !== -1) {
-    currentChapterIndex.value = chapterIndex
+    transitionToChapter(chapterIndex)
   }
 }
 
@@ -852,6 +913,12 @@ const handleLocationClick = (choiceId: string) => {
 
 // 이벤트 선택지 선택 (성공/실패)
 const selectLocationChoice = async (choiceId: string) => {
+  // 이미 3개 이벤트를 완료했으면 더 이상 진행하지 않음
+  if (eventCount.value >= 3) {
+    console.warn('All events completed, ignoring location choice')
+    return
+  }
+
   const chapterId = currentChapter.value?.id
   let targetChapterId = ''
 
@@ -906,10 +973,10 @@ const selectLocationChoice = async (choiceId: string) => {
   selectedStartCards.value.push(receivedCard)
   eventCount.value++
 
-  // 해당 챕터로 이동
+  // 해당 챕터로 이동 (양피지 애니메이션과 함께)
   const targetChapterIndex = currentStory.value.findIndex(ch => ch.id === targetChapterId)
   if (targetChapterIndex !== -1) {
-    currentChapterIndex.value = targetChapterIndex
+    transitionToChapter(targetChapterIndex)
   }
 }
 
@@ -1371,13 +1438,16 @@ const confirmNationName = () => {
 
   const findIndex = currentStory.value.findIndex(ch => ch.id === nextChapterId)
   if (findIndex !== -1) {
-    currentChapterIndex.value = findIndex
+    transitionToChapter(findIndex)
   }
 }
 
 // 계명 리롤
 const rerollCommandments = () => {
   if (rerollCount.value >= maxRerolls) return
+
+  // 리롤 효과음
+  playStoneSound()
 
   rerollCount.value++
   localSelectedCommandments.value = [] // 선택 초기화
@@ -1413,7 +1483,7 @@ const confirmStartCards = () => {
   // 다음 챕터로 (reborn_final)
   const findIndex = currentStory.value.findIndex(ch => ch.id === 'reborn_final')
   if (findIndex !== -1) {
-    currentChapterIndex.value = findIndex
+    transitionToChapter(findIndex)
   }
 
   // 스토리 상단으로 스크롤
@@ -1431,9 +1501,68 @@ const toggleCommandment = (commandment: Commandment) => {
   const index = localSelectedCommandments.value.findIndex(c => c.id === commandment.id)
   if (index > -1) {
     localSelectedCommandments.value.splice(index, 1)
+    // 선택 해제 시 역재생
+    playStoneSound(true)
   } else if (localSelectedCommandments.value.length < 5) {
     localSelectedCommandments.value.push(commandment)
+    // 선택 시 정재생
+    playStoneSound(false)
   }
+}
+
+// 돌 긁는 효과음 재생 (역재생 가능)
+const playStoneSound = async (reverse: boolean = false) => {
+  if (!process.client) return
+
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+
+    // 오디오 파일 로드
+    const sfxPath = `${useRuntimeConfig().app.baseURL}sfx/scrapingStone.mp3`
+    const response = await fetch(sfxPath)
+    const arrayBuffer = await response.arrayBuffer()
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+
+    // 역재생인 경우 버퍼 반전
+    let buffer = audioBuffer
+    if (reverse) {
+      buffer = reverseAudioBuffer(audioBuffer, audioContext)
+    }
+
+    // 재생
+    const source = audioContext.createBufferSource()
+    source.buffer = buffer
+
+    const gainNode = audioContext.createGain()
+    gainNode.gain.value = 0.5
+
+    source.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+
+    source.start(0)
+  } catch (err) {
+    console.log('Stone sound play error:', err)
+  }
+}
+
+// AudioBuffer 역전 함수
+const reverseAudioBuffer = (buffer: AudioBuffer, audioContext: AudioContext): AudioBuffer => {
+  const reversedBuffer = audioContext.createBuffer(
+    buffer.numberOfChannels,
+    buffer.length,
+    buffer.sampleRate
+  )
+
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const channelData = buffer.getChannelData(channel)
+    const reversedData = reversedBuffer.getChannelData(channel)
+
+    for (let i = 0; i < channelData.length; i++) {
+      reversedData[i] = channelData[channelData.length - 1 - i]
+    }
+  }
+
+  return reversedBuffer
 }
 
 const isSelected = (commandment: Commandment) => {
@@ -1465,6 +1594,9 @@ const totalDailyEffects = computed(() => {
 const confirmCommandments = () => {
   if (localSelectedCommandments.value.length !== 5) return
 
+  // 확정 효과음
+  playStoneSound()
+
   // 계명 저장
   setSelectedCommandments(localSelectedCommandments.value)
 
@@ -1480,7 +1612,7 @@ const confirmCommandments = () => {
 
   const findIndex = currentStory.value.findIndex(ch => ch.id === nextChapterId)
   if (findIndex !== -1) {
-    currentChapterIndex.value = findIndex
+    transitionToChapter(findIndex)
   }
 
   // 스토리 상단으로 스크롤
@@ -1516,6 +1648,37 @@ const confirmCommandments = () => {
   z-index: 10;
 }
 
+/* 돌판 배경 이미지 (계명 카드) */
+.stone-tablet {
+  background-image: url('/images/object/stone.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* 돌판 위에 어두운 오버레이 (가독성 향상) */
+.stone-tablet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(30, 41, 59, 0.6);
+  z-index: 1;
+  border-radius: 0.75rem;
+}
+
+/* 돌판 텍스트가 오버레이 위에 표시되도록 */
+.stone-tablet > * {
+  position: relative;
+  z-index: 10;
+}
+
+/* 확장된 돌판은 더 어두운 배경 */
+.stone-tablet-expanded::before {
+  background: rgba(15, 23, 42, 0.75);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1535,6 +1698,15 @@ const confirmCommandments = () => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), 0 0 40px rgba(251, 191, 36, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.6), 0 0 60px rgba(251, 191, 36, 0.3);
   }
 }
 </style>

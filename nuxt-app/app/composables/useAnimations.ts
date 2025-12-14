@@ -48,36 +48,23 @@ export const useModalZoom = () => {
  * @param element - 양피지 요소
  */
 export const useParchmentUnfold = () => {
-  const unfold = (element: HTMLElement) => {
-    const tl = gsap.timeline()
+  const unfold = (element: HTMLElement, onComplete?: () => void) => {
+    const tl = gsap.timeline({ onComplete })
 
+    // 양피지만 펼치기 (텍스트는 타이핑 애니메이션으로 별도 처리)
     tl.fromTo(
       element,
       {
-        scaleY: 0,
-        transformOrigin: 'top center',
-        opacity: 0,
+        scaleY: 0.05,
+        transformOrigin: 'center center',
+        opacity: 1,
       },
       {
         scaleY: 1,
         opacity: 1,
-        duration: 0.6,
+        duration: 0.8,
         ease: 'power2.out',
       }
-    ).fromTo(
-      element.querySelectorAll('.parchment-content'),
-      {
-        opacity: 0,
-        y: 20,
-      },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.4,
-        stagger: 0.1,
-        ease: 'power2.out',
-      },
-      '-=0.2'
     )
 
     return tl
@@ -89,14 +76,14 @@ export const useParchmentUnfold = () => {
     tl.to(element.querySelectorAll('.parchment-content'), {
       opacity: 0,
       y: -20,
-      duration: 0.2,
+      duration: 0.3,
       stagger: 0.05,
     }).to(element, {
-      scaleY: 0,
-      transformOrigin: 'top center',
-      opacity: 0,
-      duration: 0.4,
-      ease: 'power2.in',
+      scaleY: 0.05,
+      transformOrigin: 'center center',
+      opacity: 1,
+      duration: 0.7,
+      ease: 'power2.inOut',
     })
 
     return tl

@@ -2,14 +2,27 @@
   <div
       class="min-h-screen text-white flex flex-col overflow-hidden relative bg-slate-900"
   >
-    <!-- Background Video -->
+    <!-- Background Video 1 -->
     <video
+      ref="bgVideo1"
       autoplay
-      loop
       muted
       playsinline
-      class="absolute inset-0 w-full h-full object-cover z-0"
+      class="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000 ease-in-out"
+      :class="{ 'opacity-100': activeVideo === 1, 'opacity-0': activeVideo === 2 }"
       :src="`${useRuntimeConfig().app.baseURL}images/background/base_back_ani.mp4`"
+      @timeupdate="handleVideoTimeUpdate(1)"
+    ></video>
+
+    <!-- Background Video 2 (for seamless loop) -->
+    <video
+      ref="bgVideo2"
+      muted
+      playsinline
+      class="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000 ease-in-out"
+      :class="{ 'opacity-100': activeVideo === 2, 'opacity-0': activeVideo === 1 }"
+      :src="`${useRuntimeConfig().app.baseURL}images/background/base_back_ani.mp4`"
+      @timeupdate="handleVideoTimeUpdate(2)"
     ></video>
 
     <!-- Background Overlay -->
@@ -313,6 +326,46 @@ import { drawRandomCards, MAX_PASSIVE_CARDS, MAX_INHERITED_CARDS } from '../type
 import { enemyKingdoms } from '../data/mockData'
 import { useGodGame } from '~/composables/useGodGame'
 import { useRealTimeGameTimer } from '~/composables/useRealTimeGameTimer'
+
+// 백그라운드 비디오 refs
+const bgVideo1 = ref<HTMLVideoElement | null>(null)
+const bgVideo2 = ref<HTMLVideoElement | null>(null)
+const activeVideo = ref<1 | 2>(1)
+const isTransitioning = ref(false)
+
+// 비디오가 끝나기 전에 미리 전환 시작 (1초 전)
+const handleVideoTimeUpdate = (videoNum: 1 | 2) => {
+  if (!process.client || isTransitioning.value) return
+
+  const currentVideo = videoNum === 1 ? bgVideo1.value : bgVideo2.value
+  const nextVideo = videoNum === 1 ? bgVideo2.value : bgVideo1.value
+
+  if (!currentVideo || !nextVideo) return
+
+  // 비디오가 활성화 상태이고, 끝나기 1초 전인지 확인
+  if (activeVideo.value === videoNum) {
+    const timeRemaining = currentVideo.duration - currentVideo.currentTime
+
+    // 끝나기 1초 전에 전환 시작
+    if (timeRemaining <= 1.0 && timeRemaining > 0) {
+      isTransitioning.value = true
+
+      // 다음 비디오를 처음부터 시작
+      nextVideo.currentTime = 0
+      nextVideo.play().catch(err => console.log('Video play error:', err))
+
+      // 페이드 전환 시작
+      activeVideo.value = videoNum === 1 ? 2 : 1
+
+      // 전환 완료 후 플래그 리셋 (1초 후)
+      setTimeout(() => {
+        isTransitioning.value = false
+        // 이전 비디오 일시정지 (리소스 절약)
+        currentVideo.pause()
+      }, 1000)
+    }
+  }
+}
 
 // 항상 표시되는 컴포넌트 (즉시 로드)
 import GameMobileResources from '~/components/game/GameMobileResources.vue'

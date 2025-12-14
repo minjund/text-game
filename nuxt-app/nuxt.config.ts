@@ -14,6 +14,13 @@ export default defineNuxtConfig({
     buildAssetsDir: 'assets',
   },
 
+  // 정적 사이트 생성 설정
+  nitro: {
+    preset: 'static',
+    compressPublicAssets: true,
+  },
+
+
   // 빌드 최적화
   vite: {
     build: {
@@ -79,17 +86,6 @@ export default defineNuxtConfig({
         'vue-router'
       ],
     },
-  },
-
-  // Nitro 압축 활성화
-  nitro: {
-    compressPublicAssets: true,
-  },
-
-  // 라우트 규칙 - 정적 페이지 사전 렌더링
-  routeRules: {
-    '/': { prerender: true },
-    '/story': { prerender: true },
   },
 
   // PWA 설정
