@@ -38,10 +38,29 @@
     />
 
     <!-- Interactive Tutorial (Day 0) -->
+    <!-- 주석처리: 대화형 튜토리얼 비활성화 -->
+    <!--
     <GameInteractiveTutorial
       :show="showTutorial"
       @complete="completeTutorial"
       @skip="skipTutorial"
+    />
+    -->
+
+    <!-- Adventure Tutorial -->
+    <GameAdventureTutorial
+      v-if="adventureState?.active"
+      :show="showAdventureTutorial"
+      @complete="completeAdventureTutorial"
+      @skip="skipAdventureTutorial"
+    />
+
+    <!-- Omen Warning (세계 멸망 징조) -->
+    <GameOmenWarning
+      :show="showOmenWarning"
+      :title="omenWarningTitle"
+      :messages="omenWarningMessages"
+      @close="showOmenWarning = false"
     />
 
     <!-- Mobile Top Resources (Fixed) -->
@@ -64,7 +83,7 @@
     <GameMobileActions
       v-if="!adventureState?.active"
       :unlocked-features="tutorialState?.unlockedFeatures || []"
-      @show-battle-history="showBattleHistory = true"
+      @show-battle-history="showNarrativeHistory = true"
       @show-passive-cards="showPassiveCardsCollection = true"
       @show-card-deck="showCardDeckModal = true"
       @show-card-guide="showCardCollection = true"
@@ -171,11 +190,12 @@
       @close="showCommandments = false"
     />
 
-    <!-- Battle History Modal -->
-    <GameBattleHistoryModal
-      :show="showBattleHistory"
-      :battles="battleHistory"
-      @close="showBattleHistory = false"
+    <!-- Narrative History Modal -->
+    <GameNarrativeModal
+      :show="showNarrativeHistory"
+      :narratives="narratives"
+      :adventure-count="adventureCount"
+      @close="showNarrativeHistory = false"
     />
 
     <!-- Advisor Modal (Tutorial) -->
@@ -386,7 +406,7 @@ const GameReincarnationModal = defineAsyncComponent(() => import('~/components/g
 const GamePassiveCardsModal = defineAsyncComponent(() => import('~/components/game/GamePassiveCardsModal.vue'))
 const GameCardCollection = defineAsyncComponent(() => import('~/components/game/GameCardCollection.vue'))
 const GameCommandmentsModal = defineAsyncComponent(() => import('~/components/game/GameCommandmentsModal.vue'))
-const GameBattleHistoryModal = defineAsyncComponent(() => import('~/components/game/GameBattleHistoryModal.vue'))
+const GameNarrativeModal = defineAsyncComponent(() => import('~/components/game/GameNarrativeModal.vue'))
 const GameAdvisorModal = defineAsyncComponent(() => import('~/components/game/GameAdvisorModal.vue'))
 const GameSynergyCardSelection = defineAsyncComponent(() => import('~/components/game/GameSynergyCardSelection.vue'))
 const GameSynergyCollection = defineAsyncComponent(() => import('~/components/game/GameSynergyCollection.vue'))
@@ -397,7 +417,10 @@ const GameAdventureMap = defineAsyncComponent(() => import('~/components/game/Ga
 const GameAdventureShop = defineAsyncComponent(() => import('~/components/game/GameAdventureShop.vue'))
 const GameAdventureRest = defineAsyncComponent(() => import('~/components/game/GameAdventureRest.vue'))
 const GameBattleCardSelection = defineAsyncComponent(() => import('~/components/game/GameBattleCardSelection.vue'))
-const GameInteractiveTutorial = defineAsyncComponent(() => import('~/components/game/GameInteractiveTutorial.vue'))
+// 주석처리: 대화형 튜토리얼 비활성화
+// const GameInteractiveTutorial = defineAsyncComponent(() => import('~/components/game/GameInteractiveTutorial.vue'))
+const GameAdventureTutorial = defineAsyncComponent(() => import('~/components/game/GameAdventureTutorial.vue'))
+const GameOmenWarning = defineAsyncComponent(() => import('~/components/game/GameOmenWarning.vue'))
 const GameCardDeckModal = defineAsyncComponent(() => import('~/components/game/GameCardDeckModal.vue'))
 const GameDiceRoulette = defineAsyncComponent(() => import('~/components/game/GameDiceRoulette.vue'))
 const GameDiceProgress = defineAsyncComponent(() => import('~/components/game/GameDiceProgress.vue'))
@@ -416,6 +439,7 @@ import { useAdventureSystem } from '~/composables/useAdventureSystem'
 import { useActiveCards } from '~/composables/useActiveCards'
 import { useCardDeck } from '~/composables/useCardDeck'
 import { useBGM } from '~/composables/useBGM'
+import { useNarrative } from '~/composables/useNarrative'
 import { convertPassiveCardsToActiveCards } from '~/utils/cardConverter'
 
 // 신 게임 상태 가져오기
@@ -590,7 +614,7 @@ const availableDailyCards = ref<PassiveCard[]>([])
 const showCommandments = ref(false)
 
 // 전투 히스토리 모달
-const showBattleHistory = ref(false)
+const showNarrativeHistory = ref(false)
 
 // 전투 히스토리 데이터
 interface BattleRecord {
@@ -640,7 +664,16 @@ const addBattleRecord = (record: BattleRecord) => {
 }
 
 // 튜토리얼 모달 (0일차)
-const showTutorial = ref(false)
+// 주석처리: 대화형 튜토리얼 비활성화
+// const showTutorial = ref(false)
+
+// 모험 튜토리얼 모달
+const showAdventureTutorial = ref(false)
+
+// 세계 멸망 징조 경고 모달
+const showOmenWarning = ref(false)
+const omenWarningTitle = ref('')
+const omenWarningMessages = ref<string[]>([])
 
 // 자원 도움말 모달
 const showResourceHelp = ref(false)
@@ -653,6 +686,8 @@ const handleShowResourceHelp = (type: 'food' | 'gold' | 'morale' | 'soldiers') =
 }
 
 // 튜토리얼 핸들러
+// 주석처리: 대화형 튜토리얼 비활성화
+/*
 const closeTutorial = () => {
   showTutorial.value = false
 }
@@ -666,6 +701,23 @@ const completeTutorial = () => {
     localStorage.setItem('tutorialState', JSON.stringify(tutorialState.value))
   }
   showNotification('튜토리얼을 완료했습니다! 게임을 시작하세요!', 'success')
+}
+*/
+
+// 모험 튜토리얼 핸들러
+const completeAdventureTutorial = () => {
+  showAdventureTutorial.value = false
+  if (process.client) {
+    localStorage.setItem('adventureTutorialCompleted', 'true')
+  }
+  showNotification('모험 튜토리얼을 완료했습니다!', 'success')
+}
+
+const skipAdventureTutorial = () => {
+  showAdventureTutorial.value = false
+  if (process.client) {
+    localStorage.setItem('adventureTutorialCompleted', 'true')
+  }
 }
 
 // 환생 시스템
@@ -727,6 +779,15 @@ const handleReincarnationWithoutCard = () => {
 }
 
 // 모험 시스템
+// 서사 시스템
+const {
+  narratives,
+  adventureCount,
+  loadNarratives,
+  onAdventureComplete,
+  resetNarratives
+} = useNarrative()
+
 const {
   adventureState,
   moveCompletedNodeId,
@@ -752,12 +813,30 @@ const handleRetreat = () => {
   // 기본 BGM으로 전환
   playBGM('base', { loop: true, volume: 0.3 })
 
-  // 룰렛 관련 UI 숨기기
+  // 주사위 관련 UI 숨기기
   showDiceRoulette.value = false
   showDiceProgress.value = false
 
   // retreatAdventure 호출 (보상 50% 지급 및 상태 초기화)
   retreatAdventure()
+
+  // 서사 생성 (3번마다)
+  const narrativeText = onAdventureComplete({
+    day: kingdom.value.day,
+    morale: kingdom.value.resources.morale,
+    gold: kingdom.value.resources.gold,
+    food: kingdom.value.resources.food,
+    soldiers: kingdom.value.resources.soldiers,
+    victories: kingdom.value.victories,
+    defeats: kingdom.value.defeats
+  })
+
+  // 서사가 생성되었으면 알림 표시
+  if (narrativeText) {
+    setTimeout(() => {
+      showNotification(`📖 새로운 역사가 기록되었습니다: "${narrativeText}"`, 'info')
+    }, 1000)
+  }
 }
 
 // 모험 관련 모달 상태
@@ -772,17 +851,17 @@ const isDiceRolling = ref(false)
 // 주사위 굴리기 핸들러
 const handleRollDice = async () => {
   isDiceRolling.value = true
-  // 룰렛 애니메이션 효과
+  // 주사위 애니메이션 효과
   await new Promise(resolve => setTimeout(resolve, 1000))
   rollDice()
   isDiceRolling.value = false
-  showNotification('룰렛 5개 숫자 생성! 확인 버튼을 눌러주세요.', 'success')
+  showNotification('주사위 3개 숫자 생성! 확인 버튼을 눌러주세요.', 'success')
 }
 
-// 룰렛 확인 핸들러
+// 주사위 확인 핸들러
 const handleDiceConfirm = () => {
-  console.log('[handleDiceConfirm] 룰렛 확인 버튼 클릭')
-  // 룰렛 모달 닫기
+  console.log('[handleDiceConfirm] 주사위 확인 버튼 클릭')
+  // 주사위 모달 닫기
   showDiceRoulette.value = false
   // 상단 진행 표시 켜기
   showDiceProgress.value = true
@@ -800,7 +879,7 @@ const handleDiceConfirm = () => {
 const handleUseNextDice = () => {
   const steps = useNextDice()
   showNotification(`${steps}칸 이동합니다!`, 'info')
-  // 룰렛 모달은 계속 열려 있음 (진행 상황 확인용)
+  // 주사위 모달은 계속 열려 있음 (진행 상황 확인용)
   startAutoMove(steps)
 }
 
@@ -822,7 +901,7 @@ const handleStartAdventure = () => {
 
     // 주사위 결과가 있으면 자동으로 이동 재개
     if (adventureState.value.diceResults.length > 0 && adventureState.value.currentDiceIndex < adventureState.value.diceResults.length) {
-      console.log('[handleStartAdventure] 기존 룰렛 결과 유지 - 자동 이동 재개')
+      console.log('[handleStartAdventure] 기존 주사위 결과 유지 - 자동 이동 재개')
       showDiceProgress.value = true
       showDiceRoulette.value = false
 
@@ -831,7 +910,7 @@ const handleStartAdventure = () => {
         autoUseNextDice()
       }, 1000) // 1초 후 자동 시작
     } else {
-      console.log('[handleStartAdventure] 룰렛 모달 열기')
+      console.log('[handleStartAdventure] 주사위 모달 열기')
       showDiceRoulette.value = true
       showDiceProgress.value = false
     }
@@ -840,6 +919,16 @@ const handleStartAdventure = () => {
     startAdventure()
     showDiceRoulette.value = true
     showDiceProgress.value = false
+
+    // 모험 튜토리얼 표시 (처음 모험하는 경우)
+    if (process.client) {
+      const adventureTutorialCompleted = localStorage.getItem('adventureTutorialCompleted')
+      if (!adventureTutorialCompleted) {
+        setTimeout(() => {
+          showAdventureTutorial.value = true
+        }, 1000)
+      }
+    }
   }
 }
 
@@ -1205,6 +1294,72 @@ watch(
   }
 )
 
+// 현실시간 4일 경과 시 첫 번째 징조
+watch(
+  () => remainingTime.value.hasReached4Days,
+  (hasReached, oldValue) => {
+    console.log(`🔔 [Watch 4일] hasReached: ${hasReached}, oldValue: ${oldValue}, process.client: ${process.client}`)
+
+    if (hasReached && !oldValue && process.client) {
+      const shown4DaysOmen = localStorage.getItem('omen4DaysShown')
+      console.log(`[Watch 4일] localStorage 확인: ${shown4DaysOmen}`)
+
+      if (!shown4DaysOmen) {
+        console.log('✅ [징조] 현실시간 4일 경과 - 첫 번째 징조 표시!')
+
+        setTimeout(() => {
+          console.log('🎯 징조 경고 모달 표시!')
+          omenWarningTitle.value = '📜 불길한 징조'
+          omenWarningMessages.value = [
+            '-아리엘-\n\n폐하... 제가 오랜 시간 고대 문헌을 연구한 결과, 이상한 사실을 발견했습니다.',
+            '밤하늘의 별들이 평소와 다른 배열을 보이고 있고, 하늘이 점점 붉게 물들어가고 있어요.',
+            '고대 예언서에 따르면 이는 "세계의 종말"을 알리는 첫 번째 징조라고 합니다...\n\n앞으로 남은 시간이 그리 많지 않을지도 모릅니다. 서둘러야 합니다!'
+          ]
+          showOmenWarning.value = true
+          localStorage.setItem('omen4DaysShown', 'true')
+          console.log('💾 [징조] localStorage에 omen4DaysShown 저장됨')
+        }, 1000)
+      } else {
+        console.log('⏭️ [징조] 4일 징조 이미 표시됨, 건너뛰기')
+      }
+    }
+  },
+  { immediate: true }
+)
+
+// 현실시간 8일 경과 시 두 번째 징조
+watch(
+  () => remainingTime.value.hasReached8Days,
+  (hasReached, oldValue) => {
+    console.log(`🔔 [Watch 8일] hasReached: ${hasReached}, oldValue: ${oldValue}, process.client: ${process.client}`)
+
+    if (hasReached && !oldValue && process.client) {
+      const shown8DaysOmen = localStorage.getItem('omen8DaysShown')
+      console.log(`[Watch 8일] localStorage 확인: ${shown8DaysOmen}`)
+
+      if (!shown8DaysOmen) {
+        console.log('✅ [징조] 현실시간 8일 경과 - 두 번째 징조 표시!')
+
+        setTimeout(() => {
+          console.log('🎯 징조 경고 모달 표시!')
+          omenWarningTitle.value = '⚠️ 위급한 징조!'
+          omenWarningMessages.value = [
+            '-아리엘-\n\n폐하! 큰 일입니다!\n\n대지에서 불길한 진동이 느껴지고, 하늘의 균열이 점점 커지고 있습니다!',
+            '예언서의 두 번째 징조가 나타났어요!\n\n곳곳에서 시간의 흐름이 왜곡되고 있으며, 세계의 끝이 점점 가까워지고 있습니다...',
+            '이제 정말 시간이 얼마 남지 않았습니다!\n\n서둘러 제국을 정복하지 않으면, 모든 것이 무너질지도 몰라요!'
+          ]
+          showOmenWarning.value = true
+          localStorage.setItem('omen8DaysShown', 'true')
+          console.log('💾 [징조] localStorage에 omen8DaysShown 저장됨')
+        }, 1000)
+      } else {
+        console.log('⏭️ [징조] 8일 징조 이미 표시됨, 건너뛰기')
+      }
+    }
+  },
+  { immediate: true }
+)
+
 // 현실시간 12일 경과 시 세계 멸망 및 게임 리셋
 watch(
   () => remainingTime.value.isExpired,
@@ -1212,10 +1367,19 @@ watch(
     if (isExpired) {
       console.log('[게임 리셋] 현실시간 12일 경과 - 세계가 멸망합니다!')
 
+      // 최종 경고 메시지 (어시스턴트)
+      omenWarningTitle.value = '🌑 세계의 종말'
+      omenWarningMessages.value = [
+        '-아리엘-\n\n폐하... 이제 끝입니다...\n\n예언이 현실이 되었어요.',
+        '세계가 완전히 무너지고 있습니다!\n\n하늘이 갈라지고, 대지가 부서지며, 모든 것이 어둠 속으로 사라지고 있어요...',
+        '...시간을 되돌려 다시 시작할 수밖에 없을 것 같습니다.'
+      ]
+      showOmenWarning.value = true
+
       // 알림 표시
       showNotification('⚠️ 현실시간 12일이 경과했습니다! 세계가 멸망하여 게임이 초기화됩니다...', 'error')
 
-      // 2초 후 게임 리셋
+      // 3초 후 게임 리셋 (메시지를 읽을 시간 제공)
       setTimeout(() => {
         if (process.client) {
           // localStorage에서 게임 관련 데이터 제거 (환생 데이터는 유지)
@@ -1225,11 +1389,13 @@ watch(
           localStorage.removeItem('playerName')
           localStorage.removeItem('kingdomName')
           localStorage.removeItem('tutorialProgress')
+          localStorage.removeItem('omen4DaysShown')
+          localStorage.removeItem('omen8DaysShown')
 
           // 스토리 페이지로 리다이렉트
           window.location.href = '/story'
         }
-      }, 2000)
+      }, 3000)
     }
   }
 )
@@ -1332,8 +1498,8 @@ const autoUseNextDice = () => {
       startAutoMove(steps)
     }, 500) // 0.5초만 딜레이
   } else {
-    // 모든 숫자 사용 완료 - 룰렛 다시 열기
-    console.log('[autoUseNextDice] ✅ 모든 숫자 사용 완료 - 룰렛 다시 열기')
+    // 모든 숫자 사용 완료 - 주사위 다시 열기
+    console.log('[autoUseNextDice] ✅ 모든 숫자 사용 완료 - 주사위 다시 열기')
 
     // 진행 표시 숨기기
     showDiceProgress.value = false
@@ -1344,7 +1510,7 @@ const autoUseNextDice = () => {
 
     setTimeout(() => {
       showDiceRoulette.value = true
-      showNotification('모든 숫자를 사용했습니다! 다시 룰렛을 돌려주세요.', 'info')
+      showNotification('모든 숫자를 사용했습니다! 다시 주사위를 굴려주세요.', 'info')
     }, 800)
   }
 }
@@ -1387,7 +1553,7 @@ const handlePassiveCardSelect = (card: any) => {
 }
 
 // ==================== 모험 시스템 핸들러 ====================
-// 노드 이벤트 트리거 (룰렛 자동 이동 후 호출됨)
+// 노드 이벤트 트리거 (주사위 자동 이동 후 호출됨)
 const triggerNodeEvent = (node: any) => {
   console.log('[triggerNodeEvent] 노드 이벤트 트리거 - type:', node.type, 'gridX:', node.gridX, 'gridY:', node.gridY)
 
@@ -1549,9 +1715,9 @@ const handleAdventureNodeClick = (node: any) => {
     return
   }
 
-  // 사용 가능한(available) 칸을 클릭한 경우: 룰렛을 통해서만 이동 가능
+  // 사용 가능한(available) 칸을 클릭한 경우: 주사위를 통해서만 이동 가능
   if (node.status === 'available') {
-    showNotification('룰렛을 돌려서 이동해주세요!', 'info')
+    showNotification('주사위를 굴려서 이동해주세요!', 'info')
     return
   }
 
@@ -2066,7 +2232,12 @@ onMounted(() => {
     // 전투 히스토리 로드
     loadBattleHistory()
 
+    // 서사 로드
+    loadNarratives()
+
     // 디버깅: tutorialState 확인
+    // 주석처리: 대화형 튜토리얼 비활성화
+    /*
     console.log('📘 Tutorial State:', {
       currentDay: kingdom.value.day,
       hasSelectedStartCards: tutorialState.value?.hasSelectedStartCards,
@@ -2081,6 +2252,7 @@ onMounted(() => {
       showTutorial.value = true
       console.log('🎯 showTutorial set to:', showTutorial.value)
     }, 500)
+    */
 
     // 기본 BGM 재생
     playBGM('base', { loop: true, volume: 0.3 })

@@ -2,27 +2,32 @@
   <div class="min-h-screen bg-slate-900">
     <!-- Opening Video -->
     <div v-if="showOpening"
-         class="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden">
-      <!-- 블러 배경 (여백 채우기) -->
-      <video
-        ref="backgroundVideo"
-        autoplay
-        muted
-        playsinline
-        class="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-60"
-        :src="`${useRuntimeConfig().app.baseURL}images/animation/opening.mp4`"
-      ></video>
+         class="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden relative">
+      <!-- 블러 처리된 배경 비디오 -->
+      <div class="absolute inset-0">
+        <video
+          autoplay
+          muted
+          playsinline
+          preload="auto"
+          class="w-full h-full object-cover"
+          style="filter: blur(40px) brightness(0.4); transform: scale(1.1);"
+          :src="`${useRuntimeConfig().app.baseURL}images/animation/opening.mp4`"
+        ></video>
+      </div>
 
-      <!-- 메인 동영상 (전체 표시) -->
-      <video
-        ref="openingVideo"
-        autoplay
-        muted
-        playsinline
-        class="relative z-10 w-full h-full object-contain"
-        style="transform: translateY(-8%) scale(1.1);"
-        :src="`${useRuntimeConfig().app.baseURL}images/animation/opening.mp4`"
-      ></video>
+      <!-- 메인 동영상 컨테이너 -->
+      <div class="relative z-10 w-full h-full flex items-center justify-center">
+        <video
+          ref="openingVideo"
+          autoplay
+          playsinline
+          preload="auto"
+          class="max-w-full max-h-full"
+          style="width: auto; height: 100vh; object-fit: contain; box-shadow: 0 0 100px rgba(139, 92, 246, 0.3);"
+          :src="`${useRuntimeConfig().app.baseURL}images/animation/opening.mp4`"
+        ></video>
+      </div>
     </div>
 
     <!-- Mobile View Container (only show if not showing opening) -->
@@ -142,7 +147,6 @@ import { ref, onMounted, onUnmounted } from 'vue'
 // Opening 영상 관리
 const showOpening = ref(true)
 const openingVideo = ref<HTMLVideoElement | null>(null)
-const backgroundVideo = ref<HTMLVideoElement | null>(null)
 const openingTimer = ref<NodeJS.Timeout | null>(null)
 
 // 애니메이션 숫자
@@ -189,15 +193,23 @@ onMounted(() => {
 
   // Opening 비디오 재생 처리
   if (openingVideo.value) {
-    // 자동재생 실패 시 재시도
-    openingVideo.value.play().catch(error => {
-      console.log('Opening video autoplay prevented:', error)
-      // 사용자가 페이지를 클릭하면 재생 시도
-      const playOnInteraction = () => {
-        openingVideo.value?.play()
-        document.removeEventListener('click', playOnInteraction)
-      }
-      document.addEventListener('click', playOnInteraction)
+    const video = openingVideo.value
+    console.log('Video element found')
+    console.log('Video source:', video.src)
+
+    // 먼저 소리와 함께 자동재생 시도
+    video.volume = 0.5
+    video.play().then(() => {
+      console.log('✅ Video autoplay started WITH SOUND!')
+    }).catch(error => {
+      console.warn('⚠️ Autoplay with sound prevented, trying muted...')
+      // 소리 있는 자동재생 실패 → muted로 재시도
+      video.muted = true
+      video.play().then(() => {
+        console.log('✅ Video playing (muted)')
+      }).catch(err => {
+        console.error('❌ Autoplay failed:', err)
+      })
     })
   }
 
