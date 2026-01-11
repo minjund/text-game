@@ -10,7 +10,7 @@ export default defineNuxtConfig({
 
   // GitHub Pages 배포 설정
   app: {
-    baseURL: '/text-game/', // GitHub repository 이름
+    baseURL: process.env.NODE_ENV === 'production' ? '/text-game/' : '/', // 개발: '/', 배포: '/text-game/'
     buildAssetsDir: 'assets',
   },
 

@@ -1,9 +1,15 @@
 <template>
   <Transition name="modal">
     <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/80" @click.self="$emit('close')">
-      <div class="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-purple-600/50 rounded-lg sm:rounded-xl w-full max-w-md max-h-[95vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
+      <div
+        class="rounded-lg sm:rounded-xl w-full max-w-md max-h-[95vh] sm:max-h-[85vh] overflow-hidden flex flex-col bg-cover bg-no-repeat shadow-2xl"
+        :style="{
+          backgroundImage: `url(${useRuntimeConfig().app.baseURL}images/popup/card.png)`,
+          backgroundPosition: 'center top -20px'
+        }"
+      >
         <!-- Header -->
-        <div class="flex items-center justify-between p-3 sm:p-4 border-b-2 border-purple-600/30 bg-purple-900/20">
+        <div class="flex items-center justify-between p-3 sm:p-4">
           <div class="flex items-center gap-2 sm:gap-3">
             <span class="text-2xl sm:text-3xl">🎴</span>
             <div>
@@ -123,7 +129,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-3 sm:p-4 border-t-2 border-purple-600/30 bg-purple-900/20">
+        <div class="p-3 sm:p-4">
           <div class="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 text-xs sm:text-sm text-slate-400">
             <div class="flex flex-col sm:flex-row items-center gap-2">
               <span>총 {{ passiveCards.length }}개의 카드</span>
@@ -263,13 +269,31 @@ const getEffectSummary = (card: PassiveCard) => {
   opacity: 0;
 }
 
-.modal-enter-active .bg-gradient-to-br,
-.modal-leave-active .bg-gradient-to-br {
+.modal-enter-active > div > div,
+.modal-leave-active > div > div {
   transition: transform 0.3s ease;
 }
 
-.modal-enter-from .bg-gradient-to-br,
-.modal-leave-to .bg-gradient-to-br {
+.modal-enter-from > div > div,
+.modal-leave-to > div > div {
   transform: scale(0.9);
+}
+
+/* 스크롤바 스타일링 */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: rgba(88, 28, 135, 0.1);
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: rgba(147, 51, 234, 0.5);
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(147, 51, 234, 0.7);
 }
 </style>

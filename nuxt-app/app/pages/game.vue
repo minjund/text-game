@@ -2254,8 +2254,33 @@ onMounted(() => {
     }, 500)
     */
 
-    // 기본 BGM 재생
+    // 기본 BGM 재생 시도
     playBGM('base', { loop: true, volume: 0.3 })
+
+    // 브라우저 자동재생 정책으로 인해 실패할 경우를 대비한 fallback
+    // 사용자의 첫 번째 상호작용에서 BGM 재생 시도
+    let bgmStarted = false
+    const startBGMOnInteraction = () => {
+      if (!bgmStarted) {
+        console.log('[BGM] 사용자 상호작용으로 BGM 재생 시도')
+        playBGM('base', { loop: true, volume: 0.3 })
+        bgmStarted = true
+        // 이벤트 리스너 제거
+        document.removeEventListener('click', startBGMOnInteraction)
+        document.removeEventListener('touchstart', startBGMOnInteraction)
+      }
+    }
+
+    // 클릭 또는 터치 이벤트 리스너 등록
+    document.addEventListener('click', startBGMOnInteraction, { once: true })
+    document.addEventListener('touchstart', startBGMOnInteraction, { once: true })
+
+    // 3초 후에도 BGM이 시작되지 않았다면 이벤트 리스너 제거
+    setTimeout(() => {
+      bgmStarted = true
+      document.removeEventListener('click', startBGMOnInteraction)
+      document.removeEventListener('touchstart', startBGMOnInteraction)
+    }, 3000)
   }
 })
 
